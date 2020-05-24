@@ -7,8 +7,12 @@ namespace Decuplr.Serialization.Binary {
     public sealed class IndexAttribute : Attribute {
         public IndexAttribute(int index) {
             Index = index;
+            FixedSize = -1;
         }
 
         public int Index { get; }
+        public int FixedSize { get; set; } = -1;
+        public int MaxSize { get; set; } = -1;
+        public int MinSize { get; set; } = -1;
     }
 }

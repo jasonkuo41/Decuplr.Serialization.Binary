@@ -1,15 +1,17 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.Drawing;
 
 namespace Decuplr.Serialization.Binary.ConsoleTests {
     class Program {
         static void Main(string[] args) {
             Console.WriteLine("Hello World!dd");
-            TestGenerated.Analyzed.PrintResult();
+            DebugContent.PrintDebugInfo();
         }
     }
 
     [BinaryFormat]
-    public class TestClass {
+    public partial class TestClass {
 
     }
 
@@ -19,9 +21,13 @@ namespace Decuplr.Serialization.Binary.ConsoleTests {
     }
 
     [BinaryFormat]
-    public class TestClass3 {
+    public partial class TestClass3 {
 
-        [Index(1)]
+        [Index(0)]
+        [NetworkByteOrder]
+        public int InfoData { get; }
+
+        [Index(1, FixedSize = 3)]
         public byte FormatData { get; }
 
         [Index(2)]
@@ -31,7 +37,18 @@ namespace Decuplr.Serialization.Binary.ConsoleTests {
         private BaseA Condition() {
             if ((FormatData >> 3 & 1) == 0)
                 return new BaseB();
-            return new BaseA();
+            return new BaseC();
+        }
+
+        [BinaryFormat]
+        public partial class NestedClassTarget {
+            [Index(0)]
+            public NestedClassTarget Target { get; }
+
+
+            [BinaryFormat]
+            private partial class NestedClassTarget3 {
+            }
         }
     }
 
@@ -49,9 +66,11 @@ namespace Decuplr.Serialization.Binary.ConsoleTests {
     public class BaseA { }
 
     public class BaseB : BaseA { }
+    public class BaseC : BaseA { }
 
     [BinaryFormat]
-    public struct TestStruct {
+    public partial struct TestStruct {
 
     }
 }
+
