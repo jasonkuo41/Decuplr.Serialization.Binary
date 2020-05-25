@@ -14,6 +14,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Solutions {
         private IReadOnlyList<MemberFormatInfo> Members => TypeInfo.Members;
         
         private string OutArgs => string.Join(",", Enumerable.Range(0, TypeInfo.Members.Count).Select(i => $"out s_{i}"));
+        private string OutArgsWithType => string.Join(",", Enumerable.Range(0, TypeInfo.Members.Count).Select(i => $"out {Members[i].MemberTypeSymbol} s_{i}"));
 
         public PartialTypeSerialize(TypeFormatInfo typeInfo) {
             TypeInfo = typeInfo;
@@ -39,21 +40,21 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Solutions {
                 node.AddAttribute($"[GeneratedCode (\"{Assembly.GetExecutingAssembly().GetName().Name}\", \"{Assembly.GetExecutingAssembly().GetName().Version}\")]");
                 node.AddAttribute("[EditorBrowsable(EditorBrowsableState.Never)]");
 
-                node.AddNode($"internal static {DefaultDeserializePoint(TypeSymbol)} ({TypeSymbol} value, {OutArgs})", node => {
+                node.AddNode($"internal static void {DefaultDeserializePoint(TypeSymbol)} ({TypeSymbol} value, {OutArgsWithType})", node => {
                     for(var i = 0; i < Members.Count; ++i)
                         node.AddStatement($"s_{i} = {Members[i].MemberSymbol.Name}");
                 });
 
             });
-            return new GeneratedSourceCode[] { ($"{TypeInfo.TypeSymbol.Name}.Generated.PartialDeserialize.cs", builder.ToString()) };
+            return new GeneratedSourceCode[] { ($"{TypeInfo.TypeSymbol.Name}.Generated.PartialSerialize.cs", builder.ToString()) };
         }
 
-        public FormattingFunction GetSerializeFunction() {
+        public GeneratedFormatFunction GetSerializeFunction() {
             var builder = new CodeNodeBuilder();
-            builder.AddNode($"private static {TypeSymbol} DeconstructType({TypeSymbol} value, {OutArgs})", node => {
-                node.AddStatement($"return {TypeSymbol}.{DefaultDeserializePoint(TypeSymbol)} (value, {OutArgs});");
+            builder.AddNode($"private static void DeconstructType({TypeSymbol} value, {OutArgsWithType})", node => {
+                node.AddStatement($"{TypeSymbol}.{DefaultDeserializePoint(TypeSymbol)} (value, {OutArgs});");
             });
-            return new FormattingFunction("DeconstructType", builder.ToString());
+            return new GeneratedFormatFunction("DeconstructType", builder.ToString());
         }
     }
 }

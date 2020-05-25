@@ -43,10 +43,20 @@ namespace Decuplr.Serialization.Binary {
         }
     }
 
-    public abstract class BinaryFormatter {
+    public interface IBinaryFormatter {
+        bool TryGetFormatter<T>(out BinaryParser<T> parser);
+    }
+
+    public interface IBinaryNamespace {
+        IBinaryFormatter GetNamespace(string parserNamespace);
+    }
+
+    public abstract class BinaryFormatter : IBinaryFormatter, IBinaryNamespace {
 
         public abstract void AddFormatter<T>(BinaryParser<T> parser);
         public abstract void AddFormatter<T>(string parserNamespace, BinaryParser<T> parser);
+
+        public abstract void AddFormatterSource<T>(Func<IBinaryFormatter, IBinaryNamespace, BinaryParser<T>> parserSource);
 
         public abstract bool TryAddFormatter<T>(BinaryParser<T> parser);
         public abstract bool TryAddFormatter<T>(string parserNamespace, BinaryParser<T> parser);
@@ -55,7 +65,7 @@ namespace Decuplr.Serialization.Binary {
         public abstract void OverrideFormatter<T>(string parserNamespace, BinaryParser<T> parser);
 
         public abstract bool TryGetFormatter<T>(out BinaryParser<T> parser);
-        public abstract IReadOnlyDictionary<Type, object> GetNamespace(string parserNamespace);
+        public abstract IBinaryFormatter GetNamespace(string parserNamespace);
 
         public static BinaryFormatter Shared { get; } = new ImplBinarySerializer();
         public static BinaryFormatter Create() => new ImplBinarySerializer();

@@ -11,18 +11,8 @@ namespace Decuplr.Serialization.Binary.ConsoleTests {
         }
     }
 
-    [BinaryFormat]
-    public partial class TestClass {
-
-    }
-
-    [Obsolete]
-    public class TestClass2 {
-
-    }
-
     [BinaryFormat(Sealed = true)]
-    public struct FoamStruct {
+    public partial struct FoamStruct {
         public int Data { get; set; }
         public int Implement { get; set; }
     }
@@ -68,9 +58,13 @@ namespace Decuplr.Serialization.Binary.ConsoleTests {
             [Index(0)]
             public int Target { get; }
 
+            [Index(1)]
+            public int Result { get; }
 
             [BinaryFormat]
-            private partial class NestedClassTarget3 {
+            internal partial class NestedClassTarget3 {
+                [Index(0)]
+                public int Safety { get; set; }
             }
         }
     }

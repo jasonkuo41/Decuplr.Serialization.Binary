@@ -19,15 +19,15 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
         }
 
         public GeneratedSourceCode[] GetAdditionalFiles() { 
-             return new GeneratedSourceCode[] { ($"{TypeInfo.TypeSymbol.Name}.Generated.PartialSerialize.cs", CreatePartialClassConstructor()) };
+             return new GeneratedSourceCode[] { ($"{TypeInfo.TypeSymbol.Name}.Generated.PartialDeserialize.cs", CreatePartialClassConstructor()) };
         }
 
-        public FormattingFunction GetDeserializeFunction() {
+        public GeneratedFormatFunction GetDeserializeFunction() {
             var builder = new CodeNodeBuilder();
             builder.AddNode($"private static {TypeSymbol} CreateType({GetConstructorParameters()})", node => {
                 node.AddStatement($"return new {TypeSymbol} ({GetConstructorInvokeParameters()});");
             });
-            return new FormattingFunction("CreateType", builder.ToString());
+            return new GeneratedFormatFunction("CreateType", builder.ToString());
         }
 
         private string GetConstructorParameters() => string.Join(",", TypeInfo.Members.Select(x => $"{x.MemberTypeSymbol} s_{x.MemberSymbol.Name}"));

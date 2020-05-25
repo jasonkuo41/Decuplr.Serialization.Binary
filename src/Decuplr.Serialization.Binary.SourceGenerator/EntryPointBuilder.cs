@@ -8,7 +8,7 @@ using Decuplr.Serialization.Binary.Internal;
 namespace Decuplr.Serialization.Binary.SourceGenerator {
     internal class EntryPointBuilder {
 
-        public static string CreateSourceText(IReadOnlyList<FormatterSourceCode> formatters) {
+        public static string CreateSourceText(IReadOnlyList<GeneratedFormatter> formatters) {
             var builder = new CodeSnippetBuilder("Decuplr.Serialization.Binary.Internal");
             builder.Using("System");
             builder.Using("System.Threading");

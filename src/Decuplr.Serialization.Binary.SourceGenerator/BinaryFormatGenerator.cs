@@ -68,7 +68,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 var dir = Path.Combine(Directory.GetCurrentDirectory(), "Generated");
                 Directory.CreateDirectory(dir);
 
-                var result = new List<FormatterSourceCode>();
+                var result = new List<GeneratedFormatter>();
                 foreach (var typeSymbol in candidateSymbols) {
                     sourceBuilder.AppendLine($"Console.WriteLine(\"{typeSymbol}\");");
                     if (!TypeInfoDiscovery.TryParseType(typeSymbol, context, out var typeInfo))

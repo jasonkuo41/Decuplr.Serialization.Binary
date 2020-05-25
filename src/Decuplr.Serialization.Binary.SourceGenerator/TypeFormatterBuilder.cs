@@ -7,10 +7,10 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
     class TypeFormatterBuilder {
 
         private readonly TypeFormatInfo TypeInfo;
-        private readonly FormattingFunction DeserializeInfo;
-        private readonly FormattingFunction SerializeInfo;
+        private readonly GeneratedFormatFunction DeserializeInfo;
+        private readonly GeneratedFormatFunction SerializeInfo;
 
-        public TypeFormatterBuilder(TypeFormatInfo typeInfo, FormattingFunction deserializer, FormattingFunction serializer) {
+        public TypeFormatterBuilder(TypeFormatInfo typeInfo, GeneratedFormatFunction deserializer, GeneratedFormatFunction serializer) {
             TypeInfo = typeInfo;
             DeserializeInfo = deserializer;
             SerializeInfo = serializer;
@@ -18,7 +18,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
 
         public GeneratedSourceCode[] AdditionalCode { get; }
 
-        public FormatterSourceCode GetFormatterCode() {
+        public GeneratedFormatter GetFormatterCode() {
             var formatterName = $"{TypeInfo.TypeSymbol.ToString().Replace('.', '_') }_Serializer";
 
             var node = new CodeNodeBuilder();
@@ -73,7 +73,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
 
             });
 
-            return new FormatterSourceCode {
+            return new GeneratedFormatter {
                 FormatterName = formatterName,
                 FormatterClassSourceText = node.ToString()
             };
@@ -90,8 +90,9 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 for (var i = 0; i < TypeInfo.Members.Count; ++i) {
                     // force capture of i
                     var locali = i;
+                    node.AddStatement($"{TypeInfo.Members[i].MemberTypeSymbol} s_{i}");
                     node.AddNode(node => {
-                        node.AddStatement($"var parserResult = parser_{locali}.TryDeserialize(span, out var scopeReadBytes, out var s_{locali})");
+                        node.AddStatement($"var parserResult = parser_{locali}.TryDeserialize(span, out var scopeReadBytes, out s_{locali})");
                         node.AddNode($"if (parserResult != SerializeResult.Success)", node => {
                             node.AddStatement("readBytes = -1");
                             node.AddStatement("return parserResult");
@@ -103,7 +104,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 // Invoke entry compose point
                 // arg = s_1, s_2, s_3
                 var args = string.Join(", ", Enumerable.Range(0, TypeInfo.Members.Count).Select(i => $"s_{i}"));
-                node.AddStatement($"result = {SerializeInfo.FunctionName}({args})");
+                node.AddStatement($"result = {DeserializeInfo.FunctionName}({args})");
                 node.AddStatement("return SerializeResult.Success");
             });
         }
@@ -144,7 +145,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
 
                 node.AddStatement($"int length = 0");
                 for (var i = 0; i < TypeInfo.Members.Count; ++i) {
-                    // foce value capture
+                    // force value capture
                     var localI = i;
                     node.AddNode(node => {
                         node.AddNode($"if (!parser_{localI}.TrySerialize(s_{localI}, destination, out int bytes)) ", node => {

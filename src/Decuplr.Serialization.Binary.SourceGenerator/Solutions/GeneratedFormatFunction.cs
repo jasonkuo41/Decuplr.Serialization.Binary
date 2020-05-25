@@ -1,6 +1,6 @@
 ﻿namespace Decuplr.Serialization.Binary.SourceGenerator {
-    struct FormattingFunction {
-        public FormattingFunction(string name, string functionSource) {
+    struct GeneratedFormatFunction {
+        public GeneratedFormatFunction(string name, string functionSource) {
             FunctionName = name;
             FunctionSourceText = functionSource;
         }
