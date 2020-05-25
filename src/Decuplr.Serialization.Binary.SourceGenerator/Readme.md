@@ -21,3 +21,13 @@ This paragh shows a list of limitations that this library cannot current do.
   - How are we going to write to that?!
 - Const field marked as [Index]
   - Emmm...., we should allow this, since it's.... constant, wouldn't change
+- Help us create a exact constructor that takes the same parameter....
+  - Not cool! We will issue a compiler error
+
+### Mapping
+
+There are few ways to go about mapping data.
+
+#### 1. Compile Time Mapping
+
+Compile time mapping is when the source generator is figuring it how

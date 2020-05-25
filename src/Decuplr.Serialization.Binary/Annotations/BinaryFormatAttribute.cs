@@ -19,5 +19,6 @@ namespace Decuplr.Serialization.Binary {
         }
 
         public BinaryLayout Layout { get; }
+        public bool Sealed { get; set; }
     }
 }

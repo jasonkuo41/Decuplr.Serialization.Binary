@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
@@ -25,8 +27,12 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             return stack;
         }
 
-        public static TValue GetArgument<TValue>(this AttributeData attribute, string name) {
+        public static TValue GetPropertyNamedArguement<TValue>(this AttributeData attribute, string name) {
             return (TValue)attribute.NamedArguments.First(x => x.Key == name).Value.Value;
+        }
+
+        public static bool HasAny(this ImmutableArray<AttributeData> data, INamedTypeSymbol symbol, SymbolEqualityComparer? comparer = null) {
+            return data.Any(x => x.AttributeClass.Equals(symbol, comparer ?? SymbolEqualityComparer.Default));
         }
 
         /// <summary>

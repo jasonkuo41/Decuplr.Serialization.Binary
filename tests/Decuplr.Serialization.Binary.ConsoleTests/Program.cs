@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.Drawing;
+using System.Runtime.CompilerServices;
 
 namespace Decuplr.Serialization.Binary.ConsoleTests {
     class Program {
@@ -20,30 +21,52 @@ namespace Decuplr.Serialization.Binary.ConsoleTests {
 
     }
 
+    [BinaryFormat(Sealed = true)]
+    public struct FoamStruct {
+        public int Data { get; set; }
+        public int Implement { get; set; }
+    }
+
     [BinaryFormat]
     public partial class TestClass3 {
 
         [Index(0)]
         [NetworkByteOrder]
-        public int InfoData { get; }
+        public FoamStruct InfoData { get; }
 
         [Index(1, FixedSize = 3)]
         public byte FormatData { get; }
 
         [Index(2)]
-        [FormatCondition(nameof(Condition))]
+        [Union(1, 1, 1, FixedSize = 1)]
+        public (bool IsValid, bool IsCurrent, bool IsCompressed) ConditionGroup { get; }
+
+        /* Reserved concept
+        [Index(3)]
+        [TypeProvider("Index[2].IsCompressed ? 0 : 1", typeof(ClassB), typeof(ClassC))]
         public BaseA NextData { get; }
 
-        private BaseA Condition() {
-            if ((FormatData >> 3 & 1) == 0)
-                return new BaseB();
-            return new BaseC();
+        internal static Type FormatCondition([IndexSelect(2, Union = 3)] bool isCompressed) {
+            if (isCompressed)
+                return typeof(ClassB);
+            return typeof(ClassC);
         }
+        */
+
+        /*
+        [Index(4)]
+        [IgnoreIf(3, Union = 3)]
+        public int CompressionSize { get; }
+
+        [Index(5)]
+        [LengthProvider(Index = 3)]
+        public ReadOnlySpan<byte> RemainContent { get; }
+        */
 
         [BinaryFormat]
         public partial class NestedClassTarget {
             [Index(0)]
-            public NestedClassTarget Target { get; }
+            public int Target { get; }
 
 
             [BinaryFormat]
@@ -65,8 +88,11 @@ namespace Decuplr.Serialization.Binary.ConsoleTests {
 
     public class BaseA { }
 
-    public class BaseB : BaseA { }
-    public class BaseC : BaseA { }
+    [BinaryFormat]
+    public class ClassB : BaseA { }
+
+    [BinaryFormat]
+    public class ClassC : BaseA { }
 
     [BinaryFormat]
     public partial struct TestStruct {

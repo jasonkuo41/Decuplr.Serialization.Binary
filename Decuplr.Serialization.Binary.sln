@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Decuplr.Serialization.Binar
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Decuplr.Serialization.Binary.SourceGenerator", "src\Decuplr.Serialization.Binary.SourceGenerator\Decuplr.Serialization.Binary.SourceGenerator.csproj", "{3BE635E3-A5A0-4EF9-AFCF-F56F80E03E53}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Decuplr.Serialization.Binary.ConsoleTests", "tests\Decuplr.Serialization.Binary.ConsoleTests\Decuplr.Serialization.Binary.ConsoleTests.csproj", "{EBB799DD-F9F1-4B8F-9BD8-89E30839312E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Decuplr.Serialization.Binary.ConsoleTests", "tests\Decuplr.Serialization.Binary.ConsoleTests\Decuplr.Serialization.Binary.ConsoleTests.csproj", "{B7B81FB0-F2D6-4BC5-AF9C-57B19620699D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,10 +23,10 @@ Global
 		{3BE635E3-A5A0-4EF9-AFCF-F56F80E03E53}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3BE635E3-A5A0-4EF9-AFCF-F56F80E03E53}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3BE635E3-A5A0-4EF9-AFCF-F56F80E03E53}.Release|Any CPU.Build.0 = Release|Any CPU
-		{EBB799DD-F9F1-4B8F-9BD8-89E30839312E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EBB799DD-F9F1-4B8F-9BD8-89E30839312E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EBB799DD-F9F1-4B8F-9BD8-89E30839312E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{EBB799DD-F9F1-4B8F-9BD8-89E30839312E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7B81FB0-F2D6-4BC5-AF9C-57B19620699D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7B81FB0-F2D6-4BC5-AF9C-57B19620699D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7B81FB0-F2D6-4BC5-AF9C-57B19620699D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7B81FB0-F2D6-4BC5-AF9C-57B19620699D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

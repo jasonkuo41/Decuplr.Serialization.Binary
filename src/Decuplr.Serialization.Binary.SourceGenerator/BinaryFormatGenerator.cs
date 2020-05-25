@@ -1,11 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using Decuplr.Serialization.Binary.SourceGenerator.Solutions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
 
 namespace Decuplr.Serialization.Binary.SourceGenerator {
@@ -33,8 +38,11 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             if (!(context.SyntaxReceiver is CandidateSyntaxReceiver receiver))
                 return;
             var compilation = context.Compilation;
-            var attributeSymbol = compilation.GetTypeByMetadataName(typeof(BinaryFormatAttribute).FullName);
+            var binaryFormatSymbol = compilation.GetTypeByMetadataName(typeof(BinaryFormatAttribute).FullName);
             var indexSymbol = compilation.GetTypeByMetadataName(typeof(IndexAttribute).FullName);
+
+            Debug.Assert(binaryFormatSymbol != null);
+            Debug.Assert(indexSymbol != null);
 
             var sourceBuilder = new StringBuilder(@"using System;
                 namespace Decuplr.Serialization.Binary {
@@ -43,34 +51,42 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                             Console.WriteLine(""Start of debug info"");
                 ");
 
+            var candidateSymbols = new HashSet<INamedTypeSymbol>();
+            foreach (var candidateClass in receiver.CandidateTypes) {
+                var model = compilation.GetSemanticModel(candidateClass.SyntaxTree, true);
+                var typeSymbol = model.GetDeclaredSymbol(candidateClass);
+                if (typeSymbol is null || !typeSymbol.GetAttributes().HasAny(binaryFormatSymbol!))
+                    continue;
+                sourceBuilder.AppendLine($"Console.WriteLine(\"{typeSymbol}\");");
+                sourceBuilder.AppendLine($"Console.WriteLine(\"   {string.Join(" , ", candidateClass.Modifiers.Select(x => x.ValueText))}\");");
+                candidateSymbols.Add(typeSymbol!);
+            }
+
+            sourceBuilder.AppendLine($"Console.WriteLine(\"\");");
             try {
-                var qualifiedSymbols = new List<TypeAnalyzer>();
-                foreach (var candidateClass in receiver.CandidateTypes) {
-                    var model = compilation.GetSemanticModel(candidateClass.SyntaxTree);
-                    var typeSymbol = model.GetDeclaredSymbol(candidateClass);
-                    if (typeSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(attributeSymbol, SymbolEqualityComparer.Default))) {
-                        var shouldPartial = typeSymbol.GetMembers()
-                            .Where(member => member is IFieldSymbol || member is IPropertySymbol)
-                            .Where(member => !member.IsImplicitlyDeclared)
-                            .Where(member => member.GetAttributes().Any(x => x.AttributeClass.Equals(indexSymbol, SymbolEqualityComparer.Default)))
-                            .All(member => member.CanAccessSymbolInternally());
+                // For debug generator
+                var dir = Path.Combine(Directory.GetCurrentDirectory(), "Generated");
+                Directory.CreateDirectory(dir);
 
-                        sourceBuilder.AppendLine($"Console.WriteLine(\"{typeSymbol}\");");
-                        sourceBuilder.AppendLine($"Console.WriteLine(\"   {string.Join(" , ", candidateClass.Modifiers.Select(x => x.ValueText))}\");");
-                        /*
-                        if (!candidateClass.Modifiers.Any(x => x.IsKind(SyntaxKind.PartialKeyword))) {
-                            var report = new DiagnosticDescriptor("CD1001", "Type should not be partial", "Formatting", "Decuplr.Bi", DiagnosticSeverity.Error, true);
-                            context.ReportDiagnostic(Diagnostic.Create(report, candidateClass.Modifiers.Where(x => x.IsKind(SyntaxKind.PartialKeyword)).First().GetLocation()));
-                        }
-                        */
-                        var analyzedSymbol = new TypeAnalyzer(candidateClass, typeSymbol);
-                        //analyzedSymbol.AddToContextSource(context);
-                        qualifiedSymbols.Add(analyzedSymbol);
+                var result = new List<FormatterSourceCode>();
+                foreach (var typeSymbol in candidateSymbols) {
+                    sourceBuilder.AppendLine($"Console.WriteLine(\"{typeSymbol}\");");
+                    if (!TypeInfoDiscovery.TryParseType(typeSymbol, context, out var typeInfo))
+                        continue;
 
-                        sourceBuilder.AppendLine($"Console.WriteLine(@\"{PartialClassBuilder.CreatePartialClass(typeSymbol, new TypeLayout[] { })}\");");
-                    }
+                    var deserializer = new PartialTypeDeserialize(typeInfo);
+                    var files = deserializer.GetAdditionalFiles();
+                    File.WriteAllText(Path.Combine(dir, files[0].DesiredFileName), files[0].SourceText);
+
+                    var serializer = new PartialTypeSerialize(typeInfo);
+                    files = serializer.GetAdditionalFiles();
+                    File.WriteAllText(Path.Combine(dir, files[0].DesiredFileName), files[0].SourceText);
+
+                    result.Add(new TypeFormatterBuilder(typeInfo, deserializer.GetDeserializeFunction(), serializer.GetSerializeFunction()).GetFormatterCode());
                 }
-            } catch (Exception e) {
+                File.WriteAllText(Path.Combine(dir, "FinalGen.cs"), EntryPointBuilder.CreateSourceText(result));
+            }
+            catch (Exception e) {
                 sourceBuilder.AppendLine($"Console.WriteLine(@\"{e} {e.Message} \r \n {e.StackTrace}\");");
             }
             // After all the generated code, we will need to define an entry point
@@ -79,8 +95,15 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
 
             sourceBuilder.Append(@"} } }");
             context.AddSource("DebugInfo.BinaryFormatter.Generated.cs", SourceText.From(sourceBuilder.ToString(), Encoding.UTF8));
+
         }
 
     }
 
+    /*
+    if (!candidateClass.Modifiers.Any(x => x.IsKind(SyntaxKind.PartialKeyword))) {
+        var report = new DiagnosticDescriptor("CD1001", "Type should not be partial", "Formatting", "Decuplr.Bi", DiagnosticSeverity.Error, true);
+        context.ReportDiagnostic(Diagnostic.Create(report, candidateClass.Modifiers.Where(x => x.IsKind(SyntaxKind.PartialKeyword)).First().GetLocation()));
+    }
+    */
 }

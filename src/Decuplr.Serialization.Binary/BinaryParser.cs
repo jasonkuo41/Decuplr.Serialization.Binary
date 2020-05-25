@@ -4,10 +4,12 @@ using System.Text;
 
 namespace Decuplr.Serialization.Binary {
     public abstract class BinaryParser<T> {
-        public abstract void Deserialize(T value, Span<byte> destination);
+
+        public virtual int? FixedSize { get; }
+
+        public abstract bool TrySerialize(T value, Span<byte> destination, out int writtenBytes);
         public abstract int GetBinaryLength(T value);
 
-        public abstract SerializeResult TrySerialize(BinarySerializer serializer, ReadOnlySpan<byte> span, out T result);
-        public abstract SerializeResult TryGetBinaryLength(BinarySerializer serializer, ReadOnlySpan<byte> span, out int length);
+        public abstract SerializeResult TryDeserialize(ReadOnlySpan<byte> span, out int readBytes, out T result);
     }
 }
