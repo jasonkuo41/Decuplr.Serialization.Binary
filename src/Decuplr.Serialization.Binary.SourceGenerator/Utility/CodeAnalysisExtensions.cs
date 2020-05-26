@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Decuplr.Serialization.Binary.SourceGenerator {
     static class CodeAnalysisExtensions {
@@ -56,5 +58,13 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             Accessibility.ProtectedAndInternal => true,
             _ => false
         };
+
+        public static void AddSource(this SourceGeneratorContext context, GeneratedSourceCode code, Encoding? encoding = null, bool shouldDumpFile = false) {
+            context.AddSource(code.DesiredFileName, SourceText.From(code.SourceText, encoding ?? Encoding.UTF8));
+            if (shouldDumpFile) {
+                Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "generated"));
+                File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), "generated", code.DesiredFileName), code.SourceText);
+            }
+        }
     }
 }

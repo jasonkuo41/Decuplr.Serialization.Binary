@@ -22,7 +22,7 @@ namespace Decuplr.Serialization.Binary {
             throw new NotImplementedException();
         }
 
-        public override IReadOnlyDictionary<Type, object> GetNamespace(string parserNamespace) {
+        public override IBinaryFormatter GetNamespace(string parserNamespace) {
             throw new NotImplementedException();
         }
 
@@ -39,6 +39,10 @@ namespace Decuplr.Serialization.Binary {
         }
 
         public override bool TryAddFormatter<T>(string parserNamespace, BinaryParser<T> parser) {
+            throw new NotImplementedException();
+        }
+
+        public override void AddFormatterSource<T>(Func<IBinaryFormatter, IBinaryNamespace, BinaryParser<T>> parserSource) {
             throw new NotImplementedException();
         }
     }

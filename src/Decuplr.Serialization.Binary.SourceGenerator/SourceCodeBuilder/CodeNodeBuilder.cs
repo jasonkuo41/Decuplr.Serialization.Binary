@@ -47,6 +47,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
         }
 
         public void AddPlain(string plain) => Layout.Add(plain);
+        public void AddLine() => AddPlain(string.Empty);
 
         protected StringBuilder ToString(StringBuilder builder) {
             foreach(var layout in Layout) {

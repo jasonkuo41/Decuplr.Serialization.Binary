@@ -42,7 +42,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Solutions {
 
                 node.AddNode($"internal static void {DefaultDeserializePoint(TypeSymbol)} ({TypeSymbol} value, {OutArgsWithType})", node => {
                     for(var i = 0; i < Members.Count; ++i)
-                        node.AddStatement($"s_{i} = {Members[i].MemberSymbol.Name}");
+                        node.AddStatement($"s_{i} = value.{Members[i].MemberSymbol.Name}");
                 });
 
             });

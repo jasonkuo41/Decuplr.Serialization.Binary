@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -8,7 +9,11 @@ using Decuplr.Serialization.Binary.Internal;
 namespace Decuplr.Serialization.Binary.SourceGenerator {
     internal class EntryPointBuilder {
 
-        public static string CreateSourceText(IReadOnlyList<GeneratedFormatter> formatters) {
+        public static GeneratedSourceCode CreateSourceText(IEnumerable<TypeFormatterBuilder> builder) => CreateSourceText(builder.Select(x => x.GetFormatterCode()));
+        
+        public static GeneratedSourceCode CreateSourceText(IEnumerable<GeneratedFormatter> formatters) {
+            var generatedClassName = $"AssemblyFormatProvider_{Guid.NewGuid().ToString().Replace('-', '_')}";
+
             var builder = new CodeSnippetBuilder("Decuplr.Serialization.Binary.Internal");
             builder.Using("System");
             builder.Using("System.Threading");
@@ -18,16 +23,16 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             builder.AddAttribute($"[{nameof(BinaryFormatterAssemblyEntryPointAttribute)}]");
             builder.AddAttribute($"[GeneratedCode (\"{Assembly.GetExecutingAssembly().GetName().Name}\", \"{Assembly.GetExecutingAssembly().GetName().Version}\")]");
             builder.AddAttribute("[EditorBrowsable(EditorBrowsableState.Never)]");
-            builder.AddNode($"public class AssemblyFormatProvider_{Guid.NewGuid().ToString().Replace('-', '_')}", node => {
+            builder.AddNode($"public class {generatedClassName} ", node => {
 
                 // Ensure TS
+                node.AddPlain("// Declare private member");
                 node.AddStatement("private static int IsInit = 0");
+                node.AddLine();
 
                 // Put all the generated formatters class here
                 foreach (var formatter in formatters) {
-                    node.AddPlain("");
                     node.AddPlain(formatter.FormatterClassSourceText);
-                    node.AddPlain("");
                 }
 
                 // Define the entry function
@@ -43,7 +48,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 });
             });
 
-            return builder.ToString();
+            return ($"{generatedClassName}.cs", builder.ToString());
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Decuplr.Serialization.Binary.SourceGenerator {
@@ -9,14 +10,20 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
         private readonly TypeFormatInfo TypeInfo;
         private readonly GeneratedFormatFunction DeserializeInfo;
         private readonly GeneratedFormatFunction SerializeInfo;
+        private readonly List<GeneratedSourceCode> AdditionalSourceCode = new List<GeneratedSourceCode>();
 
-        public TypeFormatterBuilder(TypeFormatInfo typeInfo, GeneratedFormatFunction deserializer, GeneratedFormatFunction serializer) {
+        public IReadOnlyList<GeneratedSourceCode> AdditionalCode => AdditionalSourceCode;
+
+        public TypeFormatterBuilder(TypeFormatInfo typeInfo, IDeserializeSolution deserializeSolution, ISerializeSolution serializeSolution) {
             TypeInfo = typeInfo;
-            DeserializeInfo = deserializer;
-            SerializeInfo = serializer;
+            
+            DeserializeInfo = deserializeSolution.GetDeserializeFunction();
+            AdditionalSourceCode.AddRange(deserializeSolution.GetAdditionalFiles());
+
+            SerializeInfo = serializeSolution.GetSerializeFunction();
+            AdditionalSourceCode.AddRange(serializeSolution.GetAdditionalFiles());
         }
 
-        public GeneratedSourceCode[] AdditionalCode { get; }
 
         public GeneratedFormatter GetFormatterCode() {
             var formatterName = $"{TypeInfo.TypeSymbol.ToString().Replace('.', '_') }_Serializer";

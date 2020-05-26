@@ -68,23 +68,23 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 var dir = Path.Combine(Directory.GetCurrentDirectory(), "Generated");
                 Directory.CreateDirectory(dir);
 
-                var result = new List<GeneratedFormatter>();
+                var result = new List<TypeFormatterBuilder>();
                 foreach (var typeSymbol in candidateSymbols) {
                     sourceBuilder.AppendLine($"Console.WriteLine(\"{typeSymbol}\");");
                     if (!TypeInfoDiscovery.TryParseType(typeSymbol, context, out var typeInfo))
                         continue;
 
-                    var deserializer = new PartialTypeDeserialize(typeInfo);
-                    var files = deserializer.GetAdditionalFiles();
-                    File.WriteAllText(Path.Combine(dir, files[0].DesiredFileName), files[0].SourceText);
-
-                    var serializer = new PartialTypeSerialize(typeInfo);
-                    files = serializer.GetAdditionalFiles();
-                    File.WriteAllText(Path.Combine(dir, files[0].DesiredFileName), files[0].SourceText);
-
-                    result.Add(new TypeFormatterBuilder(typeInfo, deserializer.GetDeserializeFunction(), serializer.GetSerializeFunction()).GetFormatterCode());
+                    var serializer = new PartialTypeSerialize(typeInfo!);
+                    var deserializer = new PartialTypeDeserialize(typeInfo!);
+                    result.Add(new TypeFormatterBuilder(typeInfo!, deserializer, serializer));
                 }
-                File.WriteAllText(Path.Combine(dir, "FinalGen.cs"), EntryPointBuilder.CreateSourceText(result));
+
+                // Generate an entry point
+                context.AddSource(EntryPointBuilder.CreateSourceText(result), Encoding.UTF8);
+
+                // Generate those additional files
+                foreach (var additionFile in result.SelectMany(x => x.AdditionalCode))
+                    context.AddSource(additionFile, Encoding.UTF8);
             }
             catch (Exception e) {
                 sourceBuilder.AppendLine($"Console.WriteLine(@\"{e} {e.Message} \r \n {e.StackTrace}\");");
