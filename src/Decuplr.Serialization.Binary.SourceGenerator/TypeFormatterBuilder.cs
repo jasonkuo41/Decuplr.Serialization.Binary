@@ -88,7 +88,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
 
         private void Add_TryDeserialize(CodeNodeBuilder node) {
             // Implement TrySerialize(span, readBytes, result)
-            node.AddNode($"public override {nameof(SerializeResult)} TryDeserialize(ReadOnlySpan<byte> span, out int readBytes, out {TypeInfo.TypeSymbol} result)", node => {
+            node.AddNode($"public override {nameof(DeserializeResult)} TryDeserialize(ReadOnlySpan<byte> span, out int readBytes, out {TypeInfo.TypeSymbol} result)", node => {
                 // In case we fail
                 node.AddStatement("readBytes = 0");
                 node.AddStatement("result = default");
@@ -100,7 +100,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                     node.AddStatement($"{TypeInfo.Members[i].MemberTypeSymbol} s_{i}");
                     node.AddNode(node => {
                         node.AddStatement($"var parserResult = parser_{locali}.TryDeserialize(span, out var scopeReadBytes, out s_{locali})");
-                        node.AddNode($"if (parserResult != SerializeResult.Success)", node => {
+                        node.AddNode($"if (parserResult != DeserializeResult.Success)", node => {
                             node.AddStatement("readBytes = -1");
                             node.AddStatement("return parserResult");
                         });
@@ -112,7 +112,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 // arg = s_1, s_2, s_3
                 var args = string.Join(", ", Enumerable.Range(0, TypeInfo.Members.Count).Select(i => $"s_{i}"));
                 node.AddStatement($"result = {DeserializeInfo.FunctionName}({args})");
-                node.AddStatement("return SerializeResult.Success");
+                node.AddStatement("return DeserializeResult.Success");
             });
         }
 

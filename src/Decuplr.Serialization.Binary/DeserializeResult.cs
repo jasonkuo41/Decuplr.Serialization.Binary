@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace Decuplr.Serialization {
-    public enum SerializeResult {
+    public enum DeserializeResult {
         /// <summary>
         /// The serialization was a success
         /// </summary>

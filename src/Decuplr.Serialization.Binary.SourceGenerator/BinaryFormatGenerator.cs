@@ -3,22 +3,18 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
 using Decuplr.Serialization.Binary.SourceGenerator.Solutions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
 
 namespace Decuplr.Serialization.Binary.SourceGenerator {
 
     [Generator]
     public class BinaryFormatGenerator : ISourceGenerator {
-
-        class CandidateSyntaxReceiver : ISyntaxReceiver {
+        private class CandidateSyntaxReceiver : ISyntaxReceiver {
 
             public List<TypeDeclarationSyntax> CandidateTypes { get; } = new List<TypeDeclarationSyntax>();
 
@@ -62,7 +58,6 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 candidateSymbols.Add(typeSymbol!);
             }
 
-            sourceBuilder.AppendLine($"Console.WriteLine(\"\");");
             try {
                 // For debug generator
                 var dir = Path.Combine(Directory.GetCurrentDirectory(), "Generated");
@@ -100,10 +95,4 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
 
     }
 
-    /*
-    if (!candidateClass.Modifiers.Any(x => x.IsKind(SyntaxKind.PartialKeyword))) {
-        var report = new DiagnosticDescriptor("CD1001", "Type should not be partial", "Formatting", "Decuplr.Bi", DiagnosticSeverity.Error, true);
-        context.ReportDiagnostic(Diagnostic.Create(report, candidateClass.Modifiers.Where(x => x.IsKind(SyntaxKind.PartialKeyword)).First().GetLocation()));
-    }
-    */
 }

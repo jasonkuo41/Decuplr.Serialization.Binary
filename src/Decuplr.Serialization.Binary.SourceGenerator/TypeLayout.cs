@@ -14,7 +14,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
 
     public enum OverflowBehaviour {
         /// <summary>
-        /// Treat the data as faulty and should stop serializing, result in a <see cref="SerializeResult.Faulted"/>
+        /// Treat the data as faulty and should stop serializing, result in a <see cref="DeserializeResult.Faulted"/>
         /// </summary>
         FaultyData,
 
@@ -26,7 +26,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
 
     public enum UnderflowBehaviour {
         /// <summary>
-        /// Treat the data as faulty and should stop serializing, result in a <see cref="SerializeResult.Faulted"/>
+        /// Treat the data as faulty and should stop serializing, result in a <see cref="DeserializeResult.Faulted"/>
         /// </summary>
         FaultyData,
 

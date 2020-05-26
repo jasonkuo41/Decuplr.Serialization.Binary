@@ -8,9 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Decuplr.Serialization.Binary\Decuplr.Serialization.Binary.csproj" />
-    <ProjectReference Include="..\..\src\Decuplr.Serialization.Binary.SourceGenerator\Decuplr.Serialization.Binary.SourceGenerator.csproj"
-                      OutputItemType="Analyzer"
-                      ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\src\Decuplr.Serialization.Binary.SourceGenerator\Decuplr.Serialization.Binary.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

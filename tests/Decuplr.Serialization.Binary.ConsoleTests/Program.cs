@@ -23,7 +23,7 @@ namespace Decuplr.Serialization.Binary.ConsoleTests {
     public partial class TestClass3 {
 
         [Index(0)]
-        [NetworkByteOrder]
+        [Endianess]
         public FoamStruct InfoData { get; }
 
         [Index(1, FixedSize = 3)]

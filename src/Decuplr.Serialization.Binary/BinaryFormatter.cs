@@ -1,77 +1,34 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace Decuplr.Serialization.Binary {
 
-    internal class ImplBinarySerializer : BinaryFormatter {
-
-        private readonly Dictionary<string?, Dictionary<Type, object>> Serializers = new Dictionary<string?, Dictionary<Type, object>> {
-            { null , new Dictionary<Type, object>() }
-        };
-
-        public override void AddFormatter<T>(BinaryParser<T> parser) => Serializers[null].Add(typeof(T), parser);
-
-        public override void AddFormatter<T>(string parserNamespace, BinaryParser<T> parser) {
-            if (!Serializers.ContainsKey(parserNamespace))
-                Serializers.Add(parserNamespace, new Dictionary<Type, object>());
-            Serializers[parserNamespace].Add(typeof(T), parser);
-        }
-
-        public override bool TryGetFormatter<T>(out BinaryParser<T> parser) {
-            throw new NotImplementedException();
-        }
-
-        public override IBinaryFormatter GetNamespace(string parserNamespace) {
-            throw new NotImplementedException();
-        }
-
-        public override void OverrideFormatter<T>(BinaryParser<T> parser) {
-            throw new NotImplementedException();
-        }
-
-        public override void OverrideFormatter<T>(string parserNamespace, BinaryParser<T> parser) {
-            throw new NotImplementedException();
-        }
-
-        public override bool TryAddFormatter<T>(BinaryParser<T> parser) {
-            throw new NotImplementedException();
-        }
-
-        public override bool TryAddFormatter<T>(string parserNamespace, BinaryParser<T> parser) {
-            throw new NotImplementedException();
-        }
-
-        public override void AddFormatterSource<T>(Func<IBinaryFormatter, IBinaryNamespace, BinaryParser<T>> parserSource) {
-            throw new NotImplementedException();
-        }
-    }
-
     public interface IBinaryFormatter {
-        bool TryGetFormatter<T>(out BinaryParser<T> parser);
+        bool TryGetFormatter<T>(out BinaryParser<T> parser); 
+        bool TryGetCollectionFormatter<T>(out CollectionParser<T> parser);
     }
 
     public interface IBinaryNamespace {
         IBinaryFormatter GetNamespace(string parserNamespace);
     }
 
+    // Notes : If a 
     public abstract class BinaryFormatter : IBinaryFormatter, IBinaryNamespace {
 
-        public abstract void AddFormatter<T>(BinaryParser<T> parser);
-        public abstract void AddFormatter<T>(string parserNamespace, BinaryParser<T> parser);
+        public abstract void AddParserProvider<T>(Func<IBinaryFormatter, IBinaryNamespace, BinaryParser<T>> parserProvider);
+        public abstract void AddImmutableParser<T>(BinaryParser<T> parser);
 
-        public abstract void AddFormatterSource<T>(Func<IBinaryFormatter, IBinaryNamespace, BinaryParser<T>> parserSource);
+        public abstract int Serialize<T>(T value, Span<byte> destination);
+        public abstract T Deserialize<T>(ReadOnlySpan<byte> source, out int bytesRead);
 
-        public abstract bool TryAddFormatter<T>(BinaryParser<T> parser);
-        public abstract bool TryAddFormatter<T>(string parserNamespace, BinaryParser<T> parser);
-
-        public abstract void OverrideFormatter<T>(BinaryParser<T> parser);
-        public abstract void OverrideFormatter<T>(string parserNamespace, BinaryParser<T> parser);
+        public abstract int GetBinaryLength<T>(T value);
+        public abstract int GetBinaryLength<T>(ReadOnlySpan<T> value);
 
         public abstract bool TryGetFormatter<T>(out BinaryParser<T> parser);
+        public abstract bool TryGetCollectionFormatter<T>(out CollectionParser<T> parser);
         public abstract IBinaryFormatter GetNamespace(string parserNamespace);
 
-        public static BinaryFormatter Shared { get; } = new ImplBinarySerializer();
-        public static BinaryFormatter Create() => new ImplBinarySerializer();
+        public static BinaryFormatter Shared { get; } = new DefaultBinaryFormatter(true);
+        public static BinaryFormatter Create(bool includeDefaultSerializers) => new DefaultBinaryFormatter(includeDefaultSerializers);
     }
 }
