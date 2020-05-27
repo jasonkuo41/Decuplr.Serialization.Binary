@@ -1,4 +1,7 @@
-﻿using System;
+﻿
+#if USE_OBSOLETE
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Cryptography;
@@ -9,7 +12,7 @@ namespace Decuplr.Serialization.Binary.Internal {
         private readonly TypeParser<T> TypeParser;
         private readonly ICollectionLengthFormatter LengthFormatter;
 
-        protected CollectionParserBase(IBinaryFormatter formatter, INamespaceProvider binaryNamespace, ICollectionLengthFormatter lengthFormatter) 
+        protected CollectionParserBase(IBinaryPacker formatter, INamespaceProvider binaryNamespace, ICollectionLengthFormatter lengthFormatter) 
             : base(formatter, binaryNamespace) {
             LengthFormatter = lengthFormatter;
             var result = formatter.TryGetParser(out TypeParser);
@@ -81,3 +84,5 @@ namespace Decuplr.Serialization.Binary.Internal {
         // TODO : add more System.Collection.Generics classes for support here
     }
 }
+
+#endif

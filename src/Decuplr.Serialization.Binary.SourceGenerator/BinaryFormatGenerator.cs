@@ -63,7 +63,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 var dir = Path.Combine(Directory.GetCurrentDirectory(), "Generated");
                 Directory.CreateDirectory(dir);
 
-                var result = new List<TypeFormatterBuilder>();
+                var result = new List<TypeParserGenerator>();
                 foreach (var typeSymbol in candidateSymbols) {
                     sourceBuilder.AppendLine($"Console.WriteLine(\"{typeSymbol}\");");
                     if (!TypeInfoDiscovery.TryParseType(typeSymbol, context, out var typeInfo))
@@ -71,7 +71,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
 
                     var serializer = new PartialTypeSerialize(typeInfo!);
                     var deserializer = new PartialTypeDeserialize(typeInfo!);
-                    result.Add(new TypeFormatterBuilder(typeInfo!, deserializer, serializer));
+                    result.Add(new TypeParserGenerator(typeInfo!, deserializer, serializer));
                 }
 
                 // Generate an entry point

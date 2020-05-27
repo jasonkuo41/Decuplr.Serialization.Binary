@@ -4,7 +4,7 @@ using System.Diagnostics;
 using Decuplr.Serialization.Binary.Internal.DefaultParsers;
 
 namespace Decuplr.Serialization.Binary {
-    internal class DefaultBinaryFormatter : BinaryFormatter {
+    internal class DefaultBinaryFormatter : BinaryPacker {
 
         private readonly Dictionary<string?, Dictionary<Type, object>> Serializers = new Dictionary<string?, Dictionary<Type, object>> {
             { string.Empty , new Dictionary<Type, object>() }
@@ -30,11 +30,11 @@ namespace Decuplr.Serialization.Binary {
             return found;
         }
 
-        public override IBinaryFormatter GetNamespace(string parserNamespace) {
+        public override IBinaryPacker GetNamespace(string parserNamespace) {
             throw new NotImplementedException();
         }
 
-        public override void AddParserProvider<T>(Func<IBinaryFormatter, INamespaceProvider, TypeParser<T>> parserSource) {
+        public override void AddParserProvider<T>(Func<IBinaryPacker, INamespaceProvider, TypeParser<T>> parserSource) {
             throw new NotImplementedException();
         }
     }

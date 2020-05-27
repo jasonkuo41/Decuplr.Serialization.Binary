@@ -7,7 +7,7 @@ namespace Decuplr.Serialization.Binary.Internal {
         
         private readonly TypeParser<T> TypeParser;
 
-        public TypeSpanParser(IBinaryFormatter formatter) {
+        public TypeSpanParser(IBinaryPacker formatter) {
             Debug.Assert(!typeof(T).IsGenericType);
             if (!formatter.TryGetParser(out TypeParser)) {
                 Debug.Fail("Formatter should have decided if we contain this type");

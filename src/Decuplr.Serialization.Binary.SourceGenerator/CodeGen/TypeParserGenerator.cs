@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Decuplr.Serialization.Binary.SourceGenerator {
-    class TypeFormatterBuilder {
+    class TypeParserGenerator {
 
         private readonly TypeFormatInfo TypeInfo;
         private readonly GeneratedFormatFunction DeserializeInfo;
@@ -14,7 +14,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
 
         public IReadOnlyList<GeneratedSourceCode> AdditionalCode => AdditionalSourceCode;
 
-        public TypeFormatterBuilder(TypeFormatInfo typeInfo, IDeserializeSolution deserializeSolution, ISerializeSolution serializeSolution) {
+        public TypeParserGenerator(TypeFormatInfo typeInfo, IDeserializeSolution deserializeSolution, ISerializeSolution serializeSolution) {
             TypeInfo = typeInfo;
             
             DeserializeInfo = deserializeSolution.GetDeserializeFunction();
@@ -26,10 +26,10 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
 
 
         public GeneratedFormatter GetFormatterCode() {
-            var formatterName = $"{TypeInfo.TypeSymbol.ToString().Replace('.', '_') }_Serializer";
+            var parserName = $"{TypeInfo.TypeSymbol.ToString().Replace('.', '_') }_TypeParser";
 
             var node = new CodeNodeBuilder();
-            node.AddNode($"private class {formatterName} : TypeParser <{TypeInfo.TypeSymbol}>", node => {
+            node.AddNode($"private class {parserName} : TypeParser <{TypeInfo.TypeSymbol}>", node => {
                 
                 // Declare the parser we will be using
                 for (var i = 0; i < TypeInfo.Members.Count; ++i)
@@ -41,7 +41,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
 
                 // Initialize the parser at runtime
                 // Note : we don't need to optimize so that we can inline IL or code to startup (I think the benefit is slim)
-                node.AddNode($"public {formatterName} ({nameof(BinaryFormatter)} format)", node => {
+                node.AddNode($"public {parserName} ({nameof(IBinaryPacker)} format)", node => {
                     // Locate the parser
                     node.AddStatement("fixedSize = 0");
                     for (var i = 0; i < TypeInfo.Members.Count; ++i) {
@@ -81,7 +81,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             });
 
             return new GeneratedFormatter {
-                FormatterName = formatterName,
+                FormatterName = parserName,
                 FormatterClassSourceText = node.ToString()
             };
         }

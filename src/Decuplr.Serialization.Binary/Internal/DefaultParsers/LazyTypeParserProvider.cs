@@ -1,12 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Decuplr.Serialization.Binary.Annotations;
 using Decuplr.Serialization.Binary.Generic;
 
-namespace Decuplr.Serialization.Binary {
+namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
 
     [GenericParser(typeof(Lazy<>), 1)]
-    internal partial class LazyTypeParserProvider : NestedGenericOneArgsParserProvider {
+    internal partial class LazyTypeParserProvider<T> : GenericParserProvider<T> {
 
         /// Note currently we parse the underlying daya asap,
         /// But what we actually can do is store a block of memory and only serialize that value when it's evaluated, basically, 
@@ -22,7 +23,7 @@ namespace Decuplr.Serialization.Binary {
         ///         (1) travel through every point to get the length info and sum together, which might be counter productive
         ///         (2) if we have a bug in our code, that would could be a disater as we misallign everything
         ///  
-        private class LazyTypeParser<T> : TypeParser<Lazy<T>> {
+        private class LazyTypeParser : TypeParser<Lazy<T>> {
 
             private readonly TypeParser<T> ChildParser;
 
@@ -30,8 +31,9 @@ namespace Decuplr.Serialization.Binary {
                 ChildParser = childParser;
             }
 
-            public LazyTypeParser(IBinaryFormatter formatter) {
-                if (!formatter.TryGetParser(out ChildParser))
+            public LazyTypeParser(IBinaryPacker formatter, TypeParser<T> typeParser) {
+                ChildParser = typeParser;
+                if (typeParser is null && !formatter.TryGetParser(out ChildParser))
                     throw new NotSupportedException($"Unable to locate type parser for such underlying type {typeof(T).Name}");
             }
 
@@ -53,13 +55,8 @@ namespace Decuplr.Serialization.Binary {
 
         }
 
-        protected override object ProvideParser<TContain>(IBinaryFormatter formatter, INamespaceProvider formatNamespace) {
-            return new LazyTypeParser<TContain>(formatter);
+        protected override TypeParser ProvideParserInternal(IBinaryPacker formatter, INamespaceProvider formatNamespace, TypeParser<T> firstParser) {
+            return new LazyTypeParser(formatter, firstParser);
         }
-
-        protected override object ProvideFormatter<T1>(TypeParser<T1> parser1) {
-            return new LazyTypeParser<T1>(parser1);
-        }
-
     }
 }

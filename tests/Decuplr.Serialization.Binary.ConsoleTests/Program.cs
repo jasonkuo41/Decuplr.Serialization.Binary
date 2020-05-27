@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Drawing;
 using System.Runtime.CompilerServices;
@@ -27,7 +28,7 @@ namespace Decuplr.Serialization.Binary.ConsoleTests {
         public FoamStruct InfoData { get; }
 
         [Index(1, FixedSize = 3)]
-        public byte FormatData { get; }
+        public List<byte> FormatData { get; }
 
         [Index(2)]
         [Union(1, 1, 1, FixedSize = 1)]

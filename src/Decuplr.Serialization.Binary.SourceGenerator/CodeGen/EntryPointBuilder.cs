@@ -9,7 +9,7 @@ using Decuplr.Serialization.Binary.Internal;
 namespace Decuplr.Serialization.Binary.SourceGenerator {
     internal class EntryPointBuilder {
 
-        public static GeneratedSourceCode CreateSourceText(IEnumerable<TypeFormatterBuilder> builder) => CreateSourceText(builder.Select(x => x.GetFormatterCode()));
+        public static GeneratedSourceCode CreateSourceText(IEnumerable<TypeParserGenerator> builder) => CreateSourceText(builder.Select(x => x.GetFormatterCode()));
         
         public static GeneratedSourceCode CreateSourceText(IEnumerable<GeneratedFormatter> formatters) {
             var generatedClassName = $"AssemblyFormatProvider_{Guid.NewGuid().ToString().Replace('-', '_')}";
@@ -36,7 +36,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 }
 
                 // Define the entry function
-                node.AddNode($"public static void {BinaryFormatterAssemblyEntryPointAttribute.EntryFunctionName} ({nameof(BinaryFormatter)} formatter)", node => {
+                node.AddNode($"public static void {BinaryFormatterAssemblyEntryPointAttribute.EntryFunctionName} ({nameof(BinaryPacker)} formatter)", node => {
 
                     node.AddPlain("// This ensures that we only invoke only once (ThreadSafe)");
 

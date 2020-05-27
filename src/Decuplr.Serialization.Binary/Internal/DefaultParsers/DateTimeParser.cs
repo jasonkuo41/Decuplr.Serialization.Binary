@@ -22,6 +22,16 @@ namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
 
     [ParserNamespace("Default")]
     class StringParser : TypeParser<string> {
+        public override int GetBinaryLength(string value) {
+            throw new NotImplementedException();
+        }
 
+        public override DeserializeResult TryDeserialize(ReadOnlySpan<byte> span, out int readBytes, out string result) {
+            throw new NotImplementedException();
+        }
+
+        public override bool TrySerialize(string value, Span<byte> destination, out int writtenBytes) {
+            throw new NotImplementedException();
+        }
     }
 }
