@@ -6,13 +6,13 @@ using System.Security.Cryptography;
 namespace Decuplr.Serialization.Binary.Internal {
     internal abstract class CollectionParserBase<T> : CollectionParser<T> {
 
-        private readonly BinaryParser<T> TypeParser;
+        private readonly TypeParser<T> TypeParser;
         private readonly ICollectionLengthFormatter LengthFormatter;
 
-        protected CollectionParserBase(IBinaryFormatter formatter, IBinaryNamespace binaryNamespace, ICollectionLengthFormatter lengthFormatter) 
+        protected CollectionParserBase(IBinaryFormatter formatter, INamespaceProvider binaryNamespace, ICollectionLengthFormatter lengthFormatter) 
             : base(formatter, binaryNamespace) {
             LengthFormatter = lengthFormatter;
-            var result = formatter.TryGetFormatter(out TypeParser);
+            var result = formatter.TryGetParser(out TypeParser);
             // Assert that the result must be "true", the formatter should have known if this type is serializable
             Debug.Assert(result);
         }

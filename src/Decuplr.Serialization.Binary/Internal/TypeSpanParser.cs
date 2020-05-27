@@ -5,11 +5,11 @@ namespace Decuplr.Serialization.Binary.Internal {
     // When T is no longer a generic type, we can finally invoke this
     internal class TypeSpanParser<T> : SpanParser<T> {
         
-        private readonly BinaryParser<T> TypeParser;
+        private readonly TypeParser<T> TypeParser;
 
         public TypeSpanParser(IBinaryFormatter formatter) {
             Debug.Assert(!typeof(T).IsGenericType);
-            if (!formatter.TryGetFormatter(out TypeParser)) {
+            if (!formatter.TryGetParser(out TypeParser)) {
                 Debug.Fail("Formatter should have decided if we contain this type");
                 throw new ArgumentException($"Unable to locate {typeof(T)} formatter");
             }

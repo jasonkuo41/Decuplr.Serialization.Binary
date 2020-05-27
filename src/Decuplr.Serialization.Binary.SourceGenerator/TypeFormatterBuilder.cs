@@ -29,11 +29,11 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             var formatterName = $"{TypeInfo.TypeSymbol.ToString().Replace('.', '_') }_Serializer";
 
             var node = new CodeNodeBuilder();
-            node.AddNode($"private class {formatterName} : BinaryParser <{TypeInfo.TypeSymbol}>", node => {
+            node.AddNode($"private class {formatterName} : TypeParser <{TypeInfo.TypeSymbol}>", node => {
                 
                 // Declare the parser we will be using
                 for (var i = 0; i < TypeInfo.Members.Count; ++i)
-                    node.AddStatement($"private readonly BinaryParser<{TypeInfo.Members[i].MemberTypeSymbol}> parser_{i}");
+                    node.AddStatement($"private readonly TypeParser<{TypeInfo.Members[i].MemberTypeSymbol}> parser_{i}");
 
                 // Figure out if this is actually fixed in size
                 node.AddStatement($"private readonly int? fixedSize");

@@ -1,22 +1,24 @@
 ﻿using System;
 using System.Text;
+using Decuplr.Serialization.Binary.Generic;
 
 namespace Decuplr.Serialization.Binary {
 
     public interface IBinaryFormatter {
-        bool TryGetFormatter<T>(out BinaryParser<T> parser); 
-        bool TryGetCollectionFormatter<T>(out CollectionParser<T> parser);
+        bool TryGetParser<T>(out TypeParser<T> parser);
+        bool TryGetGenericParserProvider<T>(out GenericParserProvider provider);
     }
 
-    public interface IBinaryNamespace {
+    public interface INamespaceProvider {
         IBinaryFormatter GetNamespace(string parserNamespace);
     }
 
     // Notes : If a 
-    public abstract class BinaryFormatter : IBinaryFormatter, IBinaryNamespace {
+    public abstract class BinaryFormatter : IBinaryFormatter, INamespaceProvider {
 
-        public abstract void AddParserProvider<T>(Func<IBinaryFormatter, IBinaryNamespace, BinaryParser<T>> parserProvider);
-        public abstract void AddImmutableParser<T>(BinaryParser<T> parser);
+        public abstract void AddParserProvider<T>(Func<IBinaryFormatter, INamespaceProvider, TypeParser<T>> parserProvider);
+        public abstract void AddGenericParserProvider<T>(Type genericType, T provider) where T : GenericParserProvider;
+        public abstract void AddSealedParser<T>(TypeParser<T> parser);
 
         public abstract int Serialize<T>(T value, Span<byte> destination);
         public abstract T Deserialize<T>(ReadOnlySpan<byte> source, out int bytesRead);
@@ -24,8 +26,9 @@ namespace Decuplr.Serialization.Binary {
         public abstract int GetBinaryLength<T>(T value);
         public abstract int GetBinaryLength<T>(ReadOnlySpan<T> value);
 
-        public abstract bool TryGetFormatter<T>(out BinaryParser<T> parser);
-        public abstract bool TryGetCollectionFormatter<T>(out CollectionParser<T> parser);
+        public abstract bool TryGetParser<T>(out TypeParser<T> parser);
+        public abstract bool TryGetGenericParserProvider<T>(out GenericParserProvider provider);
+
         public abstract IBinaryFormatter GetNamespace(string parserNamespace);
 
         public static BinaryFormatter Shared { get; } = new DefaultBinaryFormatter(true);

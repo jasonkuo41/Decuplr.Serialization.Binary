@@ -2,7 +2,7 @@
 using System.Runtime.CompilerServices;
 
 namespace Decuplr.Serialization.Binary.Internal {
-    internal abstract class UnmanagedParserBase<T> : BinaryParser<T> where T : unmanaged {
+    internal abstract class UnmanagedParserBase<T> : TypeParser<T> where T : unmanaged {
 
         private readonly static int fixedSize = Unsafe.SizeOf<T>();
 

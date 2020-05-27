@@ -2,9 +2,7 @@
 using System.Text;
 
 namespace Decuplr.Serialization.Binary {
-    // TODO : Rename as TypeParser for consitency
-    public abstract class BinaryParser<T> {
-
+    public abstract class TypeParser<T> {
         public virtual int? FixedSize { get; }
 
         public abstract bool TrySerialize(T value, Span<byte> destination, out int writtenBytes);

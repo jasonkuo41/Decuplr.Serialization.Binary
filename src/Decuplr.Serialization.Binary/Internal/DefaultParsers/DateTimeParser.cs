@@ -21,7 +21,7 @@ namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
     }
 
     [ParserNamespace("Default")]
-    class StringParser : BinaryParser<string> {
+    class StringParser : TypeParser<string> {
 
     }
 }

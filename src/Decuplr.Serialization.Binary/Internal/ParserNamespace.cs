@@ -16,8 +16,4 @@ namespace Decuplr.Serialization.Binary.Internal {
         public string Namespace { get; }
     }
 
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
-    internal sealed class MutatableParserAttribute : Attribute {
-
-    }
 }

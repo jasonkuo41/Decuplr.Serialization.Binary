@@ -13,20 +13,20 @@ namespace Decuplr.Serialization.Binary {
         public DefaultBinaryFormatter(bool includeDefaultSerializers) {
             if (!includeDefaultSerializers)
                 return;
-            AddImmutableParser(new Int32Parser());
+            AddSealedParser(new Int32Parser());
         }
 
-        public override void AddImmutableParser<T>(BinaryParser<T> parser) {
+        public override void AddSealedParser<T>(TypeParser<T> parser) {
             Serializers[string.Empty].Add(typeof(T), parser);
 
         }
 
-        public override bool TryGetFormatter<T>(out BinaryParser<T> parser) {
+        public override bool TryGetParser<T>(out TypeParser<T> parser) {
             var found = Serializers[string.Empty].TryGetValue(typeof(T), out var result);
 
-            Debug.Assert(result is BinaryParser<T>);
+            Debug.Assert(result is TypeParser<T>);
 
-            parser = (BinaryParser<T>)result;
+            parser = (TypeParser<T>)result;
             return found;
         }
 
@@ -34,7 +34,7 @@ namespace Decuplr.Serialization.Binary {
             throw new NotImplementedException();
         }
 
-        public override void AddParserProvider<T>(Func<IBinaryFormatter, IBinaryNamespace, BinaryParser<T>> parserSource) {
+        public override void AddParserProvider<T>(Func<IBinaryFormatter, INamespaceProvider, TypeParser<T>> parserSource) {
             throw new NotImplementedException();
         }
     }

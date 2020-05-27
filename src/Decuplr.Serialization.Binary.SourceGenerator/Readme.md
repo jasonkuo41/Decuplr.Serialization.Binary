@@ -23,6 +23,7 @@ This paragh shows a list of limitations that this library cannot current do.
   - Emmm...., we should allow this, since it's.... constant, wouldn't change
 - Help us create a exact constructor that takes the same parameter....
   - Not cool! We will issue a compiler error
+- Cannot support any generics that are larger then 16 arguments (but why), nested generics are fine
 
 ### Mapping
 
