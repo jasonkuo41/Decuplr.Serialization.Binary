@@ -9,14 +9,23 @@ namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
 
     [ParserNamespace("Default")]
     class DateTimeParser : UnmanagedParserBase<DateTime> {
+
+        private readonly TypeParser<long> Packer;
+
+        public DateTimeParser(IBinaryPacker packer) {
+            Packer = packer.GetParser<long>();
+        }
+
         protected override DateTime GetValue(ReadOnlySpan<byte> value) {
-            return DateTime.FromBinary(BinaryConverter.ToInt64(value));
+            var parseResult = Packer.TryDeserialize(value, out var readBytes, out var datetime);
+            Debug.Assert(parseResult == DeserializeResult.Success && readBytes == FixedSize.Value);
+            return DateTime.FromBinary(datetime);
         }
 
         protected override void WriteBytes(Span<byte> destination, DateTime value) {
             var bin = value.ToBinary();
-            var result = BinaryConverter.TryWriteBytes(destination, bin);
-            Debug.Assert(result);
+            var result = Packer.TrySerialize(bin, destination, out var writtenBytes);
+            Debug.Assert(result && writtenBytes == FixedSize.Value);
         }
     }
 

@@ -7,7 +7,7 @@ using Decuplr.Serialization.Binary.Generic;
 namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
 
     [GenericParser(typeof(Lazy<>), 1)]
-    internal partial class LazyTypeParserProvider<T> : GenericParserProvider<T> {
+    internal class LazyTypeParserProvider<T> : GenericParserProvider {
 
         /// Note currently we parse the underlying daya asap,
         /// But what we actually can do is store a block of memory and only serialize that value when it's evaluated, basically, 
@@ -31,9 +31,8 @@ namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
                 ChildParser = childParser;
             }
 
-            public LazyTypeParser(IBinaryPacker formatter, TypeParser<T> typeParser) {
-                ChildParser = typeParser;
-                if (typeParser is null && !formatter.TryGetParser(out ChildParser))
+            public LazyTypeParser(IBinaryPacker formatter) {
+                if (!formatter.TryGetParser(out ChildParser))
                     throw new NotSupportedException($"Unable to locate type parser for such underlying type {typeof(T).Name}");
             }
 
@@ -55,8 +54,8 @@ namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
 
         }
 
-        protected override TypeParser ProvideParserInternal(IBinaryPacker formatter, INamespaceProvider formatNamespace, TypeParser<T> firstParser) {
-            return new LazyTypeParser(formatter, firstParser);
+        public override TypeParser ProvideParser(IBinaryPacker formatter, INamespaceProvider formatNamespace) {
+            return new LazyTypeParser(formatter);
         }
     }
 }
