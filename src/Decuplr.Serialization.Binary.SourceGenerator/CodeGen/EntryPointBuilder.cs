@@ -20,7 +20,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             builder.Using("System.ComponentModel");
             builder.Using("System.CodeDom.Compiler");
 
-            builder.AddAttribute($"[{nameof(BinaryFormatterAssemblyEntryPointAttribute)}]");
+            builder.AddAttribute($"[{nameof(BinaryPackerAssemblyEntryPointAttribute)}]");
             builder.AddAttribute($"[GeneratedCode (\"{Assembly.GetExecutingAssembly().GetName().Name}\", \"{Assembly.GetExecutingAssembly().GetName().Version}\")]");
             builder.AddAttribute("[EditorBrowsable(EditorBrowsableState.Never)]");
             builder.AddNode($"public class {generatedClassName} ", node => {
@@ -36,7 +36,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 }
 
                 // Define the entry function
-                node.AddNode($"public static void {BinaryFormatterAssemblyEntryPointAttribute.EntryFunctionName} ({nameof(BinaryPacker)} formatter)", node => {
+                node.AddNode($"public static void {BinaryPackerAssemblyEntryPointAttribute.EntryFunctionName} ({nameof(BinaryPacker)} formatter)", node => {
 
                     node.AddPlain("// This ensures that we only invoke only once (ThreadSafe)");
 

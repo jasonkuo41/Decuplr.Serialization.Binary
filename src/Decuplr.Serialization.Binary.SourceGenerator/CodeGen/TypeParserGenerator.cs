@@ -41,7 +41,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
 
                 // Initialize the parser at runtime
                 // Note : we don't need to optimize so that we can inline IL or code to startup (I think the benefit is slim)
-                node.AddNode($"public {parserName} ({nameof(IBinaryPacker)} format)", node => {
+                node.AddNode($"public {parserName} ({nameof(IParserNamespace)} format)", node => {
                     // Locate the parser
                     node.AddStatement("fixedSize = 0");
                     for (var i = 0; i < TypeInfo.Members.Count; ++i) {

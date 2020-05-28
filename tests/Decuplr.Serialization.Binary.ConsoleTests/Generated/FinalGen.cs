@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.CodeDom.Compiler;
 
 namespace Decuplr.Serialization.Binary.Internal {
-[BinaryFormatterAssemblyEntryPointAttribute]
+[BinaryPackerAssemblyEntryPointAttribute]
 [GeneratedCode ("Decuplr.Serialization.Binary.SourceGenerator", "1.0.0.0")]
 [EditorBrowsable(EditorBrowsableState.Never)]
 public class AssemblyFormatProvider_c9d6ae2b_208c_4d30_aa72_6fc9d6d9dc72{

@@ -6,11 +6,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Memory" Version="4.5.4" />
+    <Compile Remove="Internal\DefaulttLengthProvider\**" />
+    <EmbeddedResource Remove="Internal\DefaulttLengthProvider\**" />
+    <None Remove="Internal\DefaulttLengthProvider\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Internal\DefaulttLengthProvider\" />
+    <PackageReference Include="System.Memory" Version="4.5.4" />
   </ItemGroup>
 
 </Project>

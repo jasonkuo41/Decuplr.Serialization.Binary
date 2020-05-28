@@ -12,7 +12,7 @@ namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
 
         private readonly TypeParser<long> Packer;
 
-        public DateTimeParser(IBinaryPacker packer) {
+        public DateTimeParser(IParserNamespace packer) {
             Packer = packer.GetParser<long>();
         }
 

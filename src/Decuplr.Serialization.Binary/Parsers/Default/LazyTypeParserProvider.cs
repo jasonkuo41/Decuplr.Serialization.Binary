@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Decuplr.Serialization.Binary.Annotations;
 using Decuplr.Serialization.Binary.Generic;
+using Decuplr.Serialization.Binary.Namespaces;
 
 namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
 
@@ -31,7 +32,7 @@ namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
                 ChildParser = childParser;
             }
 
-            public LazyTypeParser(IBinaryPacker formatter) {
+            public LazyTypeParser(IParserNamespace formatter) {
                 if (!formatter.TryGetParser(out ChildParser))
                     throw new NotSupportedException($"Unable to locate type parser for such underlying type {typeof(T).Name}");
             }
@@ -54,7 +55,7 @@ namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
 
         }
 
-        public override TypeParser ProvideParser(IBinaryPacker formatter, INamespaceProvider formatNamespace) {
+        public override TypeParser ProvideParser(IParserNamespace formatter, INamespaceRoot formatNamespace) {
             return new LazyTypeParser(formatter);
         }
     }
