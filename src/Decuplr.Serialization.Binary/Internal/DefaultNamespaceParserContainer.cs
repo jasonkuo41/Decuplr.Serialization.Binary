@@ -11,12 +11,12 @@ namespace Decuplr.Serialization.Binary {
 
         private readonly ConcurrentDictionary<Assembly, bool> TraversedAssemblies = new ConcurrentDictionary<Assembly, bool>();
         private readonly ParserDiscovery DefaultLocator;
-        private readonly BinaryPacker Packer;
+        private readonly INamespaceRoot Root;
 
         public LengthProvider LengthProvider => DefaultLocator.LengthProvider;
 
-        public DefaultNamespaceParserContainer(BinaryPacker packer, ParserDiscovery defaultLocator) : base("Default", packer) {
-            Packer = packer;
+        public DefaultNamespaceParserContainer(INamespaceRoot root, ParserDiscovery defaultLocator) : base("Default") {
+            Root = root;
             DefaultLocator = defaultLocator;
         }
 
@@ -28,7 +28,7 @@ namespace Decuplr.Serialization.Binary {
             if (entryPoint is null)
                 return TraversedAssemblies.TryAdd(assembly, false);
             // Load that entry point
-            entryPoint.LoadContext(Packer);
+            entryPoint.LoadContext(Root);
             return true;
         }
 
@@ -44,8 +44,6 @@ namespace Decuplr.Serialization.Binary {
             // If the assembly is System.* then we will say it's probably not a registered parser
             // Otherwise it'll add a hint if the assembly was not compiled with source generator
             var assembly = typeof(T).Assembly;
-            // ugh... I feel like this are enough vendors we trust not to do dumb things... I guess?
-            // wait... then why is microsoft here?! I shall summon silverlight back with blazor!!!!
             if (assembly == SystemPrivateCoreLib || assembly.FullName.StartsWith("System.") || assembly.FullName.StartsWith("Microsoft."))
                 throw new ParserNotFoundException($"Unable to locate parser of type `{typeof(T)}`, you must register the parser before using it.", typeof(T));
             throw new ParserNotFoundException($"Unable to locate parser of type `{typeof(T)}`, you must register the parser before using it. (Did you forgot to run our source generator along with your project?)", typeof(T));

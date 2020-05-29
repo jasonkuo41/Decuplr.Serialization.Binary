@@ -7,13 +7,11 @@ namespace Decuplr.Serialization.Binary {
     internal class ParserNamespaces {
         public static IReadOnlyList<string> DefaultNamespaceTitle { get; } = new string[] { string.Empty, "default", "Default", "DEFAULT" };
 
-        private readonly INamespaceRoot NamespaceRoot;
         private readonly ConcurrentDictionary<string, ParserContainer> Namespaces = new ConcurrentDictionary<string, ParserContainer>();
 
         public DefaultNamespaceParserContainer Default { get; }
 
-        public ParserNamespaces(BinaryPacker packer) {
-            NamespaceRoot = packer;
+        public ParserNamespaces(INamespaceRoot packer) {
 
             Default = new DefaultNamespaceParserContainer(packer, new ParserDiscovery(this));
             // This makes all namespace with default namespace title to map
@@ -26,12 +24,12 @@ namespace Decuplr.Serialization.Binary {
 
         public ParserContainer GetNamespace(string @namespace) => Namespaces[@namespace];
 
-        public ParserContainer GetOrAddNamespace(string @namespace) => Namespaces.GetOrAdd(@namespace, key => new ParserContainer(key, NamespaceRoot));
+        public ParserContainer GetOrAddNamespace(string @namespace) => Namespaces.GetOrAdd(@namespace, key => new ParserContainer(key));
 
         public bool TryGetNamespace(string @namespace, out ParserContainer container) => Namespaces.TryGetValue(@namespace, out container);
 
         public bool TryAddNamespace(string @namespace, out ParserContainer container) {
-            var createdContainer = new ParserContainer(@namespace, NamespaceRoot);
+            var createdContainer = new ParserContainer(@namespace);
             if (Namespaces.TryAdd(@namespace, createdContainer)) {
                 container = createdContainer;
                 return true;

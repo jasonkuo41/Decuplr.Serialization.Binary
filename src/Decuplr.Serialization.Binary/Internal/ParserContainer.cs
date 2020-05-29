@@ -9,13 +9,11 @@ namespace Decuplr.Serialization.Binary {
     internal class ParserContainer : IParserNamespaceOwner {
 
         private readonly ConcurrentDictionary<Type, object> Parsers = new ConcurrentDictionary<Type, object>();
-        private readonly INamespaceRoot RootNamespace;
 
         public string Name { get; }
 
-        public ParserContainer(string containerName, INamespaceRoot namespaceRoot) {
+        public ParserContainer(string containerName) {
             Name = containerName;
-            RootNamespace = namespaceRoot;
         }
 
         #region Acquiring Parser
