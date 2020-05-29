@@ -64,22 +64,65 @@ namespace Decuplr.Serialization.Binary {
 
         private readonly ConcurrentDictionary<Type, TypeParser> CachedParser = new ConcurrentDictionary<Type, TypeParser>();
         private readonly ParserNamespaces DiscoverNamespaces;
-        private readonly string[] CurrentNamespace = Array.Empty<string>();
-        private readonly string[] PrioritizedNamespace = Array.Empty<string>();
+        private readonly ParserContainer[] CurrentNamespace = Array.Empty<ParserContainer>();
+        private readonly ParserContainer[] PrioritizedNamespace = Array.Empty<ParserContainer>();
 
-        public LengthProvider LengthProvider => throw new NotImplementedException();
+        public LengthProvider LengthProvider {
+            get {
+                if (TryGetProvider(PrioritizedNamespace, out var provider))
+                    return provider;
+                if (TryGetProvider(CurrentNamespace, out provider))
+                    return provider;
+                return DiscoverNamespaces.Default.LengthProvider;
+
+                static bool TryGetProvider(ParserContainer[] containers, out LengthProvider provider) {
+                    for (var i = 0; i < containers.Length; ++i) {
+                        provider = containers[i].LengthProvider;
+                        if (provider != null)
+                            return true;
+                    }
+                    provider = null;
+                    return false;
+                }
+            }
+        }
 
         public ParserDiscovery(ParserNamespaces namespaces) {
             DiscoverNamespaces = namespaces;
-            CurrentNamespace = Array.Empty<string>();
         }
 
         public ParserDiscovery(ParserNamespaces namespaces, IEnumerable<string> targetNamespaces) : this(namespaces) {
-            CurrentNamespace = targetNamespaces.ToArray();
+            CurrentNamespace = GetContainers(namespaces, targetNamespaces).ToArray();
         }
 
         public ParserDiscovery(ParserNamespaces namespaces, IEnumerable<string> targetNamespaces, IEnumerable<string> prioritizeNamespace) : this(namespaces, targetNamespaces) {
-            PrioritizedNamespace = prioritizeNamespace.ToArray();
+            PrioritizedNamespace = GetContainers(namespaces, prioritizeNamespace).ToArray();
+        }
+
+        public ParserDiscovery(ParserDiscovery discovery, IEnumerable<string> targetNamespaces, IEnumerable<string> priotizeNamespace)
+            : this (discovery.DiscoverNamespaces) {
+            // Assume namespaces are added in order by their number
+            // [First] P1 P3 (Prioritized) | S5 S4 S2 [Last]
+
+            // If it's not prioritized, we stack the namespace, so it get's discovered first
+            CurrentNamespace = GetContainers(discovery.DiscoverNamespaces, targetNamespaces).Concat(discovery.CurrentNamespace).ToArray();
+
+            // Otherwise we queue the namespace to the prioritized group, so it get's discovered later
+            PrioritizedNamespace = discovery.PrioritizedNamespace.Concat(GetContainers(discovery.DiscoverNamespaces, priotizeNamespace)).ToArray();
+        }
+
+        public ParserDiscovery(ParserDiscovery discovery, string targetNamespace, string priotizeNamespace) 
+            : this (discovery.DiscoverNamespaces) {
+
+            var currentNamespace 
+        }
+
+        private static IEnumerable<ParserContainer> GetContainers(ParserNamespaces namespaces, IEnumerable<string> targetNamespaces) {
+            return targetNamespaces.Select(target => {
+                if (!namespaces.TryGetNamespace(target, out var container))
+                    throw new ArgumentException($"Unable to locate namespace `{target}`.", nameof(targetNamespaces));
+                return container;
+            });
         }
 
         private bool TryGetNonDefaultParser<T>(IParserDiscovery parserNamespace, out TypeParser<T> parser) {
@@ -90,12 +133,9 @@ namespace Decuplr.Serialization.Binary {
             parser = null;
             return false;
 
-            bool TryGetParserInternal(string[] namespaces, out TypeParser<T> parser) {
-                for (var i = 0; i < namespaces.Length; ++i) {
-                    // TODO : If we can't find the namespace should we throw namespace not found?
-                    if (!DiscoverNamespaces.TryGetNamespace(namespaces[i], out var container))
-                        continue;
-                    if (container.TryGetParser(parserNamespace, out parser))
+            bool TryGetParserInternal(ParserContainer[] containers, out TypeParser<T> parser) {
+                for (var i = 0; i < containers.Length; ++i) {
+                    if (containers[i].TryGetParser(parserNamespace, out parser))
                         return true;
                 }
                 parser = null;

@@ -11,6 +11,7 @@ namespace Decuplr.Serialization.Binary {
         private readonly ConcurrentDictionary<Type, object> Parsers = new ConcurrentDictionary<Type, object>();
 
         public string Name { get; }
+        public LengthProvider? LengthProvider { get; set; }
 
         public ParserContainer(string containerName) {
             Name = containerName;
