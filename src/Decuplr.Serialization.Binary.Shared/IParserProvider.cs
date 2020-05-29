@@ -10,19 +10,17 @@ namespace Decuplr.Serialization.Binary {
         /// <summary>
         /// Creates the parser for the current namespace
         /// </summary>
-        /// <param name="currentNamespace">The current namespace</param>
-        /// <param name="rootNamespace">The root namespace</param>
+        /// <param name="discovery">The current namespace</param>
         /// <returns>The target parser</returns>
-        TypeParser<T> ProvideParser(IParserDiscovery currentNamespace, INamespaceRoot rootNamespace);
+        TypeParser<T> ProvideParser(IParserDiscovery discovery);
 
         /// <summary>
         /// Try to create a parser for the current namespace
         /// </summary>
-        /// <param name="currentNamespace">The current namespace</param>
-        /// <param name="rootNamespace">The root namespace</param>
+        /// <param name="discovery">The current namespace</param>
         /// <param name="parser">The target parser</param>
-        /// <returns>If parser is succefully delivered</returns>
-        bool TryProvideParser(IParserDiscovery currentNamespace, INamespaceRoot rootNamespace, out TypeParser<T> parser);
+        /// <returns>If parser is successfully delivered</returns>
+        bool TryProvideParser(IParserDiscovery discovery, out TypeParser<T> parser);
 
     }
 

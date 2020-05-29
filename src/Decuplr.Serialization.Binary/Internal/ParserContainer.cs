@@ -29,7 +29,7 @@ namespace Decuplr.Serialization.Binary {
             Debug.Assert(provider != null);
 
             // Since the parser is sucessfully created, we can cache the result (as IParserProvider<T>)
-            var parser = gProvider.ProvideParser<T>(parserNamespace, RootNamespace);
+            var parser = gProvider.ProvideParser<T>(parserNamespace);
             Parsers.TryAdd(type, gProvider.CreateProvider<T>());
             return parser;
         }
@@ -45,7 +45,7 @@ namespace Decuplr.Serialization.Binary {
                     parser = sealedParser;
                     return true;
                 case IParserProvider<T> parserProvider:
-                    return parserProvider.TryProvideParser(parserNamespace, RootNamespace, out parser);
+                    return parserProvider.TryProvideParser(parserNamespace, out parser);
             }
 
             Debug.Fail($"{regParser} should be registered for {type.Name}");
@@ -60,7 +60,7 @@ namespace Decuplr.Serialization.Binary {
                 return false;
             var gProvider = provider as GenericParserProvider;
             Debug.Assert(provider != null);
-            if (!gProvider.TryProvideParser(parserNamespace, RootNamespace, out parser))
+            if (!gProvider.TryProvideParser(parserNamespace, out parser))
                 return false;
             // Cache the parser for this type
             Parsers.TryAdd(type, gProvider.CreateProvider<T>());
@@ -74,7 +74,7 @@ namespace Decuplr.Serialization.Binary {
 
             switch (regParser) {
                 case TypeParser<T> sealedParser: return sealedParser;
-                case IParserProvider<T> parserProvider: return parserProvider.ProvideParser(parserNamespace, RootNamespace);
+                case IParserProvider<T> parserProvider: return parserProvider.ProvideParser(parserNamespace);
             }
             // That's odd
             Debug.Fail($"{regParser} should be registered for {type.Name}");

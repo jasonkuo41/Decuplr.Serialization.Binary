@@ -11,22 +11,22 @@ namespace Decuplr.Serialization.Binary {
                 Provider = provider;
             }
 
-            public TypeParser<T> ProvideParser(IParserDiscovery currentNamespace, INamespaceRoot rootNamespace) 
-                => Provider.ProvideParser<T>(currentNamespace, rootNamespace);
+            public TypeParser<T> ProvideParser(IParserDiscovery currentNamespace) 
+                => Provider.ProvideParser<T>(currentNamespace);
 
-            public bool TryProvideParser(IParserDiscovery currentNamespace, INamespaceRoot rootNamespace, out TypeParser<T> parser) 
-                => Provider.TryProvideParser<T>(currentNamespace, rootNamespace, out parser);
+            public bool TryProvideParser(IParserDiscovery currentNamespace, out TypeParser<T> parser) 
+                => Provider.TryProvideParser<T>(currentNamespace, out parser);
         }
 
-        public abstract TypeParser ProvideParser(IParserDiscovery formatter, INamespaceRoot formatNamespace);
-        public abstract bool TryProvideParser(IParserDiscovery formatter, INamespaceRoot formatNamespace, out TypeParser parser);
+        public abstract TypeParser ProvideParser(IParserDiscovery discovery);
+        public abstract bool TryProvideParser(IParserDiscovery discovery, out TypeParser parser);
 
-        public virtual TypeParser<TGeneric> ProvideParser<TGeneric>(IParserDiscovery formatter, INamespaceRoot formatNamespace) {
-            return (TypeParser<TGeneric>)ProvideParser(formatter, formatNamespace);
+        public virtual TypeParser<TGeneric> ProvideParser<TGeneric>(IParserDiscovery formatter) {
+            return (TypeParser<TGeneric>)ProvideParser(formatter);
         }
 
-        public virtual bool TryProvideParser<TGeneric>(IParserDiscovery formatter, INamespaceRoot formatNamespace, out TypeParser<TGeneric> parser) {
-            var result = TryProvideParser(formatter, formatNamespace, out TypeParser generalParser);
+        public virtual bool TryProvideParser<TGeneric>(IParserDiscovery discovery, out TypeParser<TGeneric> parser) {
+            var result = TryProvideParser(discovery, out TypeParser generalParser);
             parser = (TypeParser<TGeneric>)generalParser;
             return result;
         }
