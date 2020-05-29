@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using Decuplr.Serialization.Binary.SourceGenerator.Solutions;
 using Microsoft.CodeAnalysis;
@@ -20,8 +21,9 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
 
             public void OnVisitSyntaxNode(SyntaxNode syntaxNode) {
                 // We capture every class we are interested in
-                if (syntaxNode is TypeDeclarationSyntax classSyntax && classSyntax.AttributeLists.Any())
+                if (syntaxNode is TypeDeclarationSyntax classSyntax && classSyntax.AttributeLists.Any()) {
                     CandidateTypes.Add(classSyntax);
+                }
                 // TODO : Add interfaces, note we may only allow interfaces with public setters
             }
         }
@@ -55,6 +57,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                     continue;
                 sourceBuilder.AppendLine($"Console.WriteLine(\"{typeSymbol}\");");
                 sourceBuilder.AppendLine($"Console.WriteLine(\"   {string.Join(" , ", candidateClass.Modifiers.Select(x => x.ValueText))}\");");
+                sourceBuilder.AppendLine($"Console.WriteLine(\"   {}\");");
                 candidateSymbols.Add(typeSymbol!);
             }
 
@@ -71,22 +74,20 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
 
                     var serializer = new PartialTypeSerialize(typeInfo!);
                     var deserializer = new PartialTypeDeserialize(typeInfo!);
+
                     result.Add(new TypeParserGenerator(typeInfo!, deserializer, serializer));
                 }
 
                 // Generate an entry point
-                context.AddSource(EntryPointBuilder.CreateSourceText(result), Encoding.UTF8);
+                //context.AddSource(EntryPointBuilder.CreateSourceText(result));
 
                 // Generate those additional files
-                foreach (var additionFile in result.SelectMany(x => x.AdditionalCode))
-                    context.AddSource(additionFile, Encoding.UTF8);
+                //foreach (var additionFile in result.SelectMany(x => x.AdditionalCode))
+                //    context.AddSource(additionFile);
             }
             catch (Exception e) {
                 sourceBuilder.AppendLine($"Console.WriteLine(@\"{e} {e.Message} \r \n {e.StackTrace}\");");
             }
-            // After all the generated code, we will need to define an entry point
-            // They are pretty much global and wouldn't use namespace
-            //context.AddSource("SerializerEntryPoint.cs", SourceText.From(EntryPointGenerator.CreateSourceText(qualifiedSymbols)));
 
             sourceBuilder.Append(@"} } }");
             context.AddSource("DebugInfo.BinaryFormatter.Generated.cs", SourceText.From(sourceBuilder.ToString(), Encoding.UTF8));

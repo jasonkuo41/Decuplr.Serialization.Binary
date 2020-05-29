@@ -6,7 +6,7 @@ namespace Decuplr.Serialization.Binary {
     /// </summary>
     public static class BinaryPackerExtensions {
 
-        public static IParserNamespace GetNamespace(this INamespaceRoot packer, params string[] parserNamespace) => packer.GetNamespace(parserNamespace);
+        public static IParserDiscovery GetNamespace(this INamespaceRoot packer, params string[] parserNamespace) => packer.CreateDiscovery(parserNamespace);
 
         public static TypeParser<T> GetParser<T>(this BinaryPacker packer) => packer.DefaultNamespace.GetParser<T>();
 

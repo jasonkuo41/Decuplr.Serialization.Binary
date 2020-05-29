@@ -1,6 +1,10 @@
 ﻿namespace Decuplr.Serialization.Binary.SourceGenerator {
-    internal struct GeneratedFormatter {
-        public string FormatterName { get; set; }
-        public string FormatterClassSourceText { get; set; }
+    internal abstract class GeneratedParser {
+        public string ParserClassName { get; }
+        public string ParserSourceText { get; }
+    }
+
+    internal class SealedParser {
+
     }
 }

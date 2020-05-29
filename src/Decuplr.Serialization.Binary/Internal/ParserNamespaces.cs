@@ -15,7 +15,7 @@ namespace Decuplr.Serialization.Binary {
         public ParserNamespaces(BinaryPacker packer) {
             NamespaceRoot = packer;
 
-            Default = new DefaultNamespaceParserContainer(packer);
+            Default = new DefaultNamespaceParserContainer(packer, new ParserDiscovery(this));
             // This makes all namespace with default namespace title to map
             Namespaces = new ConcurrentDictionary<string, ParserContainer>(DefaultNamespaceTitle.Select(x => new KeyValuePair<string, ParserContainer>(x, Default)));
             // Optimizations Point : For all `Internal` namespaces, we should also be able to really fetch them real fast without string lookups

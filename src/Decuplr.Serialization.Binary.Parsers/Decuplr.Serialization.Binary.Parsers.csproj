@@ -11,8 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Decuplr.Serialization.Binary.Parsers\Decuplr.Serialization.Binary.Parsers.csproj" />
     <ProjectReference Include="..\Decuplr.Serialization.Binary.Shared\Decuplr.Serialization.Binary.Shared.csproj" />
+    <ProjectReference Include="..\src\Decuplr.Serialization.Binary.SourceGenerator\Decuplr.Serialization.Binary.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

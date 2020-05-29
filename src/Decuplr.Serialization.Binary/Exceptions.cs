@@ -50,4 +50,27 @@ namespace Decuplr.Serialization.Binary {
         public Type ParsedType { get; }
     }
 
+    /// <summary>
+    /// Indicates that a circular reference of antoher schema was detected, thus the parser can be created
+    /// </summary>
+    public class CircularSchemaReferenceException : BinarySerializationException {
+
+        public CircularSchemaReferenceException() { }
+
+        public CircularSchemaReferenceException(string message) : base(message) {
+        }
+
+        public CircularSchemaReferenceException(string message, Type circularType) : base(message) {
+            CircularSchemaType = circularType;
+        }
+
+        public CircularSchemaReferenceException(string message, Exception innerException) : base(message, innerException) {
+        }
+
+        public CircularSchemaReferenceException(string message, Type circularType, Exception innerException) : base(message, innerException) {
+            CircularSchemaType = circularType;
+        }
+
+        public Type CircularSchemaType { get; }
+    }
 }

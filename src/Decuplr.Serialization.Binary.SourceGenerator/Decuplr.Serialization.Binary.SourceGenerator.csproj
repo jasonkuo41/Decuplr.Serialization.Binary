@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Decuplr.Serialization.Binary\Decuplr.Serialization.Binary.csproj" />
+    <ProjectReference Include="..\Decuplr.Serialization.Binary.Shared\Decuplr.Serialization.Binary.Shared.csproj" />
   </ItemGroup>
 
 </Project>
