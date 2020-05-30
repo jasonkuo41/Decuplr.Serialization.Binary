@@ -34,8 +34,10 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
         }
 
         public static bool HasAny(this ImmutableArray<AttributeData> data, INamedTypeSymbol symbol, SymbolEqualityComparer? comparer = null) {
-            return data.Any(x => x.AttributeClass.Equals(symbol, comparer ?? SymbolEqualityComparer.Default));
+            return data.Any(x => x.AttributeClass?.Equals(symbol, comparer ?? SymbolEqualityComparer.Default) ?? false);
         }
+
+        public static ISymbol? GetSymbol<T>(this Compilation compilation) => compilation.GetTypeByMetadataName(typeof(T).FullName);
 
         /// <summary>
         /// Decides if a member can access a symbol internally within the generated class (without partial)

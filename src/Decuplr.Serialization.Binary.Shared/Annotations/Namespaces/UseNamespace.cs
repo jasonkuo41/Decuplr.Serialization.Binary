@@ -17,7 +17,6 @@ namespace Decuplr.Serialization.Binary.Annotations.Namespaces {
         }
 
         public string FormatterNamespace { get; }
-        public int PrioritizeIndex { get; }
     }
 
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
@@ -27,6 +26,5 @@ namespace Decuplr.Serialization.Binary.Annotations.Namespaces {
         }
 
         public string FormatterNamespace { get; }
-        public bool DefinesPrimitives { get; set; }
     }
 }

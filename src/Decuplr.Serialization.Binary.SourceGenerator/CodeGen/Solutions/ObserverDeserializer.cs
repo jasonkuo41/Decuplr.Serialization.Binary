@@ -7,14 +7,14 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Solutions {
 
     internal class ObserverDeserializer : IDeserializeSolution {
 
-        private readonly TypeFormatInfo TypeInfo;
+        private readonly AnalyzedType TypeInfo;
 
-        public ObserverDeserializer(TypeFormatInfo typeInfo) {
+        public ObserverDeserializer(AnalyzedType typeInfo) {
             TypeInfo = typeInfo;
         }
 
         // Duplicate code, should we inherit instead?
-        private string GetConstructorParameters() => string.Join(",", TypeInfo.Members.Select(x => $"{x.MemberTypeSymbol} s_{x.MemberSymbol.Name}"));
+        private string GetConstructorParameters() => string.Join(",", TypeInfo.MemberFormatInfo.Select(x => $"{x.MemberTypeSymbol} s_{x.MemberSymbol.Name}"));
 
         public GeneratedSourceCode[] GetAdditionalFiles() => Array.Empty<GeneratedSourceCode>();
 
@@ -23,7 +23,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Solutions {
             node.AddNode($"private {TypeInfo.TypeSymbol} CreateType({GetConstructorParameters()})", node => {
                 // Must be constructless!, otherwise we will fail
                 node.AddStatement($"var target = new {TypeInfo.TypeSymbol}()");
-                foreach (var member in TypeInfo.Members)
+                foreach (var member in TypeInfo.MemberFormatInfo)
                     node.AddStatement($"target.{member.MemberSymbol.Name} = s_{member.MemberSymbol.Name}");
                 node.AddStatement($"return target");
             });

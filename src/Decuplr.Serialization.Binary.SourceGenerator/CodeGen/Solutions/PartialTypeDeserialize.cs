@@ -11,10 +11,10 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
     internal class PartialTypeDeserialize : IDeserializeSolution {
 
         private INamedTypeSymbol TypeSymbol => TypeInfo.TypeSymbol;
-        private IReadOnlyList<MemberFormatInfo> Layouts => TypeInfo.Members;
-        private readonly TypeFormatInfo TypeInfo;
+        private IReadOnlyList<MemberFormatInfo> Layouts => TypeInfo.MemberFormatInfo;
+        private readonly AnalyzedType TypeInfo;
 
-        public PartialTypeDeserialize(TypeFormatInfo typeInfo) {
+        public PartialTypeDeserialize(AnalyzedType typeInfo) {
             TypeInfo = typeInfo;
         }
 
@@ -30,8 +30,8 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             return new GeneratedFormatFunction("CreateType", builder.ToString());
         }
 
-        private string GetConstructorParameters() => string.Join(",", TypeInfo.Members.Select(x => $"{x.MemberTypeSymbol} s_{x.MemberSymbol.Name}"));
-        private string GetConstructorInvokeParameters() => string.Join("," , TypeInfo.Members.Select(x => $"s_{x.MemberSymbol.Name}"));
+        private string GetConstructorParameters() => string.Join(",", TypeInfo.MemberFormatInfo.Select(x => $"{x.MemberTypeSymbol} s_{x.MemberSymbol.Name}"));
+        private string GetConstructorInvokeParameters() => string.Join("," , TypeInfo.MemberFormatInfo.Select(x => $"s_{x.MemberSymbol.Name}"));
 
         private string CreatePartialClassConstructor() {
             
@@ -52,7 +52,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 node.AddAttribute($"[GeneratedCode (\"{Assembly.GetExecutingAssembly().GetName().Name}\", \"{Assembly.GetExecutingAssembly().GetName().Version}\")]");
                 node.AddAttribute("[EditorBrowsable(EditorBrowsableState.Never)]");
                 node.AddNode($"internal {TypeSymbol.Name} ({GetConstructorParameters()}) {(TypeSymbol.TypeKind == TypeKind.Struct ? ":this()" : null)}", node => {
-                    foreach(var member in TypeInfo.Members)
+                    foreach(var member in TypeInfo.MemberFormatInfo)
                         node.AddStatement($"{member.MemberSymbol.Name} = s_{member.MemberSymbol.Name}");
                 });
 

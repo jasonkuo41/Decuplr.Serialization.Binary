@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Decuplr.Serialization.Binary.SourceGenerator {
     static class TypeInfoDiscovery {
-        public static bool TryParseType(INamedTypeSymbol typeSymbol, SourceGeneratorContext context, out TypeFormatInfo? format) {
+        public static bool TryParseType(INamedTypeSymbol typeSymbol, SourceGeneratorContext context, out AnalyzedType? format) {
             format = null;
             var compilation = context.Compilation;
             var indexSymbol = compilation.GetTypeByMetadataName(typeof(IndexAttribute).FullName);
@@ -44,7 +44,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.MissingIndex, typeSymbol.Locations.First(), i));
                 return false;
             }
-            format = new TypeFormatInfo(typeSymbol, layoutlist);
+            format = new AnalyzedType(typeSymbol, layoutlist);
             return true;
         }
     }

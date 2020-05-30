@@ -4,9 +4,9 @@ using System.Linq;
 namespace Decuplr.Serialization.Binary.SourceGenerator.Solutions {
     internal class ObserverSerializer : ISerializeSolution {
 
-        private readonly TypeFormatInfo TypeInfo;
+        private readonly AnalyzedType TypeInfo;
 
-        public ObserverSerializer(TypeFormatInfo typeInfo) {
+        public ObserverSerializer(AnalyzedType typeInfo) {
             TypeInfo = typeInfo;
         }
 
@@ -14,10 +14,10 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Solutions {
 
         public GeneratedFormatFunction GetSerializeFunction() {
             var node = new CodeNodeBuilder();
-            var outArgsTypes = string.Join(",", Enumerable.Range(0, TypeInfo.Members.Count).Select(i => $"out {TypeInfo.Members[i].MemberTypeSymbol} s_{i}"));
+            var outArgsTypes = string.Join(",", Enumerable.Range(0, TypeInfo.MemberFormatInfo.Count).Select(i => $"out {TypeInfo.MemberFormatInfo[i].MemberTypeSymbol} s_{i}"));
             node.AddNode($"private void DeconstructType({TypeInfo.TypeSymbol} value, {outArgsTypes})", node => {
-                for(var i = 0; i < TypeInfo.Members.Count; ++i) {
-                    node.AddStatement($"s_{i} = value.{TypeInfo.Members}");
+                for(var i = 0; i < TypeInfo.MemberFormatInfo.Count; ++i) {
+                    node.AddStatement($"s_{i} = value.{TypeInfo.MemberFormatInfo}");
                 }
             });
             return new GeneratedFormatFunction("DeconstructType", node.ToString());

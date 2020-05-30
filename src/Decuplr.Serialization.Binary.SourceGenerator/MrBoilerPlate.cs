@@ -50,11 +50,11 @@ namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
 
         }
 
-        public override TypeParser ProvideParser(IParserDiscovery formatter, INamespaceRoot formatNamespace) {
+        public override TypeParser ProvideParser(IParserDiscovery formatter) {
             return new LazyTypeParser(formatter);
         }
 
-        public override bool TryProvideParser(IParserDiscovery formatter, INamespaceRoot formatNamespace, out TypeParser parser) {
+        public override bool TryProvideParser(IParserDiscovery formatter, out TypeParser parser) {
             throw new NotImplementedException();
         }
     }

@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using Decuplr.Serialization.Binary.SourceGenerator.Solutions;
 using Microsoft.CodeAnalysis;
@@ -21,6 +19,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
 
             public void OnVisitSyntaxNode(SyntaxNode syntaxNode) {
                 // We capture every class we are interested in
+                // We only capture classes that comes with attribute, but we may also be interested in those with specific syntax ending
                 if (syntaxNode is TypeDeclarationSyntax classSyntax && classSyntax.AttributeLists.Any()) {
                     CandidateTypes.Add(classSyntax);
                 }
@@ -57,14 +56,11 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                     continue;
                 sourceBuilder.AppendLine($"Console.WriteLine(\"{typeSymbol}\");");
                 sourceBuilder.AppendLine($"Console.WriteLine(\"   {string.Join(" , ", candidateClass.Modifiers.Select(x => x.ValueText))}\");");
-                sourceBuilder.AppendLine($"Console.WriteLine(\"   {}\");");
+                sourceBuilder.AppendLine($"Console.WriteLine(\"   {candidateClass.AttributeLists[0].Attributes.Count}\");");
                 candidateSymbols.Add(typeSymbol!);
             }
 
             try {
-                // For debug generator
-                var dir = Path.Combine(Directory.GetCurrentDirectory(), "Generated");
-                Directory.CreateDirectory(dir);
 
                 var result = new List<TypeParserGenerator>();
                 foreach (var typeSymbol in candidateSymbols) {

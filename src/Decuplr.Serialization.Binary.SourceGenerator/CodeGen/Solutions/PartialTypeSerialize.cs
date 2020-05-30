@@ -8,15 +8,15 @@ using Microsoft.CodeAnalysis;
 namespace Decuplr.Serialization.Binary.SourceGenerator.Solutions {
     class PartialTypeSerialize : ISerializeSolution {
 
-        private readonly TypeFormatInfo TypeInfo;
+        private readonly AnalyzedType TypeInfo;
 
         private INamedTypeSymbol TypeSymbol => TypeInfo.TypeSymbol;
-        private IReadOnlyList<MemberFormatInfo> Members => TypeInfo.Members;
+        private IReadOnlyList<MemberFormatInfo> Members => TypeInfo.MemberFormatInfo;
         
-        private string OutArgs => string.Join(",", Enumerable.Range(0, TypeInfo.Members.Count).Select(i => $"out s_{i}"));
-        private string OutArgsWithType => string.Join(",", Enumerable.Range(0, TypeInfo.Members.Count).Select(i => $"out {Members[i].MemberTypeSymbol} s_{i}"));
+        private string OutArgs => string.Join(",", Enumerable.Range(0, TypeInfo.MemberFormatInfo.Count).Select(i => $"out s_{i}"));
+        private string OutArgsWithType => string.Join(",", Enumerable.Range(0, TypeInfo.MemberFormatInfo.Count).Select(i => $"out {Members[i].MemberTypeSymbol} s_{i}"));
 
-        public PartialTypeSerialize(TypeFormatInfo typeInfo) {
+        public PartialTypeSerialize(AnalyzedType typeInfo) {
             TypeInfo = typeInfo;
         }
 

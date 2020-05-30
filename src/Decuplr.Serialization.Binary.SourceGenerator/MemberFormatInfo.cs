@@ -8,10 +8,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
         public int Index { get; }
         public ISymbol MemberSymbol { get; }
         public ITypeSymbol MemberTypeSymbol { get; }
-        public ICustomParserAttribute? CustomParser { get; }
-        public FormatLengthInfo? LengthInfo { get; }
-
-        public IReadOnlyList<AttributeData> Attributes => MemberSymbol.GetAttributes();
+        public IReadOnlyList<AttributeData> Attributes { get; }
 
         public MemberFormatInfo(int index, ISymbol symbol) {
             Index = index;

@@ -7,14 +7,14 @@ using System.Text;
 namespace Decuplr.Serialization.Binary.SourceGenerator {
     class TypeParserGenerator {
 
-        private readonly TypeFormatInfo TypeInfo;
+        private readonly AnalyzedType TypeInfo;
         private readonly GeneratedFormatFunction DeserializeInfo;
         private readonly GeneratedFormatFunction SerializeInfo;
         private readonly List<GeneratedSourceCode> AdditionalSourceCode = new List<GeneratedSourceCode>();
 
         public IReadOnlyList<GeneratedSourceCode> AdditionalCode => AdditionalSourceCode;
 
-        public TypeParserGenerator(TypeFormatInfo typeInfo, IDeserializeSolution deserializeSolution, ISerializeSolution serializeSolution) {
+        public TypeParserGenerator(AnalyzedType typeInfo, IDeserializeSolution deserializeSolution, ISerializeSolution serializeSolution) {
             TypeInfo = typeInfo;
             
             DeserializeInfo = deserializeSolution.GetDeserializeFunction();
@@ -32,8 +32,8 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             node.AddNode($"private class {parserName} : TypeParser <{TypeInfo.TypeSymbol}>", node => {
                 
                 // Declare the parser we will be using
-                for (var i = 0; i < TypeInfo.Members.Count; ++i)
-                    node.AddStatement($"private readonly TypeParser<{TypeInfo.Members[i].MemberTypeSymbol}> parser_{i}");
+                for (var i = 0; i < TypeInfo.MemberFormatInfo.Count; ++i)
+                    node.AddStatement($"private readonly TypeParser<{TypeInfo.MemberFormatInfo[i].MemberTypeSymbol}> parser_{i}");
 
                 // Figure out if this is actually fixed in size
                 node.AddStatement($"private readonly int? fixedSize");
@@ -44,7 +44,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 node.AddNode($"public {parserName} ({nameof(IParserDiscovery)} format)", node => {
                     // Locate the parser
                     node.AddStatement("fixedSize = 0");
-                    for (var i = 0; i < TypeInfo.Members.Count; ++i) {
+                    for (var i = 0; i < TypeInfo.MemberFormatInfo.Count; ++i) {
                         // TODO : Allow namespace to run
                         // What if it's not supported?
                         node.AddStatement($"format.TryGetFormatter(out parser_{i})");
@@ -94,10 +94,10 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 node.AddStatement("result = default");
 
                 // Try to serialize every member
-                for (var i = 0; i < TypeInfo.Members.Count; ++i) {
+                for (var i = 0; i < TypeInfo.MemberFormatInfo.Count; ++i) {
                     // force capture of i
                     var locali = i;
-                    node.AddStatement($"{TypeInfo.Members[i].MemberTypeSymbol} s_{i}");
+                    node.AddStatement($"{TypeInfo.MemberFormatInfo[i].MemberTypeSymbol} s_{i}");
                     node.AddNode(node => {
                         node.AddStatement($"var parserResult = parser_{locali}.TryDeserialize(span, out var scopeReadBytes, out s_{locali})");
                         node.AddNode($"if (parserResult != DeserializeResult.Success)", node => {
@@ -110,7 +110,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 }
                 // Invoke entry compose point
                 // arg = s_1, s_2, s_3
-                var args = string.Join(", ", Enumerable.Range(0, TypeInfo.Members.Count).Select(i => $"s_{i}"));
+                var args = string.Join(", ", Enumerable.Range(0, TypeInfo.MemberFormatInfo.Count).Select(i => $"s_{i}"));
                 node.AddStatement($"result = {DeserializeInfo.FunctionName}({args})");
                 node.AddStatement("return DeserializeResult.Success");
             });
@@ -124,11 +124,11 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 });
 
                 // out var s_1, out var s_2
-                var outArgs = string.Join(",", Enumerable.Range(0, TypeInfo.Members.Count).Select(i => $"out var s_{i}"));
+                var outArgs = string.Join(",", Enumerable.Range(0, TypeInfo.MemberFormatInfo.Count).Select(i => $"out var s_{i}"));
                 node.AddStatement($"{SerializeInfo.FunctionName} (value, {outArgs})");
 
                 node.AddStatement($"int length = 0");
-                for (var i = 0; i < TypeInfo.Members.Count; ++i) {
+                for (var i = 0; i < TypeInfo.MemberFormatInfo.Count; ++i) {
                     node.AddStatement($"length += parser_{i}.GetBinaryLength(s_{i})");
                 }
                 node.AddStatement("return length");
@@ -147,11 +147,11 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 });
 
                 // out var s_1, out var s_2
-                var outArgs = string.Join(",", Enumerable.Range(0, TypeInfo.Members.Count).Select(i => $"out var s_{i}"));
+                var outArgs = string.Join(",", Enumerable.Range(0, TypeInfo.MemberFormatInfo.Count).Select(i => $"out var s_{i}"));
                 node.AddStatement($"{SerializeInfo.FunctionName} (value, {outArgs})");
 
                 node.AddStatement($"int length = 0");
-                for (var i = 0; i < TypeInfo.Members.Count; ++i) {
+                for (var i = 0; i < TypeInfo.MemberFormatInfo.Count; ++i) {
                     // force value capture
                     var localI = i;
                     node.AddNode(node => {
