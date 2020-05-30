@@ -14,6 +14,7 @@ namespace Decuplr.Serialization.Binary {
         public DefaultBinaryPacker() {
             Namespaces = new ParserNamespaces(this);
 
+            // TODO : [Prioritzed] Note this would absolutely result in a but, that says we can't create namespaces that starts with an Internal prefix
             new DefaultParserEntryPoint().LoadContext(this);
         }
 

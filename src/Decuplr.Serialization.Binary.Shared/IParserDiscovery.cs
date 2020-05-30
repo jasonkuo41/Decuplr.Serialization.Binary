@@ -9,16 +9,29 @@ namespace Decuplr.Serialization.Binary {
         /// Makes a copy of the discovery, and adds the given namespace for discovering types
         /// </summary>
         /// <param name="parserNamespace">The given namespace</param>
-        /// <param name="shouldPrioritize">Should the namespace override other namespace that has been established</param>
         /// <returns>A cloned parser discovery that discovers the new included namespace</returns>
-        IParserDiscovery WithNamespace(IEnumerable<string> parserNamespace, bool shouldPrioritize = false);
+        IParserDiscovery WithNamespace(IEnumerable<string> parserNamespace);
 
         /// <summary>
         /// Makes a copy of the discovery, and adds the given namespace for discovering types
         /// </summary>
         /// <param name="parserNamespace">The given namespace</param>
-        /// <param name="shouldPrioritize">Should the namespace override other namespace that has been established</param>
         /// <returns>A cloned parser discovery that discovers the new included namespace</returns>
-        IParserDiscovery WithNamespace(string parserNamespace, bool shouldPrioritize = false);
+        IParserDiscovery WithNamespace(string parserNamespace);
+
+        /// <summary>
+        /// Makes a copy of the discovery, and add the given namespace to priotize over other namepace for discoverying types
+        /// </summary>
+        /// <param name="parserNamespace">The given namespace</param>
+        /// <returns>A cloned parser discovery that discovers the new included namespace</returns>
+        IParserDiscovery WithPrioritizedNamespace(IEnumerable<string> parserNamespace);
+
+        /// <summary>
+        /// Makes a copy of the discovery, and add the given namespace to priotize over other namepace for discoverying types
+        /// </summary>
+        /// <param name="parserNamespace">The prioritized namespace</param>
+        /// <returns>A cloned parser discovery that discovers the new included namespace</returns>
+        IParserDiscovery WithPrioritizedNamespace(string parserNamespace);
+
     }
 }

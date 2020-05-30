@@ -13,8 +13,6 @@ namespace Decuplr.Serialization.Binary {
         private readonly ParserDiscovery DefaultLocator;
         private readonly INamespaceRoot Root;
 
-        public LengthProvider LengthProvider => DefaultLocator.LengthProvider;
-
         public DefaultNamespaceParserContainer(INamespaceRoot root, ParserDiscovery defaultLocator) : base("Default") {
             Root = root;
             DefaultLocator = defaultLocator;

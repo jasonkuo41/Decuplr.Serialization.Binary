@@ -51,15 +51,29 @@ namespace Decuplr.Serialization.Binary {
                 return false;
             }
 
-            public IParserDiscovery WithNamespace(IEnumerable<string> parserNamespace, bool shouldPrioritize = false) {
-                CurrentParent = (ParserDiscovery)CurrentParent.WithNamespace(parserNamespace, shouldPrioritize);
+            #region WithNamespace Implementation 
+
+            public IParserDiscovery WithNamespace(IEnumerable<string> parserNamespace) {
+                CurrentParent = (ParserDiscovery)CurrentParent.WithNamespace(parserNamespace);
                 return this;
             }
 
-            public IParserDiscovery WithNamespace(string parserNamespace, bool shouldPrioritize = false) {
-                CurrentParent = (ParserDiscovery)CurrentParent.WithNamespace(parserNamespace, shouldPrioritize);
+            public IParserDiscovery WithNamespace(string parserNamespace) {
+                CurrentParent = (ParserDiscovery)CurrentParent.WithNamespace(parserNamespace);
                 return this;
             }
+
+            public IParserDiscovery WithPrioritizedNamespace(IEnumerable<string> parserNamespace) {
+                CurrentParent = (ParserDiscovery)CurrentParent.WithPrioritizedNamespace(parserNamespace);
+                return this;
+            }
+
+            public IParserDiscovery WithPrioritizedNamespace(string parserNamespace) {
+                CurrentParent = (ParserDiscovery)CurrentParent.WithPrioritizedNamespace(parserNamespace);
+                return this;
+            }
+
+            #endregion
         }
 
         private readonly ConcurrentDictionary<Type, TypeParser> CachedParser = new ConcurrentDictionary<Type, TypeParser>();
@@ -91,39 +105,62 @@ namespace Decuplr.Serialization.Binary {
             DiscoverNamespaces = namespaces;
         }
 
-        public ParserDiscovery(ParserNamespaces namespaces, IEnumerable<string> targetNamespaces) : this(namespaces) {
-            CurrentNamespace = GetContainers(namespaces, targetNamespaces).ToArray();
+        public ParserDiscovery(ParserNamespaces namespaces, IEnumerable<string>? targetNamespaces) : this(namespaces) {
+            CurrentNamespace = targetNamespaces is null ? Array.Empty<ParserContainer>() : GetContainers(namespaces, targetNamespaces).ToArray();
         }
 
-        public ParserDiscovery(ParserNamespaces namespaces, IEnumerable<string> targetNamespaces, IEnumerable<string> prioritizeNamespace) : this(namespaces, targetNamespaces) {
-            PrioritizedNamespace = GetContainers(namespaces, prioritizeNamespace).ToArray();
+        public ParserDiscovery(ParserNamespaces namespaces, IEnumerable<string>? targetNamespaces, IEnumerable<string>? prioritizeNamespace) : this(namespaces, targetNamespaces) {
+            PrioritizedNamespace = prioritizeNamespace is null ? Array.Empty<ParserContainer>() : GetContainers(namespaces, prioritizeNamespace).ToArray();
         }
 
-        public ParserDiscovery(ParserDiscovery discovery, IEnumerable<string> targetNamespaces, IEnumerable<string> priotizeNamespace)
+        // This two constructor is meant for copying and add new namespaces to the discovery
+        //
+        // Assume namespaces are added in order by their number
+        // [First] P1 P3 (Prioritized) | S5 S4 S2 [Last]
+        //
+        public ParserDiscovery(ParserDiscovery discovery, IEnumerable<string>? targetNamespaces, IEnumerable<string>? priotizeNamespace)
             : this (discovery.DiscoverNamespaces) {
-            // Assume namespaces are added in order by their number
-            // [First] P1 P3 (Prioritized) | S5 S4 S2 [Last]
 
             // If it's not prioritized, we stack the namespace, so it get's discovered first
-            CurrentNamespace = GetContainers(discovery.DiscoverNamespaces, targetNamespaces).Concat(discovery.CurrentNamespace).ToArray();
+            CurrentNamespace = targetNamespaces is null ? discovery.CurrentNamespace : GetContainers(discovery.DiscoverNamespaces, targetNamespaces).Concat(discovery.CurrentNamespace).ToArray();
 
             // Otherwise we queue the namespace to the prioritized group, so it get's discovered later
-            PrioritizedNamespace = discovery.PrioritizedNamespace.Concat(GetContainers(discovery.DiscoverNamespaces, priotizeNamespace)).ToArray();
+            PrioritizedNamespace = priotizeNamespace is null? discovery.PrioritizedNamespace : discovery.PrioritizedNamespace.Concat(GetContainers(discovery.DiscoverNamespaces, priotizeNamespace)).ToArray();
         }
 
         public ParserDiscovery(ParserDiscovery discovery, string targetNamespace, string priotizeNamespace) 
             : this (discovery.DiscoverNamespaces) {
 
-            var currentNamespace 
+            WriteNamespace(ref CurrentNamespace, discovery.CurrentNamespace, targetNamespace, isPrepend: true);
+            WriteNamespace(ref PrioritizedNamespace, discovery.PrioritizedNamespace, priotizeNamespace, isPrepend: false);
+
+            void WriteNamespace(ref ParserContainer[] target, ParserContainer[] source, string targetNamespace, bool isPrepend) {
+                if (targetNamespace is null)
+                    return;
+                var container = GetContainer(discovery.DiscoverNamespaces, targetNamespace);
+                // Note : `Prepend` and `Append` isn't support on all .Net standard 2.0 platforms (even though it's part of the standard)
+                // Thus we manually write one ourself
+                target = new ParserContainer[source.Length + 1];
+                if (isPrepend) {
+                    // Reserve one space at the front so we can write
+                    Array.Copy(source, 0, target, 1, source.Length);
+                    CurrentNamespace[0] = container;
+                    return;
+                }
+                // Reserve none from the start, so we have space at the end
+                Array.Copy(source, 0, target, 0, source.Length);
+                CurrentNamespace[source.Length] = container;
+            }
         }
 
-        private static IEnumerable<ParserContainer> GetContainers(ParserNamespaces namespaces, IEnumerable<string> targetNamespaces) {
-            return targetNamespaces.Select(target => {
-                if (!namespaces.TryGetNamespace(target, out var container))
-                    throw new ArgumentException($"Unable to locate namespace `{target}`.", nameof(targetNamespaces));
-                return container;
-            });
+        private static ParserContainer GetContainer(ParserNamespaces namespaces, string target) {
+            if (!namespaces.TryGetNamespace(target, out var container))
+                throw new ArgumentException($"Unable to locate namespace `{target}`.", nameof(target));
+            return container;
         }
+
+        private static IEnumerable<ParserContainer> GetContainers(ParserNamespaces namespaces, IEnumerable<string> targetNamespaces) 
+            => targetNamespaces.Select(target => GetContainer(namespaces, target));
 
         private bool TryGetNonDefaultParser<T>(IParserDiscovery parserNamespace, out TypeParser<T> parser) {
             if (TryGetParserInternal(PrioritizedNamespace, out parser))
@@ -180,6 +217,7 @@ namespace Decuplr.Serialization.Binary {
         }
 
         // This demonstrates how we can bypass circular reference check, at the risk of stackoverflow
+        // Side notes : This would be a tradeoff only to speed up certain type intial serialization speed
         internal TypeParser<T> GetParserUnsafe<T>() => GetParser<T>(this);
 
         internal bool TryGetParserUnsafe<T>(out TypeParser<T> parser) => TryGetParser(this, out parser);
@@ -189,23 +227,10 @@ namespace Decuplr.Serialization.Binary {
         public bool TryGetParser<T>(out TypeParser<T> parser) => TryGetParser(new ParserDiscoveryProxy(this), out parser);
         public bool TryGetParser<T>(bool throwOnCircularRef, out TypeParser<T> parser) => TryGetParser(new ParserDiscoveryProxy(this, throwOnCircularRef), out parser);
 
+        public IParserDiscovery WithNamespace(IEnumerable<string> parserNamespace) => new ParserDiscovery(this, parserNamespace, null);
+        public IParserDiscovery WithNamespace(string parserNamespace) => new ParserDiscovery(this, parserNamespace, null);
 
-        // Assume namespaces are added in order by their number
-        // [First] P1 P3 (Prioritized) | S5 S4 S2 [Last]
-        public IParserDiscovery WithNamespace(IEnumerable<string> parserNamespace, bool shouldPrioritize = false) {
-            // If it's not proritize, we stack the namespace, so it get's discovered first
-            if (!shouldPrioritize)
-                return new ParserDiscovery(DiscoverNamespaces, parserNamespace.Concat(CurrentNamespace), PrioritizedNamespace);
-            // Otherwise we queue the namespace to the priotized group, so it get's discovered later
-            return new ParserDiscovery(DiscoverNamespaces, CurrentNamespace, PrioritizedNamespace.Concat(parserNamespace));
-        }
-
-        public IParserDiscovery WithNamespace(string parserNamespace, bool shouldPrioritize = false) {
-            // If it's not proritize, we stack the namespace, so it get's discovered first
-            if (!shouldPrioritize)
-                return new ParserDiscovery(DiscoverNamespaces, CurrentNamespace.Prepend(parserNamespace), PrioritizedNamespace);
-            // Otherwise we queue the namespace to the priotized group, so it get's discovered later
-            return new ParserDiscovery(DiscoverNamespaces, CurrentNamespace, PrioritizedNamespace.Append(parserNamespace));
-        }
+        public IParserDiscovery WithPrioritizedNamespace(IEnumerable<string> parserNamespace) => new ParserDiscovery(this, null, parserNamespace);
+        public IParserDiscovery WithPrioritizedNamespace(string parserNamespace) => new ParserDiscovery(this, null, parserNamespace);
     }
 }
