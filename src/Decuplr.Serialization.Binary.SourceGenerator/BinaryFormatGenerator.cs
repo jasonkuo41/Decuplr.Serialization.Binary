@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Text;
-using Decuplr.Serialization.Binary.SourceGenerator.Solutions;
+using Decuplr.Serialization.Binary.Analyzers;
+using Decuplr.Serialization.Binary.SourceGenerator.BinaryFormatSource;
+using Decuplr.Serialization.Binary.SourceGenerator.ParserSource;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
@@ -34,13 +33,6 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
         public void Execute(SourceGeneratorContext context) {
             if (!(context.SyntaxReceiver is CandidateSyntaxReceiver receiver))
                 return;
-            var compilation = context.Compilation;
-            var binaryFormatSymbol = compilation.GetTypeByMetadataName(typeof(BinaryFormatAttribute).FullName);
-            var indexSymbol = compilation.GetTypeByMetadataName(typeof(IndexAttribute).FullName);
-
-            Debug.Assert(binaryFormatSymbol != null);
-            Debug.Assert(indexSymbol != null);
-
             var sourceBuilder = new StringBuilder(@"using System;
                 namespace Decuplr.Serialization.Binary {
                     public static class DebugContent {
@@ -48,38 +40,28 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                             Console.WriteLine(""Start of debug info"");
                 ");
 
-            var candidateSymbols = new HashSet<INamedTypeSymbol>();
-            foreach (var candidateClass in receiver.CandidateTypes) {
-                var model = compilation.GetSemanticModel(candidateClass.SyntaxTree, true);
-                var typeSymbol = model.GetDeclaredSymbol(candidateClass);
-                if (typeSymbol is null || !typeSymbol.GetAttributes().HasAny(binaryFormatSymbol!))
-                    continue;
-                sourceBuilder.AppendLine($"Console.WriteLine(\"{typeSymbol}\");");
-                sourceBuilder.AppendLine($"Console.WriteLine(\"   {string.Join(" , ", candidateClass.Modifiers.Select(x => x.ValueText))}\");");
-                sourceBuilder.AppendLine($"Console.WriteLine(\"   {candidateClass.AttributeLists[0].Attributes.Count}\");");
-                candidateSymbols.Add(typeSymbol!);
-            }
-
             try {
+                // We also need to dump struct output (markdown file) for output
+                var generationSources = new IParserGenerateSource[] {
+                    // Responsible for [BinaryFormat] tags
+                    new BinaryFormatSG(),
+                    // Responsible for [BinaryParser] tags
+                    new BinaryParserSG()
+                };
 
-                var result = new List<TypeParserGenerator>();
-                foreach (var typeSymbol in candidateSymbols) {
-                    sourceBuilder.AppendLine($"Console.WriteLine(\"{typeSymbol}\");");
-                    if (!TypeInfoDiscovery.TryParseType(typeSymbol, context, out var typeInfo))
-                        continue;
+                var types = SourceCodeAnalyzer.AnalyzeTypeSyntax(receiver.CandidateTypes, context.Compilation, context.CancellationToken);
 
-                    var serializer = new PartialTypeSerialize(typeInfo!);
-                    var deserializer = new PartialTypeDeserialize(typeInfo!);
+                var generatedResults = new List<GeneratedParser>();
 
-                    result.Add(new TypeParserGenerator(typeInfo!, deserializer, serializer));
+                // We loop through all the internal generators
+                foreach (var source in generationSources) {
+                    var generated = source.GenerateParser(types, context);
+                    foreach (var additionalFile in generated.AdditionalFiles)
+                        context.AddSource(additionalFile);
+                    generatedResults.AddRange(generated.GeneratedParser);
                 }
+                context.AddSource(EntryPointBuilder.CreateSourceText(generatedResults));
 
-                // Generate an entry point
-                //context.AddSource(EntryPointBuilder.CreateSourceText(result));
-
-                // Generate those additional files
-                //foreach (var additionFile in result.SelectMany(x => x.AdditionalCode))
-                //    context.AddSource(additionFile);
             }
             catch (Exception e) {
                 sourceBuilder.AppendLine($"Console.WriteLine(@\"{e} {e.Message} \r \n {e.StackTrace}\");");

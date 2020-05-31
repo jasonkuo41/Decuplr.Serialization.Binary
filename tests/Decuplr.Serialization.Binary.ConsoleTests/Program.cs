@@ -31,8 +31,9 @@ namespace Decuplr.Serialization.Binary.ConsoleTests {
         public List<byte> FormatData { get; }
 
         [Index(2)]
-        [Union(1, 1, 1, FixedSize = 1)]
         public (bool IsValid, bool IsCurrent, bool IsCompressed) ConditionGroup { get; }
+
+        public int Test => 3;
 
         /* Reserved concept
         [Index(3)]
