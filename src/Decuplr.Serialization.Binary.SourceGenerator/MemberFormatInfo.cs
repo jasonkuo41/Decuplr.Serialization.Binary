@@ -5,10 +5,16 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Decuplr.Serialization.Binary.SourceGenerator {
     internal class MemberFormatInfo {
-        public int Index { get; }
+        // Conclude the basic info of this member format
+        public AnalyzedMember Member { get; }
         public ISymbol MemberSymbol { get; }
         public ITypeSymbol MemberTypeSymbol { get; }
-        public IReadOnlyList<AttributeData> Attributes { get; }
+
+        public int Index { get; }
+        public string[] UsingNamespaces { get; }
+        public FormatLengthInfo? CustomLengthInfo { get; }
+        public bool IsBitUnion { get; }
+        // Info for padding
 
         public MemberFormatInfo(int index, ISymbol symbol) {
             Index = index;
