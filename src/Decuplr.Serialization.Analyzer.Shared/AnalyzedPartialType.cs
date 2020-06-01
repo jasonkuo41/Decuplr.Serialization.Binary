@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
+using Decuplr.Serialization.Analyzer.BinaryFormat;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Decuplr.Serialization.Binary.Analyzers
-{
+namespace Decuplr.Serialization.Binary.Analyzers {
     public class AnalyzedPartialType {
 
         /// <summary>

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Decuplr.Serialization.Binary;
 using Decuplr.Serialization.Binary.Analyzers;
 using Microsoft.CodeAnalysis;
@@ -16,9 +17,8 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
             Member = member;
         }
 
-        public static bool TryGetLayout(AnalyzedType type, out IReadOnlyList<Diagnostic> diagnostics, out TypeFormatLayout? layout) {
-            var diagnosticList = new List<Diagnostic>();
-            diagnostics = diagnosticList;
+        public static bool TryGetLayout(AnalyzedType type, out IList<Diagnostic> diagnostics, out TypeFormatLayout? layout) {
+            diagnostics = new List<Diagnostic>();
             layout = default;
 
             // Check if type contains what layout
@@ -33,26 +33,37 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
                 .Select(member => (Member: member, Attribute: member.GetAttributes<IndexAttribute>().First()))
                 .ToList();
 
-            if (!TryEnsureLayout(type, ref statedLayout, formatAttribute, indexAttributes.Select(x => x.Attribute).ToList(), diagnosticList))
+            if (!TryEnsureLayout(type, ref statedLayout, formatAttribute, indexAttributes.Select(x => x.Attribute).ToList(), diagnostics))
                 return false;
 
             IReadOnlyList<AnalyzedMember> orderedMembers;
             if (statedLayout == BinaryLayout.Explicit) {
                 // with explicit we use index attribute as our order guidance
-                orderedMembers = indexAttributes.OrderBy(x => (int)x.Attribute.Data.ConstructorArguments[0].Value!).Select(x => x.Member).ToList();
+                var indexs = indexAttributes.Select(x => (Index: (int)x.Attribute.Data.ConstructorArguments[0].Value!, x.Member)).ToList();
+                {
+                    // locate duplicate indexs
+                    var foundDuplicate = false;
+                    foreach (var gmember in indexs.GroupBy(x => x.Index).Where(x => x.Count() > 1)) {
+                        diagnostics.Add(Diagnostic.Create(DiagnosticHelper.DuplicateIndexs, gmember.First().Member.Declarations[0].DeclaredLocation, gmember.Key));
+                        foundDuplicate = true;
+                    }
+                    if (foundDuplicate)
+                        return false;
+                }
+                orderedMembers = indexs.OrderBy(x => x.Index).Select(x => x.Member).ToList();
             }
             else {
                 // with sequential we use the declared order and use ignore attribute to skip member
                 Debug.Assert(type.Declarations.Count == 1);
-                orderedMembers = type.Declarations[0].Members.Where(type => !type.ContainsAttribute<NeverFormatAttribute>()).ToList();
+                orderedMembers = type.Declarations[0].Members.Where(type => !type.ContainsAttribute<IgnoreAttribute>()).ToList();
             }
-            if (!MemberFormatInfo.TryCreateFormatInfo(orderedMembers, diagnosticList, out var formatInfos))
+            if (!MemberFormatInfo.TryCreateFormatInfo(orderedMembers, diagnostics, out var formatInfos))
                 return false;
             layout = new TypeFormatLayout(type, formatInfos.ToList());
             return true;
         }
 
-        private static bool TryEnsureLayout(AnalyzedType type, ref BinaryLayout statedLayout, AnalyzedAttribute formatAttribute, IReadOnlyList<AnalyzedAttribute> indexAttributes, List<Diagnostic> diagnostics) {
+        private static bool TryEnsureLayout(AnalyzedType type, ref BinaryLayout statedLayout, AnalyzedAttribute formatAttribute, IReadOnlyList<AnalyzedAttribute> indexAttributes, IList<Diagnostic> diagnostics) {
 
             // If it's auto or sequential, we will now try to locate if there's Index set of our member.
             // 
@@ -82,7 +93,7 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
                     return false;
                 }
                 // If we found NeverFormat, just softly hint 
-                var neverFormat = type.Declarations.SelectMany(x => x.Members).SelectMany(partial => partial.GetAttributes<NeverFormatAttribute>()).ToList();
+                var neverFormat = type.Declarations.SelectMany(x => x.Members).SelectMany(partial => partial.GetAttributes<IgnoreAttribute>()).ToList();
                 if (neverFormat.Count != 0)
                     diagnostics.Add(Diagnostic.Create(DiagnosticHelper.ExplicitDontNeedNeverFormat, neverFormat[0].Location, neverFormat.Select(x => x.Location)));
             }

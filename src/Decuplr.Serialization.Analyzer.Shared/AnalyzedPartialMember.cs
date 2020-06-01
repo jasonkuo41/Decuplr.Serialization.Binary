@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Reflection.Emit;
+using Decuplr.Serialization.Binary.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -21,4 +24,5 @@ namespace Decuplr.Serialization.Binary.Analyzers {
         }
 
     }
+
 }

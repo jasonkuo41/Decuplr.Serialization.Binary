@@ -84,6 +84,17 @@ namespace Decuplr.Serialization.Binary.ConsoleTests {
 
     }
 
+    [BinaryFormat]
+    [RequiresContructor]
+    public class ObjectA {
+        [Required]
+        public ObjectA (int length) {
+
+        }
+
+
+    }
+
     public class BaseA { }
 
     public class ClassB : BaseA { }

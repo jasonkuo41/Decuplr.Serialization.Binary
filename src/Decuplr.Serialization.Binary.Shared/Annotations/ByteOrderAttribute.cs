@@ -11,7 +11,6 @@ namespace Decuplr.Serialization.Binary {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
     [ApplyNamespaceIf("Internal.BigEndianess", ByteOrder.BigEndian)]
     [ApplyNamespaceIf("Default", ByteOrder.LittleEndian)]
-    [DefinesPrimitives]
     public sealed class EndianessAttribute : Attribute {
         public EndianessAttribute(ByteOrder endianess) {
             Endianess = endianess;

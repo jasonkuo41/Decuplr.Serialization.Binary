@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Decuplr.Serialization.Analyzer.BinaryFormat;
 
 namespace Decuplr.Serialization.Binary.SourceGenerator.Solutions {
 
@@ -7,9 +8,9 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Solutions {
 
     internal class ObserverDeserializer : IDeserializeSolution {
 
-        private readonly AnalyzedType TypeInfo;
+        private readonly TypeFormatLayout TypeInfo;
 
-        public ObserverDeserializer(AnalyzedType typeInfo) {
+        public ObserverDeserializer(TypeFormatLayout typeInfo) {
             TypeInfo = typeInfo;
         }
 
@@ -20,7 +21,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Solutions {
 
         public GeneratedFormatFunction GetDeserializeFunction() {
             var node = new CodeNodeBuilder();
-            node.AddNode($"private {TypeInfo.TypeSymbol} CreateType({GetConstructorParameters()})", node => {
+            node.AddNode($"private {TypeInfo.MemberSymbol} CreateType({GetConstructorParameters()})", node => {
                 // Must be constructless!, otherwise we will fail
                 node.AddStatement($"var target = new {TypeInfo.TypeSymbol}()");
                 foreach (var member in TypeInfo.MemberFormatInfo)

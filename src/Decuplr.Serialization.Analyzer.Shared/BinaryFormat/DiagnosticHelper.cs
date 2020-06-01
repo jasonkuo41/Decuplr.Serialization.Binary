@@ -3,8 +3,8 @@ using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Analyzer.BinaryFormat {
     internal class DiagnosticHelper {
-        private const string IdTitle = "BFSG";
-        private const string Category = "Decuplr.BinaryPacker.SourceGen";
+        private const string IdTitle = "BPSA"; // BinaryPacker Shared Analyzer
+        private const string Category = "Decuplr.BinaryPacker.Analyzer";
 
         public static DiagnosticDescriptor SequentialShouldNotIndex { get; }
             = new DiagnosticDescriptor($"{IdTitle}-001",
@@ -34,8 +34,38 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
 
         public static DiagnosticDescriptor ExplicitDontNeedNeverFormat { get; }
             = new DiagnosticDescriptor($"{IdTitle}-005",
-                $"Explicit layout ignores {nameof(NeverFormatAttribute)}",
-                $"Explicit layout ignores {nameof(NeverFormatAttribute)} as it uses IndexAttribute to determinate what should be formatted",
+                $"Explicit layout ignores {nameof(IgnoreAttribute)}",
+                $"Explicit layout ignores {nameof(IgnoreAttribute)} as it uses IndexAttribute to determinate what should be formatted",
                 Category, DiagnosticSeverity.Warning, true);
+
+        public static DiagnosticDescriptor StaticNeverFormats { get; }
+            = new DiagnosticDescriptor($"{IdTitle}-006",
+                "Static type members will never be serialized",
+                "Static type member `{0}` will never be serialized, and should not be marked with any IndexAttribute and alike",
+                Category, DiagnosticSeverity.Warning, true);
+
+        public static DiagnosticDescriptor NotPropertyOrFieldNeverFormats { get; }
+            = new DiagnosticDescriptor($"{IdTitle}-007",
+                "Type members that are not property or fields will never be serialized",
+                "Type members `{0}` will never be serialized as it is not property or field",
+                Category, DiagnosticSeverity.Warning, true);
+
+        public static DiagnosticDescriptor DelegatesNeverFormats { get; }
+            = new DiagnosticDescriptor($"{IdTitle}-008",
+                "Property or field returning delegates will not be correctly serialized",
+                "Property or field `{0}` returning delegates is not supported for serializing or formatting",
+                Category, DiagnosticSeverity.Error, true);
+
+        public static DiagnosticDescriptor DelegatesNeverFormatsHint { get; }
+            = new DiagnosticDescriptor($"{IdTitle}-009",
+                "Property or field returning delegates will not be correctly serialized",
+               $"Property or field `{{0}}` returning delegates is not supported for serializing or formatting, consider adding {nameof(IgnoreAttribute)} for clearity",
+                Category, DiagnosticSeverity.Info, true);
+
+        public static DiagnosticDescriptor DuplicateIndexs { get; }
+            = new DiagnosticDescriptor($"{IdTitle}-010",
+                "Found duplicate indexs",
+                "Found duplicate index `{0}`, which is not allowed.",
+                Category, DiagnosticSeverity.Error, true);
     }
 }

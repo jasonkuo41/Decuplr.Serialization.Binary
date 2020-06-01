@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Decuplr.Serialization.Binary.SourceGenerator.Analyzers;
+using Decuplr.Serialization.Analyzer.BinaryFormat;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.SourceGenerator {
@@ -12,5 +12,6 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
     internal struct GeneratedTypeParser {
         public IReadOnlyList<GeneratedSourceCode> AdditionalFiles { get; set; }
         public IReadOnlyList<GeneratedParser> GeneratedParser { get; set; }
+        public IReadOnlyList<string> AdditionalClasses { get; set; }
     }
 }

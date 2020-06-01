@@ -5,7 +5,13 @@ using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.SourceGenerator {
     static class DiagnosticHelper {
-        public static DiagnosticDescriptor DuplicateIndex { get; } = new DiagnosticDescriptor("BSG-0001", "Duplicate Index", "Duplicated index of '{0}' was found in multiple occassions", "BinaryFormat.SourceGenerator", DiagnosticSeverity.Error, true);
-        public static DiagnosticDescriptor MissingIndex { get; } = new DiagnosticDescriptor("BSG-0002", "Missing Index", "Index '{0}' cannot be found within the type. (Did you forgot to add index attribute?)", "BinaryFormat.SourceGenerator", DiagnosticSeverity.Error, true);
+        private const string IdTitle = "BFSG";
+        private const string Category = "Decuplr.BinaryPacker.SourceGenerator";
+
+        public static DiagnosticDescriptor ShouldDeclarePartial { get; }
+            = new DiagnosticDescriptor($"{IdTitle}-001",
+                "Target type has member that can only be access by partial",
+                "Add `partial` keyword to type `{0}` since it's members contain format that cannot be accessed via internal or public",
+                Category, DiagnosticSeverity.Error, true);
     }
 }

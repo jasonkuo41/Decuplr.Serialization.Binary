@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Decuplr.Serialization.Binary.Analyzers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Decuplr.Serialization.Binary.Analyzers {
+namespace Decuplr.Serialization.Analyzer.BinaryFormat {
 
     // Represents an analyzed type
     public class AnalyzedType {
