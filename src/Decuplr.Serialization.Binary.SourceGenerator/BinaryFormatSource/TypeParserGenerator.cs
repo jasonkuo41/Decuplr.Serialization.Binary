@@ -3,18 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Decuplr.Serialization.Analyzer.BinaryFormat;
 
 namespace Decuplr.Serialization.Binary.SourceGenerator {
     class TypeParserGenerator {
 
-        private readonly AnalyzedType TypeInfo;
+        private readonly TypeFormatLayout TypeInfo;
         private readonly GeneratedFormatFunction DeserializeInfo;
         private readonly GeneratedFormatFunction SerializeInfo;
         private readonly List<GeneratedSourceCode> AdditionalSourceCode = new List<GeneratedSourceCode>();
 
         public IReadOnlyList<GeneratedSourceCode> AdditionalCode => AdditionalSourceCode;
 
-        public TypeParserGenerator(AnalyzedType typeInfo, IDeserializeSolution deserializeSolution, ISerializeSolution serializeSolution) {
+        public TypeParserGenerator(TypeFormatLayout typeInfo, IDeserializeSolution deserializeSolution, ISerializeSolution serializeSolution) {
             TypeInfo = typeInfo;
             
             DeserializeInfo = deserializeSolution.GetDeserializeFunction();
@@ -30,10 +31,13 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
 
             var node = new CodeNodeBuilder();
             node.AddNode($"private class {parserName} : TypeParser <{TypeInfo.TypeSymbol}>", node => {
-                
+
                 // Declare the parser we will be using
-                for (var i = 0; i < TypeInfo.MemberFormatInfo.Count; ++i)
-                    node.AddStatement($"private readonly TypeParser<{TypeInfo.MemberFormatInfo[i].MemberTypeSymbol}> parser_{i}");
+                for (var i = 0; i < TypeInfo.Member.Count; ++i) {
+                    for (var j = 0; j < TypeInfo.Member[i].DecisionAnnotation.RequestParserType.Count; ++j) {
+                        node.AddStatement($"private readonly TypeParser<{TypeInfo.Member[i].TypeSymbol}> parser_{i}_{j}");
+                    }
+                }
 
                 // Figure out if this is actually fixed in size
                 node.AddStatement($"private readonly int? fixedSize");
@@ -41,20 +45,27 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
 
                 // Initialize the parser at runtime
                 // Note : we don't need to optimize so that we can inline IL or code to startup (I think the benefit is slim)
-                node.AddNode($"public {parserName} ({nameof(IParserDiscovery)} format)", node => {
-                    // Locate the parser
+                node.AddNode($"public {parserName} ({nameof(IParserDiscovery)} parser, out bool isSuccess)", node => {
+                    node.AddStatement("isSuccess = false");
                     node.AddStatement("fixedSize = 0");
-                    for (var i = 0; i < TypeInfo.MemberFormatInfo.Count; ++i) {
-                        // TODO : Allow namespace to run
-                        // What if it's not supported?
-                        node.AddStatement($"format.TryGetFormatter(out parser_{i})");
+                    for (var i = 0; i < TypeInfo.Member.Count; ++i) {
+                        var annotation = TypeInfo.Member[i].DecisionAnnotation;
+                        var currentNamespace = TypeInfo.Member[i].UsedNamespaces;
+                        node.AddStatement($"var parserSpace_{i} = parser.WithNamespace({string.Join(",", currentNamespace)})");
+                        for (var j = 0; j < annotation.RequestParserType.Count; ++j) {
 
-                        // force capture of i
-                        var captureI = i;
-                        node.AddNode("if (fixedSize != null)", node => {
-                            node.AddStatement($"fixedSize += parser_{captureI}.FixedSize");
-                        });
+                            node.AddNode($"if (!parserSpace_{i}.TryGetParser(out parser_{i}_{j})", node => {
+                                node.AddStatement("return");
+                            });
+
+                            // force capture of i
+                            var captureI = i;
+                            node.AddNode("if (fixedSize != null)", node => {
+                                node.AddStatement($"fixedSize += parser_{i}_{j}.FixedSize");
+                            });
+                        }
                     }
+                    node.AddStatement("isSuccess = true");
                 });
 
                 node.AddPlain("");

@@ -36,10 +36,6 @@ Describes that the member should be ignored when BinaryLayout is sequential
 
 Formats the current type to a convertible target type when serializing, and convert back when deserialized.
 
-There are set of limitations of what FormatAs can do in the current version.
-
-- The target type that replaces the current type must be in the same assembly
-
 #### [UseNamespace]
 
 Notates a type to use the parser provided by a specific namespace. When applied on an attribute, 
@@ -67,13 +63,6 @@ Defines a binary length for the field
 ***Type Decision Attribute***
 
 Notates a type or a tuple to become bit length fields
-
-
-#### [SubType]
-
-***Type Decision Attribute***
-
-Notates a type to be serialized to a target type when conditions are right
 
 #### [Constant]
 

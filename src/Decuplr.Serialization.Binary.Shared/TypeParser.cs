@@ -5,6 +5,9 @@ namespace Decuplr.Serialization.Binary {
     public abstract class TypeParser<T> : TypeParser {
 
         public abstract bool TrySerialize(T value, Span<byte> destination, out int writtenBytes);
+
+        public abstract int Serialize(T value, Span<byte> destination);
+
         public abstract int GetBinaryLength(T value);
 
         public abstract DeserializeResult TryDeserialize(ReadOnlySpan<byte> span, out int readBytes, out T result);

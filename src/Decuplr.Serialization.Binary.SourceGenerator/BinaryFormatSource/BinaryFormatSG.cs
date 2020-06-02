@@ -22,13 +22,15 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.BinaryFormatSource {
 
             // Check if the target parser would need to use `partial` keyword to help up invoke into the code
             // I mean if it's already partial, we might as well as embed into it
-            // If it's not partial, we check if we can access every member with 
-            if (CanAccessAllGetValue(typeLayout) && (typeLayout.CanDeserialize || CanAccessAllSetValue(typeLayout))) {
-                // If we can then we use observer class to invoke the class
 
-            }
+            /* Currently, there are since it's kind of complicated to decide whether we can not use partial, so we now force users to partial everything  */
+            // If it's not partial, we check if we can access every member with 
+            //if (CanAccessAllGetValue(typeLayout) && (typeLayout.CanDeserialize || CanAccessAllSetValue(typeLayout))) {
+                // If we can then we use observer class to invoke the class
+            
+            //}
             // Otherwise the type must be partial, or else we don't like it
-            if (!typeLayout.Type.IsPartial) {
+            if (!typeLayout!.Type.IsPartial) {
                 context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.ShouldDeclarePartial, typeLayout.Type.Declarations[0].DeclaredLocation, typeLayout.Type.TypeSymbol));
                 return false;
             }

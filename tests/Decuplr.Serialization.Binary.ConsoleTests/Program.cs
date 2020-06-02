@@ -8,7 +8,7 @@ namespace Decuplr.Serialization.Binary.ConsoleTests {
     class Program {
         static void Main(string[] args) {
             Console.WriteLine("Hello World!dd");
-            DebugContent.PrintDebugInfo();
+            //DebugContent.PrintDebugInfo();
         }
     }
 

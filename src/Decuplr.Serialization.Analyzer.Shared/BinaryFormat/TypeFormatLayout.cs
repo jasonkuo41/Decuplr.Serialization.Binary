@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -7,14 +8,33 @@ using Decuplr.Serialization.Binary.Analyzers;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Analyzer.BinaryFormat {
+
+    public struct FormatInfo {
+        public bool CanDeserialize { get; }
+
+        public bool IsSealed { get; }
+    }
+
     public class TypeFormatLayout {
+
+        private readonly Lazy<FormatInfo?> formatInfo;
+
         public AnalyzedType Type { get; }
 
         public IReadOnlyList<MemberFormatInfo> Member { get; }
 
+        public INamedTypeSymbol TypeSymbol => Type.TypeSymbol;
+
+        public Location FirstLocation => Type.Declarations[0].DeclaredLocation;
+
+        public FormatInfo? FormatInfo => formatInfo.Value;
+
         private TypeFormatLayout(AnalyzedType type, IReadOnlyList<MemberFormatInfo> member) {
             Type = type;
             Member = member;
+            formatInfo = new Lazy<FormatInfo?>(() => { 
+                Type.GetAttributes<BinaryFormatAttribute>
+            }, true);
         }
 
         public static bool TryGetLayout(AnalyzedType type, out IList<Diagnostic> diagnostics, out TypeFormatLayout? layout) {
@@ -22,6 +42,7 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
             layout = default;
 
             // Check if type contains what layout
+            // TODO : errrrr what about our guy BinaryFormatter?!
             var formatAttribute = type.GetAttributes<BinaryFormatAttribute>().FirstOrDefault();
             if (formatAttribute.IsEmpty)
                 return false;

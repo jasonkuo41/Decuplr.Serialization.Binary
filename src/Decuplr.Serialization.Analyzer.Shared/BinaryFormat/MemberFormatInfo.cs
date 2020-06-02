@@ -6,22 +6,27 @@ using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Analyzer.BinaryFormat {
 
-    public struct BitUnion {
-        public int[] Unions { get; }
-    }
-
     public class MemberFormatInfo {
         public int Index { get; }
 
         public bool IsConstant { get; }
 
-        public BitUnion? BitUnion { get; }
+        /// <summary>
+        /// The type that the member format wants to be formatted into
+        /// </summary>
+        public TypeDecisionAnnotation DecisionAnnotation { get; }
 
-        public INamedTypeSymbol? FormatAs { get; }
+        public Condition? FormatCondition { get; }
 
         public string[] UsedNamespaces { get; }
 
         public AnalyzedMember Analyzed { get; }
+
+        public int? ConstantLength { get; }
+
+        public ISymbol Symbol => Analyzed.MemberSymbol;
+
+        public INamedTypeSymbol TypeSymbol { get; } // Cast to IFieldSymbol or IProperty symbol to capture this
 
         public MemberFormatInfo(AnalyzedMember member, IReadOnlyList<AnalyzedMember> referencedMember, ISet<IPropertySymbol> assiociatedSymbols) {
 
@@ -48,7 +53,7 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
 
         // This functions decide what members we want to capture, and also tell user their stupid ideas
         // return 0 if ignored, 1 if accepted and -1 for bail out
-        private static int ShouldCreateFormatInfo(AnalyzedMember member, BinaryLayout layout, List<Diagnostic> diagnostics) {
+        private static int ShouldCreateFormatInfo(AnalyzedMember member, BinaryLayout layout, IList<Diagnostic> diagnostics) {
             var symbol = member.MemberSymbol;
             if (symbol.IsImplicitlyDeclared)
                 return 0;
