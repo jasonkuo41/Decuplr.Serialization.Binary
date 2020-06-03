@@ -36,6 +36,10 @@ namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
                 return ChildParser.GetBinaryLength(value.Value);
             }
 
+            public override int Serialize(Lazy<T> value, Span<byte> destination) {
+                throw new NotImplementedException();
+            }
+
             public override DeserializeResult TryDeserialize(ReadOnlySpan<byte> span, out int readBytes, out Lazy<T> result) {
                 result = null;
                 var parseResult = ChildParser.TryDeserialize(span, out readBytes, out var nestedResult);

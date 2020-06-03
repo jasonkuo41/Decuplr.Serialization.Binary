@@ -2,25 +2,26 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
+using Decuplr.Serialization.Analyzer.BinaryFormat;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.SourceGenerator.Solutions {
     class PartialTypeSerialize : ISerializeSolution {
 
-        private readonly AnalyzedType TypeInfo;
+        private readonly TypeFormatLayout TypeInfo;
 
         private INamedTypeSymbol TypeSymbol => TypeInfo.TypeSymbol;
-        private IReadOnlyList<MemberFormatInfo> Members => TypeInfo.MemberFormatInfo;
+        private IReadOnlyList<MemberFormatInfo> Members => TypeInfo.Member;
         
-        private string OutArgs => string.Join(",", Enumerable.Range(0, TypeInfo.MemberFormatInfo.Count).Select(i => $"out s_{i}"));
-        private string OutArgsWithType => string.Join(",", Enumerable.Range(0, TypeInfo.MemberFormatInfo.Count).Select(i => $"out {Members[i].MemberTypeSymbol} s_{i}"));
-
-        public PartialTypeSerialize(AnalyzedType typeInfo) {
+        public PartialTypeSerialize(TypeFormatLayout typeInfo) {
             TypeInfo = typeInfo;
         }
 
-        internal static string DefaultDeserializePoint(INamedTypeSymbol symbol) => $"___generated__no_invoke_{symbol.Name}_Derializer";
+        private string TrySerializeFuncName => $"___generated__no_invoke_{TypeSymbol.Name}_TrySerializer";
+        private string SerializeFuncName => $"___generated__no_invoke_{TypeSymbol.Name}_Serializer";
+        private string GetBinaryLengthFuncName => $"___generated__no_inoke_{TypeSymbol.Name}_GetLength";
 
         public GeneratedSourceCode[] GetAdditionalFiles() {
             var builder = new CodeSnippetBuilder(TypeSymbol.ContainingNamespace.ToString());
@@ -37,24 +38,101 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Solutions {
             // {public} {partial} {class/ struct} Name {
             builder.AddPartialClass(TypeSymbol, node => {
 
-                node.AddAttribute($"[GeneratedCode (\"{Assembly.GetExecutingAssembly().GetName().Name}\", \"{Assembly.GetExecutingAssembly().GetName().Version}\")]");
-                node.AddAttribute("[EditorBrowsable(EditorBrowsableState.Never)]");
+                // TrySerialize
+                node.AddAttribute(CommonAttributes.GeneratedCodeAttribute);
+                node.AddAttribute(CommonAttributes.HideFromEditor);
 
-                node.AddNode($"internal static void {DefaultDeserializePoint(TypeSymbol)} ({TypeSymbol} value, {OutArgsWithType})", node => {
-                    for(var i = 0; i < Members.Count; ++i)
-                        node.AddStatement($"s_{i} = value.{Members[i].MemberSymbol.Name}");
+                node.AddNode($"internal static bool {TrySerializeFuncName} (in {TypeInfo.GetDefaultParserCollectionName()} parsers, {TypeSymbol} value, Span<byte> destination, out int writtenBytes)", node => {
+                    node.AddStatement("writtenBytes = -1");
+                    node.AddStatement("var oglength = destination.Length");
+                    for (var i = 0; i < Members.Count; ++i) {
+                        WriteMemberNodes(node, i, "parsers", true);
+                    }
+                    node.AddStatement("writtenBytes = oglength - destination.Length");
+                    node.AddStatement("return true");
+                });
+
+                // Serialize
+                node.AddAttribute(CommonAttributes.GeneratedCodeAttribute);
+                node.AddAttribute(CommonAttributes.HideFromEditor);
+                node.AddNode($"internal static int {SerializeFuncName} (in {TypeInfo.GetDefaultParserCollectionName()} parsers, {TypeSymbol} value, Span<byte> destination)", node => {
+                    node.AddStatement("var oglength = destination.Length");
+                    for (var i = 0; i < Members.Count; ++i) {
+                        WriteMemberNodes(node, i, "parsers", false);
+                    }
+                    node.AddStatement("return oglength - destination.Length");
+                });
+
+                node.AddAttribute(CommonAttributes.GeneratedCodeAttribute);
+                node.AddAttribute(CommonAttributes.HideFromEditor);
+                node.AddNode($"internal static int {GetBinaryLengthFuncName}(in {TypeInfo.GetDefaultParserCollectionName()} parsers, {TypeSymbol} value)", node => {
+                    node.AddStatement("var result = 0");
+                    for (var i = 0; i < Members.Count; ++i) {
+                        WriteMemberLengthEvalNodes(node, i, "parsers", "result");
+                    }
+                    node.AddStatement("return result");
                 });
 
             });
             return new GeneratedSourceCode[] { ($"{TypeInfo.TypeSymbol.Name}.Generated.PartialSerialize.cs", builder.ToString()) };
         }
 
+        public GeneratedFormatFunction GetTrySerializeFunction() {
+            var builder = new CodeNodeBuilder();
+            builder.AddNode($"private static bool TrySerializeType(in {TypeInfo.GetDefaultParserCollectionName()} parsers, {TypeSymbol} value, Span<byte> destination, out int writtenBytes)", node => {
+                node.AddStatement($"return {TypeSymbol}.{TrySerializeFuncName} (in parsers, value, destination, out writtenBytes);");
+            });
+            return new GeneratedFormatFunction("TrySerializeType", builder.ToString());
+        }
+
         public GeneratedFormatFunction GetSerializeFunction() {
             var builder = new CodeNodeBuilder();
-            builder.AddNode($"private static void DeconstructType({TypeSymbol} value, {OutArgsWithType})", node => {
-                node.AddStatement($"{TypeSymbol}.{DefaultDeserializePoint(TypeSymbol)} (value, {OutArgs});");
+            builder.AddNode($"private static int SerializeType(in {TypeInfo.GetDefaultParserCollectionName()} parsers, {TypeSymbol} value, Span<byte> destination)", node => {
+                node.AddStatement($"return {TypeSymbol}.{SerializeFuncName} (in parsers, value, destination);");
             });
-            return new GeneratedFormatFunction("DeconstructType", builder.ToString());
+            return new GeneratedFormatFunction("SerializeType", builder.ToString());
         }
+        public GeneratedFormatFunction GetBinaryLengthFunction() {
+            throw new NotImplementedException();
+        }
+
+        private void WriteMemberLengthEvalNodes(CodeNodeBuilder node, int i, string parserName, string lengthName) {
+            switch (Members[i].DecisionAnnotation) {
+                case BitUnionAnnotation bitUnion:
+
+                    break;
+                case FormatAsAnnotation formatAsAnnotation:
+
+                    break;
+                default:
+                    node.AddStatement($"{lengthName} += {parserName}.Parser_{i}_{0}.GetBinaryLength(value.{Members[i].Symbol.Name}, destination)");
+                    break;
+            }
+        }
+
+        private void WriteMemberNodes(CodeNodeBuilder node, int i, string parserName, bool isTryPattern) {
+            // time to find the correct parser
+            node.AddStatement("int currentWrittenBytes");
+            switch (Members[i].DecisionAnnotation) {
+                case BitUnionAnnotation bitUnion:
+
+                    break;
+                case FormatAsAnnotation formatAsAnnotation:
+
+                    break;
+                default:
+                    if (isTryPattern) {
+                        node.AddNode($"if (!{parserName}.Parser_{i}_{0}.TrySerialize(value.{Members[i].Symbol.Name}, destination, out currentWrittenBytes)", node => {
+                            node.AddStatement("return false");
+                        });
+                    }
+                    else {
+                        node.AddStatement($"currentWrittenBytes = {parserName}.Parser_{i}_{0}.Serialize(value.{Members[i].Symbol.Name}, destination)");
+                    }
+                    break;
+            }
+            node.AddStatement("destination = destination.Slice(currentWrittenBytes)");
+        }
+
     }
 }

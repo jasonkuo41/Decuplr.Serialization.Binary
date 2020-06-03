@@ -7,7 +7,6 @@ namespace Decuplr.Serialization.Binary {
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
     [ApplyNamespace("Default")]
-    [DefinesPrimitives]
     public sealed class DefaultFormatAttribute : Attribute {
         public DefaultFormatAttribute() { }
     }

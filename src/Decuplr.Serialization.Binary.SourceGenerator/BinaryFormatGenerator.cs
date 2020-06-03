@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 using Decuplr.Serialization.Binary.Analyzers;
 using Decuplr.Serialization.Binary.SourceGenerator.BinaryFormatSource;
@@ -60,7 +61,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                         context.AddSource(additionalFile);
                     generatedResults.AddRange(generated.GeneratedParser);
                 }
-                context.AddSource(EntryPointBuilder.CreateSourceText(generatedResults));
+                context.AddSource(BinaryPackerEntryPointGenerator.CreateSourceText(generatedResults));
 
             }
             catch (Exception e) {

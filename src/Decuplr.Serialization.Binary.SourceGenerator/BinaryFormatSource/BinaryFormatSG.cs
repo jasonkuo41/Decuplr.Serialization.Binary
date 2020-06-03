@@ -1,13 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Decuplr.Serialization.Analyzer.BinaryFormat;
+using Decuplr.Serialization.Binary.SourceGenerator.Solutions;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.SourceGenerator.BinaryFormatSource {
     internal class BinaryFormatSG : IParserGenerateSource {
 
         public GeneratedTypeParser GenerateParser(IEnumerable<AnalyzedType> types, SourceGeneratorContext context) {
-            var interestedType = types.Where(type => type.ContainsAttribute<BinaryFormatAttribute>()).Select(type => CreateParser(type));
+            var interestedType = types.Where(type => type.ContainsAttribute<BinaryFormatAttribute>());
 
         }
 
@@ -35,7 +36,8 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.BinaryFormatSource {
                 return false;
             }
             // We pump a constructor for our sweet partial class here
-
+            parser = new TypeParserGenerator(typeLayout, new PartialTypeDeserialize(typeLayout), new PartialTypeSerialize(typeLayout)).GetFormatterCode();
+            return true;
         }
     }
 

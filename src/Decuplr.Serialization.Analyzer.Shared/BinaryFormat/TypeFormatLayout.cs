@@ -17,8 +17,6 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
 
     public class TypeFormatLayout {
 
-        private readonly Lazy<FormatInfo?> formatInfo;
-
         public AnalyzedType Type { get; }
 
         public IReadOnlyList<MemberFormatInfo> Member { get; }
@@ -27,14 +25,11 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
 
         public Location FirstLocation => Type.Declarations[0].DeclaredLocation;
 
-        public FormatInfo? FormatInfo => formatInfo.Value;
+        public FormatInfo? FormatInfo { get; }
 
         private TypeFormatLayout(AnalyzedType type, IReadOnlyList<MemberFormatInfo> member) {
             Type = type;
             Member = member;
-            formatInfo = new Lazy<FormatInfo?>(() => { 
-                Type.GetAttributes<BinaryFormatAttribute>
-            }, true);
         }
 
         public static bool TryGetLayout(AnalyzedType type, out IList<Diagnostic> diagnostics, out TypeFormatLayout? layout) {
@@ -42,7 +37,7 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
             layout = default;
 
             // Check if type contains what layout
-            // TODO : errrrr what about our guy BinaryFormatter?!
+            // TODO : hard code [BinaryFormat] [BinaryParser] and [InlineData] since there are the only three; also make them return format info
             var formatAttribute = type.GetAttributes<BinaryFormatAttribute>().FirstOrDefault();
             if (formatAttribute.IsEmpty)
                 return false;
