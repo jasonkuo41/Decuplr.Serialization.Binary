@@ -33,6 +33,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             builder.AddNode($"internal class {generatedClassName} : {nameof(AssemblyPackerEntryPoint)} ", node => {
 
                 // Put all the generated formatters class here
+                "Add the darn source code here!!!!!"
 
                 // Define the entry function
                 node.AddNode($"public override void {nameof(AssemblyPackerEntryPoint.LoadContext)} ({nameof(INamespaceRoot)} root)", node => {
