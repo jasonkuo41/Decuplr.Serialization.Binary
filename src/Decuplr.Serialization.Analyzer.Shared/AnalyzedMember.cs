@@ -22,6 +22,8 @@ namespace Decuplr.Serialization.Binary.Analyzers {
 
         public IReadOnlyList<AnalyzedPartialMember> Declarations => DeclarationList;
 
+        public Location FirstLocation => Declarations[0].DeclaredLocation;
+
         public IEnumerable<AnalyzedAttribute> GetAttributes<T>(SymbolEqualityComparer? comparer = null) where T : Attribute {
             return Declarations.SelectMany(x => x.Attributes.SelectMany(x => x)).Where(x => x.Data.AttributeClass?.Equals(Analyzer.GetSymbol<T>(), comparer ?? SymbolEqualityComparer.Default) ?? false);
         }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 
 namespace Decuplr.Serialization.Binary.Internal {
     internal abstract class UnmanagedParserBase<T> : TypeParser<T> where T : unmanaged {
@@ -29,6 +30,13 @@ namespace Decuplr.Serialization.Binary.Internal {
             writtenBytes = fixedSize;
             WriteBytes(destination, value);
             return true;
+        }
+
+        public override int Serialize(T value, Span<byte> destination) {
+            if (destination.Length < fixedSize)
+                throw new ArgumentOutOfRangeException("Destination not large enough");
+            WriteBytes(destination, value);
+            return fixedSize;
         }
     }
 }

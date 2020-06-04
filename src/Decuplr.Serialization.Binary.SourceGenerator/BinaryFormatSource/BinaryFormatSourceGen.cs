@@ -5,14 +5,23 @@ using Decuplr.Serialization.Binary.SourceGenerator.Solutions;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.SourceGenerator.BinaryFormatSource {
-    internal class BinaryFormatSG : IParserGenerateSource {
+    internal class BinaryFormatSourceGen : IParserGenerateSource {
 
-        public GeneratedTypeParser GenerateParser(IEnumerable<AnalyzedType> types, SourceGeneratorContext context) {
+        public bool TryGenerateParser(IEnumerable<AnalyzedType> types, SourceGeneratorContext context, out IEnumerable<GeneratedParser>? parsers) {
+            parsers = null;
+
             var interestedType = types.Where(type => type.ContainsAttribute<BinaryFormatAttribute>());
-
+            var resultParsers = new List<GeneratedParser>();
+            foreach(var type in interestedType) {
+                if (!TryCreateParser(type, context, out var parser))
+                    return false;
+                resultParsers.Add(parser);
+            }
+            parsers = resultParsers;
+            return true;
         }
 
-        public bool TryCreateParser(AnalyzedType type, SourceGeneratorContext context, out GeneratedTypeParser parser) {
+        public bool TryCreateParser(AnalyzedType type, SourceGeneratorContext context, out GeneratedParser parser) {
             // First we check if the type's layout and dump the output of the analyzed format
             parser = default;
             var result = TypeFormatLayout.TryGetLayout(type, out var diagnostics, out var typeLayout);

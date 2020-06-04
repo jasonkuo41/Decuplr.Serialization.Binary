@@ -42,30 +42,48 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
             = new DiagnosticDescriptor($"{IdTitle}-006",
                 "Static type members will never be serialized",
                 "Static type member `{0}` will never be serialized, and should not be marked with any IndexAttribute and alike",
-                Category, DiagnosticSeverity.Warning, true);
+                Category, DiagnosticSeverity.Error, true);
+
+        public static DiagnosticDescriptor ConstNeverFormats { get; }
+            = new DiagnosticDescriptor($"{IdTitle}-007",
+                "Const members will never be serialized",
+                "Const member `{0}` will never be serialized, and should not be marked with any IndexAttribute and alike",
+                Category, DiagnosticSeverity.Error, true);
 
         public static DiagnosticDescriptor NotPropertyOrFieldNeverFormats { get; }
-            = new DiagnosticDescriptor($"{IdTitle}-007",
+            = new DiagnosticDescriptor($"{IdTitle}-008",
                 "Type members that are not property or fields will never be serialized",
                 "Type members `{0}` will never be serialized as it is not property or field",
                 Category, DiagnosticSeverity.Warning, true);
 
         public static DiagnosticDescriptor DelegatesNeverFormats { get; }
-            = new DiagnosticDescriptor($"{IdTitle}-008",
+            = new DiagnosticDescriptor($"{IdTitle}-009",
                 "Property or field returning delegates will not be correctly serialized",
                 "Property or field `{0}` returning delegates is not supported for serializing or formatting",
                 Category, DiagnosticSeverity.Error, true);
 
         public static DiagnosticDescriptor DelegatesNeverFormatsHint { get; }
-            = new DiagnosticDescriptor($"{IdTitle}-009",
+            = new DiagnosticDescriptor($"{IdTitle}-010",
                 "Property or field returning delegates will not be correctly serialized",
                $"Property or field `{{0}}` returning delegates is not supported for serializing or formatting, consider adding {nameof(IgnoreAttribute)} for clearity",
                 Category, DiagnosticSeverity.Info, true);
 
         public static DiagnosticDescriptor DuplicateIndexs { get; }
-            = new DiagnosticDescriptor($"{IdTitle}-010",
+            = new DiagnosticDescriptor($"{IdTitle}-011",
                 "Found duplicate indexs",
                 "Found duplicate index `{0}`, which is not allowed.",
+                Category, DiagnosticSeverity.Error, true);
+
+        public static DiagnosticDescriptor ShouldApplyConstant { get; }
+            = new DiagnosticDescriptor($"{IdTitle}-012",
+                "Property or field that cannot be modified during runtime should be marked with constant",
+                "Property or field `{0}` cannot be modified during runtime. It should be marked with constant to explicitly imply it's behaviour, if it should not be serialized, then it should be marked with [Ignore]",
+                Category, DiagnosticSeverity.Warning, true);
+
+        public static DiagnosticDescriptor PropertyCannotBeWriteOnly { get; }
+            = new DiagnosticDescriptor($"{IdTitle}-013",
+                "Property cannot be write only",
+                "Property `{0}` cannot be write only, it must contain get methods",
                 Category, DiagnosticSeverity.Error, true);
     }
 }

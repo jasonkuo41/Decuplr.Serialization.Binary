@@ -11,6 +11,11 @@ using Microsoft.CodeAnalysis;
 namespace Decuplr.Serialization.Binary.SourceGenerator {
     internal class BinaryPackerEntryPointGenerator {
 
+        private struct EmbeddedClass {
+            public string ClassSourceText { get; set; }
+            public string FunctionSourceText { get; set; }
+        }
+
         private enum ParserType {
             Sealed,
             ParserProvider,
@@ -32,25 +37,17 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             builder.AddAttribute(CommonAttributes.HideFromEditor);
             builder.AddNode($"internal class {generatedClassName} : {nameof(AssemblyPackerEntryPoint)} ", node => {
 
+                var namespaceName = "defaultNamespace";
                 // Put all the generated formatters class here
-                "Add the darn source code here!!!!!"
+                var finalParser = TransformParserToConsumable(parsers, namespaceName).ToList();
+                foreach (var parser in finalParser)
+                    node.AddPlain(parser.ClassSourceText);
 
                 // Define the entry function
                 node.AddNode($"public override void {nameof(AssemblyPackerEntryPoint.LoadContext)} ({nameof(INamespaceRoot)} root)", node => {
-                    foreach (var parser in TransformParserToConsumable(parsers)) {
-                        switch (parser.Type) {
-                            case ParserType.Sealed:
-                                // bool AddSealedParser<T>(TypeParser<T> parser);
-                                node.AddStatement($"defaultSpace.{nameof(IDefaultParserNamespace.AddParserProvider)}(new {parser.Parser.ParserClassName}(root))");
-                                break;
-                            case ParserType.GenericParserProvider:
-                                // bool AddGenericParserProvider<TParser>(Type genericType) where TParser : GenericParserProvider;
-                                node.AddStatement($"defaultSpace.{nameof(IDefaultParserNamespace.AddGenericParserProvider)}<{ TypeHere }>()");
-                                break;
-                        }
-
-                        // bool AddParserProvider<TProvider, TType>(TProvider provider) where TProvider : IParserProvider<TType>;
-                        node.AddStatement($"defaultSpace.{nameof(IDefaultParserNamespace.AddParserProvider)}<>()");
+                    node.AddStatement($"var {namespaceName} = root.DefaultNamespace");
+                    foreach (var parser in finalParser) {
+                        node.AddStatement(parser.FunctionSourceText);
                     }
                 });
             });
@@ -58,23 +55,26 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             return ($"{generatedClassName}.cs", builder.ToString());
         }
 
-        private static IEnumerable<(ParserType Type, GeneratedParser Parser)> TransformParserToConsumable(IEnumerable<GeneratedParser> parsers) {
+        private static IEnumerable<EmbeddedClass> TransformParserToConsumable(IEnumerable<GeneratedParser> parsers, string nsName) {
             foreach (var parser in parsers) {
                 var formatInfo = parser.TypeInfo.FormatInfo;
                 if (!formatInfo.HasValue)
                     continue;
                 // Check if it's a sealed parser
                 if (formatInfo.Value.IsSealed)
-                    yield return (ParserType.Sealed, parser);
+                    yield return new EmbeddedClass {
+                        ClassSourceText = parser.ParserSourceText,
+                        FunctionSourceText = $"{nsName}.{nameof(IDefaultParserNamespace.AddParserProvider)}(new {parser.ParserClassName}(root))"
+                    };
                 // Check if it's a generic type 
                 if (parser.TypeInfo.TypeSymbol.IsUnboundGenericType)
-                    yield return (ParserType.GenericParserProvider, WrapAsGenericParserProvider(parser));
-                yield return (ParserType.ParserProvider, WrapAsParserProvider(parser));
+                    yield return WrapAsGenericParserProvider(nsName, parser);
+                yield return WrapAsParserProvider(nsName, parser);
             }
         }
 
         // Returns the class name
-        private static GeneratedParser WrapAsGenericParserProvider(GeneratedParser parser) {
+        private static EmbeddedClass WrapAsGenericParserProvider(string nsName, GeneratedParser parser) {
             var parserProviderName = $"{parser.ParserClassName}_GenericProvider";
             var genParam = parser.TypeInfo.TypeSymbol.TypeParameters;
             var node = new CodeNodeBuilder();
@@ -101,10 +101,14 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 });
             });
 
-            return (parserProviderName, node.ToString());
+            return new EmbeddedClass {
+                ClassSourceText = node.ToString(),
+                // bool AddGenericParserProvider(Type parserProvider, Type genericType) where TParser : GenericParserProvider;
+                FunctionSourceText = $"{nsName}.{nameof(IDefaultParserNamespace.AddGenericParserProvider)}({parserProviderName}, typeof({parser.TypeInfo.TypeSymbol}).GetGenericTypeDefinition())"
+            };
         }
 
-        private static GeneratedParser WrapAsParserProvider(GeneratedParser parser) {
+        private static EmbeddedClass WrapAsParserProvider(string nsName, GeneratedParser parser) {
             var parserProviderName = $"{parser.ParserClassName}_Provider";
 
             var node = new CodeNodeBuilder();
@@ -127,7 +131,11 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 });
             });
 
-            return (parserProviderName, node.ToString());
+            return new EmbeddedClass {
+                ClassSourceText = node.ToString(),
+                // bool AddParserProvider<TProvider, TType>(TProvider provider) where TProvider : IParserProvider<TType>;
+                FunctionSourceText = $"{nsName}.AddPraserProvider<{parserProviderName}, {parser.TypeInfo.TypeSymbol}(new {parserProviderName}())"
+            };
         }
     }
 }

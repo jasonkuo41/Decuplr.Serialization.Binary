@@ -144,7 +144,8 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             return new GeneratedParser {
                 TypeInfo = TypeInfo,
                 ParserClassName = parserName,
-                ParserSourceText = node.ToString()
+                ParserSourceText = node.ToString(),
+                GeneratedSourceCodes = AdditionalCode
             };
         }
 

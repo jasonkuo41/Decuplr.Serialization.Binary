@@ -1,4 +1,7 @@
-﻿namespace Decuplr.Serialization.Analyzer.BinaryFormat {
+﻿using System.Collections.Generic;
+using Microsoft.CodeAnalysis;
+
+namespace Decuplr.Serialization.Analyzer.BinaryFormat {
     public class FormatAsAnnotation : TypeDecisionAnnotation {
         /// <summary>
         /// 
@@ -9,6 +12,8 @@
         /// The type to be formatted as
         /// </summary>
         public AnalyzedType FormatAs { get; }
+
+        public override IReadOnlyList<INamedTypeSymbol> RequestParserType => throw new System.NotImplementedException();
     }
 
 }

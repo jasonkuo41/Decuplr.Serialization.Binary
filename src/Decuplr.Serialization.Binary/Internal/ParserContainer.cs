@@ -119,16 +119,20 @@ namespace Decuplr.Serialization.Binary {
 
         public virtual bool AddParserProvider<TProvider, TType>(TProvider provider) where TProvider : IParserProvider<TType> => Parsers.TryAdd(typeof(TType), provider);
         public virtual bool AddSealedParser<T>(TypeParser<T> parser) => Parsers.TryAdd(typeof(T), parser);
-        public virtual bool AddGenericParserProvider<TParser>(Type genericType) where TParser : GenericParserProvider {
+        public virtual bool AddGenericParserProvider(Type parserType, Type genericType) {
             CheckGenericType(genericType);
-            return Parsers.TryAdd(genericType, typeof(TParser));
+            if (!typeof(GenericParserProvider).IsAssignableFrom(parserType))
+                throw new ArgumentException($"Generic parser type {parserType} must be derived from {nameof(GenericParserProvider)}.");
+            return Parsers.TryAdd(genericType, parserType);
         }
 
         public virtual void ReplaceParserProvider<TProvider, TType>(TProvider provider) where TProvider : IParserProvider<TType> => Parsers[typeof(TType)] = provider;
         public virtual void ReplaceSealedParser<T>(TypeParser<T> parser) => Parsers[typeof(T)] = parser;
-        public virtual void ReplaceGenericParserProvider<TParser>(Type genericType) where TParser : GenericParserProvider {
+        public virtual void ReplaceGenericParserProvider(Type parserType, Type genericType) {
             CheckGenericType(genericType);
-            Parsers[genericType] = typeof(TParser);
+            if (!typeof(GenericParserProvider).IsAssignableFrom(parserType))
+                throw new ArgumentException($"Generic parser type {parserType} must be derived from {nameof(GenericParserProvider)}.");
+            Parsers[genericType] = parserType;
         }
 
     }
