@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using Decuplr.Serialization.Binary;
 using Decuplr.Serialization.Binary.Analyzers;
@@ -37,14 +38,14 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
 
         public ITypeSymbol TypeSymbol { get; } // Cast to IFieldSymbol or IProperty symbol to capture this
 
-        public MemberFormatInfo(int index, AnalyzedMember member, ITypeSymbol typeSymbol, TypeDecisionAnnotation annotation, ConstantInfo? constantInfo, IReadOnlyList<Condition> formatConditions, IReadOnlyList<string> namespaces) {
+        public MemberFormatInfo(int index, AnalyzedMember member, IReadOnlyList<AnalyzedMember> members, ISet<IPropertySymbol> associated, IList<Diagnostic> diagnostics) {
             Index = index;
-            TypeSymbol = typeSymbol;
+            TypeSymbol = member.MemberSymbol is IPropertySymbol propSymbol ? propSymbol.Type : member.MemberSymbol is IFieldSymbol field ? field.Type : throw new ArgumentException("Serializable member can only be property or field");
             Analyzed = member;
             DecisionAnnotation = annotation;
-            ConstantInfo = constantInfo;
+            ConstantInfo = GetConstantInfo(member, associated, diagnostics);
             FormatConditions = formatConditions;
-            UsedNamespaces = namespaces;
+            UsedNamespaces = GetUsingNamespace(member, diagnostics);
         }
 
         public static IEnumerable<MemberFormatInfo> CreateFormatInfo(IReadOnlyList<AnalyzedMember> members, BinaryLayout layout, IList<Diagnostic> diagnostics) {
@@ -61,7 +62,7 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
                                       .Distinct();
 
             for (int i = 0; i < targetMembers.Count; i++) {
-                yield return CreateFormatInfo(i, targetMembers[i], members, new HashSet<IPropertySymbol>(asProp!), diagnostics);
+                yield return new MemberFormatInfo(i, targetMembers[i], members, new HashSet<IPropertySymbol>(asProp!), diagnostics);
             }
         }
 
@@ -97,12 +98,6 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
             return true;
         }
 
-        // Then we try to create it
-        private static MemberFormatInfo CreateFormatInfo(int index, AnalyzedMember member, IReadOnlyList<AnalyzedMember> referencedMember, ISet<IPropertySymbol> associated, IList<Diagnostic> diagnostics) {
-            ITypeSymbol typeSymbol;
-            ConstantInfo? isConstant = GetConstantInfo(member, associated, diagnostics);
-        }
-
         private static ConstantInfo? GetConstantInfo(AnalyzedMember member, ISet<IPropertySymbol> associated, IList<Diagnostic> diagnostics) {
             // (note : we don't allow const fields or static fields for verification or functions)
             if (!(member.MemberSymbol is IPropertySymbol propertySymbol))
@@ -121,6 +116,10 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
                 return null;
             }
             return null;
+        }
+
+        private static IReadOnlyList<string> GetUsingNamespace(AnalyzedMember member, IList<Diagnostic> diagnostics) {
+
         }
     }
 

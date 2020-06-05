@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 namespace Decuplr.Serialization.Binary.ConsoleTests {
     class Program {
         static void Main(string[] args) {
-            BinaryPacker.Shared.GetParser<int>().Serialize(123, new byte[]);
+            BinaryPacker.Shared.GetParser<int>().Serialize(123, new byte[32]);
             Console.WriteLine("Hello World!dd");
             //DebugContent.PrintDebugInfo();
         }
@@ -82,15 +82,6 @@ namespace Decuplr.Serialization.Binary.ConsoleTests {
         public FormatConditionAttribute(string condition) {
 
         }
-
-    }
-
-    [InlineData]
-    public class ObjectA {
-        public ObjectA (int length) {
-
-        }
-
 
     }
 
