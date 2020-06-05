@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Decuplr.Serialization.Analyzer.BinaryFormat;
 using Decuplr.Serialization.Binary.SourceGenerator.Solutions;
@@ -24,7 +25,17 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.BinaryFormatSource {
         public bool TryCreateParser(AnalyzedType type, SourceGeneratorContext context, out GeneratedParser parser) {
             // First we check if the type's layout and dump the output of the analyzed format
             parser = default;
-            var result = TypeFormatLayout.TryGetLayout(type, out var diagnostics, out var typeLayout);
+            var attribute = type.GetAttributes<BinaryFormatAttribute>().FirstOrDefault();
+            if (attribute.IsEmpty)
+                return false;
+            var formatInfo = new FormatInfo {
+                IsSealed = attribute.Data.GetNamedArgumentValue<bool>(nameof(BinaryFormatAttribute.Sealed)) ?? false,
+                NeverDeserialize = attribute.Data.GetNamedArgumentValue<bool>(nameof(BinaryFormatAttribute.NeverDeserialize)) ?? false,
+                RequestLayout = attribute.Data.GetNamedArgumentValue<BinaryLayout>(nameof(BinaryFormatAttribute.Layout)) ?? BinaryLayout.Auto,
+                // Because we aren't supporting it rn
+                TargetNamespaces = Array.Empty<string>()
+            };
+            var result = TypeFormatLayout.TryGetLayout(type, ref formatInfo, out var diagnostics, out var typeLayout);
             foreach (var diagnostic in diagnostics)
                 context.ReportDiagnostic(diagnostic);
             if (!result)

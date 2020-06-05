@@ -13,7 +13,6 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
     public class AnalyzedType {
 
         private readonly Compilation Compilation;
-        private readonly SourceCodeAnalyzer Analyzer;
         private readonly CancellationToken CancellationToken;
         private readonly List<AnalyzedPartialType> _declartions = new List<AnalyzedPartialType>();
 
@@ -26,6 +25,8 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
         /// The Symbol that represents the type
         /// </summary>
         public INamedTypeSymbol TypeSymbol { get; }
+
+        public SourceCodeAnalyzer Analyzer { get; }
 
         /// <summary>
         /// All the declarations found for this type, would be more then one if partial

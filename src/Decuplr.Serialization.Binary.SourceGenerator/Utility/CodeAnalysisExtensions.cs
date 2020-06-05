@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Text;
+using Decuplr.Serialization.Analyzer.BinaryFormat;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 
@@ -68,5 +69,30 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), "generated", code.DesiredFileName), code.SourceText);
             }
         }
+
+        public static T? GetNamedArgumentValue<T>(this AttributeData data, string propertyName) where T : struct {
+            var value = data.NamedArguments.FirstOrDefault(x => x.Key == propertyName).Value.Value;
+            if (value is null)
+                return default;
+            return (T)value;
+        }
+
+        public static T? GetNamedArgumentObject<T>(this AttributeData data, string propertyName) where T : class {
+            var value = data.NamedArguments.FirstOrDefault(x => x.Key == propertyName).Value.Value;
+            if (value is null)
+                return default;
+            return (T)value;
+        }
+
+        public static bool InheritFrom(this INamedTypeSymbol symbol, ITypeSymbol baseType) {
+            while (symbol.BaseType != null) {
+                if (symbol.BaseType.Equals(baseType, SymbolEqualityComparer.Default))
+                    return true;
+                symbol = symbol.BaseType;
+            }
+            return false;
+        }
+
+        public static bool InheritFrom<T>(this AnalyzedType type) => InheritFrom(type.TypeSymbol, type.Analyzer.GetSymbol<T>()!);
     }
 }

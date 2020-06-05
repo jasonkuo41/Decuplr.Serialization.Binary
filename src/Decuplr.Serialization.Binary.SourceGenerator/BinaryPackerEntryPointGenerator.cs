@@ -72,7 +72,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 //if (!formatInfo.HasValue)
                 //    continue;
                 // Check if it's a sealed parser
-                if (formatInfo.HasValue && formatInfo.Value.IsSealed)
+                if (formatInfo.IsSealed)
                     yield return new EmbeddedClass {
                         TypeInfo = parser.TypeInfo,
                         ClassSourceText = parser.ParserSourceText,

@@ -10,9 +10,13 @@ using Microsoft.CodeAnalysis;
 namespace Decuplr.Serialization.Analyzer.BinaryFormat {
 
     public struct FormatInfo {
-        public bool CanDeserialize { get; }
+        public bool NeverDeserialize { get; set; }
 
-        public bool IsSealed { get; }
+        public bool IsSealed { get; set; }
+
+        public BinaryLayout RequestLayout { get; set; }
+
+        public IReadOnlyList<string> TargetNamespaces { get; set; }
     }
 
     public class TypeFormatLayout {
@@ -25,35 +29,31 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
 
         public Location FirstLocation => Type.Declarations[0].DeclaredLocation;
 
-        public FormatInfo? FormatInfo { get; }
+        public FormatInfo FormatInfo { get; }
 
-        private TypeFormatLayout(AnalyzedType type, IReadOnlyList<MemberFormatInfo> member) {
+        private TypeFormatLayout(AnalyzedType type, FormatInfo formatInfo, IReadOnlyList<MemberFormatInfo> member) {
             Type = type;
             Member = member;
+            FormatInfo = formatInfo;
         }
 
-        public static bool TryGetLayout(AnalyzedType type, out IList<Diagnostic> diagnostics, out TypeFormatLayout? layout) {
+        public static bool TryGetLayout(AnalyzedType type, ref FormatInfo formatInfo, out IList<Diagnostic> diagnostics, out TypeFormatLayout? layout) {
             diagnostics = new List<Diagnostic>();
             layout = default;
 
-            // Check if type contains what layout
-            // TODO : hard code [BinaryFormat] [BinaryParser] and [InlineData] since there are the only three; also make them return format info
-            var formatAttribute = type.GetAttributes<BinaryFormatAttribute>().FirstOrDefault();
-            if (formatAttribute.IsEmpty)
-                return false;
-            // We get the user's claimed layout type
-            var statedLayout = formatAttribute.Data.GetNamedArgumentValue<BinaryLayout>(nameof(BinaryFormatAttribute.Layout)) ?? BinaryLayout.Auto;
             // We also get if we have index attributes
             var indexAttributes = type.Declarations.SelectMany(x => x.Members)
                 .Where(member => member.ContainsAttribute<IndexAttribute>())
                 .Select(member => (Member: member, Attribute: member.GetAttributes<IndexAttribute>().First()))
                 .ToList();
 
-            if (!TryEnsureLayout(type, ref statedLayout, formatAttribute, indexAttributes.Select(x => x.Attribute).ToList(), diagnostics))
+            var binaryLayout = formatInfo.RequestLayout;
+            if (!TryEnsureLayout(type, ref binaryLayout, indexAttributes.Select(x => x.Attribute).ToList(), diagnostics))
                 return false;
+            formatInfo.RequestLayout = binaryLayout;
 
             IReadOnlyList<AnalyzedMember> orderedMembers;
-            if (statedLayout == BinaryLayout.Explicit) {
+            if (formatInfo.RequestLayout == BinaryLayout.Explicit) {
                 // with explicit we use index attribute as our order guidance
                 var indexs = indexAttributes.Select(x => (Index: (int)x.Attribute.Data.ConstructorArguments[0].Value!, x.Member)).ToList();
                 {
@@ -73,11 +73,11 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
                 Debug.Assert(type.Declarations.Count == 1);
                 orderedMembers = type.Declarations[0].Members.Where(type => !type.ContainsAttribute<IgnoreAttribute>()).ToList();
             }
-            layout = new TypeFormatLayout(type, MemberFormatInfo.CreateFormatInfo(orderedMembers, statedLayout, diagnostics).ToList());
+            layout = new TypeFormatLayout(type, formatInfo, MemberFormatInfo.CreateFormatInfo(orderedMembers, binaryLayout, diagnostics).ToList());
             return true;
         }
 
-        private static bool TryEnsureLayout(AnalyzedType type, ref BinaryLayout statedLayout, AnalyzedAttribute formatAttribute, IReadOnlyList<AnalyzedAttribute> indexAttributes, IList<Diagnostic> diagnostics) {
+        private static bool TryEnsureLayout(AnalyzedType type, ref BinaryLayout statedLayout, IReadOnlyList<AnalyzedAttribute> indexAttributes, IList<Diagnostic> diagnostics) {
 
             // If it's auto or sequential, we will now try to locate if there's Index set of our member.
             // 
@@ -103,7 +103,7 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
             // If it's explicit and we see NeverFormat, we hint the user that we don't really need that
             else {
                 if (indexAttributes.Count == 0) {
-                    diagnostics.Add(Diagnostic.Create(DiagnosticHelper.ExplicitNoIndex, formatAttribute.Location));
+                    diagnostics.Add(Diagnostic.Create(DiagnosticHelper.ExplicitNoIndex, type.Declarations[0].DeclaredLocation));
                     return false;
                 }
                 // If we found NeverFormat, just softly hint 
