@@ -73,9 +73,7 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
                 Debug.Assert(type.Declarations.Count == 1);
                 orderedMembers = type.Declarations[0].Members.Where(type => !type.ContainsAttribute<IgnoreAttribute>()).ToList();
             }
-            if (!MemberFormatInfo.TryCreateFormatInfo(orderedMembers, statedLayout, diagnostics, out var formatInfos))
-                return false;
-            layout = new TypeFormatLayout(type, formatInfos.ToList());
+            layout = new TypeFormatLayout(type, MemberFormatInfo.CreateFormatInfo(orderedMembers, statedLayout, diagnostics).ToList());
             return true;
         }
 

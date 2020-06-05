@@ -5,8 +5,8 @@ namespace Decuplr.Serialization.Binary.Annotations {
     /// Provides a parser with the annotated type
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
-    public sealed class ParserAttribute : Attribute {
-        public ParserAttribute(Type type) {
+    public sealed class BinaryParserAttribute : Attribute {
+        public BinaryParserAttribute(Type type) {
             Type = type;
         }
 

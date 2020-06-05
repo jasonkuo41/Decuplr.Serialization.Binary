@@ -13,7 +13,7 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
         /// </summary>
         public AnalyzedType FormatAs { get; }
 
-        public override IReadOnlyList<INamedTypeSymbol> RequestParserType => throw new System.NotImplementedException();
+        public override IReadOnlyList<ITypeSymbol> RequestParserType => throw new System.NotImplementedException();
     }
 
 }

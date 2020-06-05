@@ -35,8 +35,12 @@ namespace Decuplr.Serialization.Binary.Analyzers {
                 var typeSymbol = model.GetDeclaredSymbol(syntax, ct);
                 if (typeSymbol is null)
                     continue;
-                if (!types.TryGetValue(typeSymbol, out var analyzed))
-                    yield return new AnalyzedType(analyzer, syntax, typeSymbol, compilation, model, ct);
+                if (!types.TryGetValue(typeSymbol, out var analyzed)) {
+                    var analyzedType = new AnalyzedType(analyzer, syntax, typeSymbol, compilation, model, ct);
+                    types.Add(typeSymbol, analyzedType);
+                    yield return analyzedType;
+                    continue;
+                }
 
                 analyzed.AddSyntaxUnsafe(syntax, model);
             }

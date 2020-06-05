@@ -4,6 +4,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using Decuplr.Serialization.Analyzer.BinaryFormat;
+using Decuplr.Serialization.Binary.Annotations.Internal;
 using Decuplr.Serialization.Binary.Internal;
 using Decuplr.Serialization.Binary.Namespaces;
 using Microsoft.CodeAnalysis;
@@ -12,6 +14,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
     internal class BinaryPackerEntryPointGenerator {
 
         private struct EmbeddedClass {
+            public TypeFormatLayout TypeInfo { get; set; }
             public string ClassSourceText { get; set; }
             public string FunctionSourceText { get; set; }
         }
@@ -23,25 +26,33 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
         }
 
         public static GeneratedSourceCode CreateSourceText(Compilation compilation, IEnumerable<GeneratedParser> parsers) {
-            var generatedClassName = compilation.Assembly.GetDefaultAssemblyEntryClass();
+            var generatedClassName = compilation.GetDefaultAssemblyEntryClass();
 
             var builder = new CodeSnippetBuilder("Decuplr.Serialization.Binary.Internal");
             builder.Using("System");
             builder.Using("System.Threading");
             builder.Using("System.ComponentModel");
             builder.Using("System.CodeDom.Compiler");
+            builder.Using("Decuplr.Serialization.Binary.Internal");
+            builder.Using("Decuplr.Serialization.Binary.Namespaces");
 
-            builder.AddAssemblyAttribute($"[assembly: {nameof(BinaryPackerAssemblyEntryPointAttribute)}(typeof({generatedClassName}))]");
+            // If we are default parser we don't need this
+            if (!compilation.IsDefaultAssembly())
+                builder.AddAssemblyAttribute($"[assembly: {nameof(BinaryPackerAssemblyEntryPointAttribute)}(typeof({generatedClassName}))]");
 
             builder.AddAttribute(CommonAttributes.GeneratedCodeAttribute);
             builder.AddAttribute(CommonAttributes.HideFromEditor);
-            builder.AddNode($"internal class {generatedClassName} : {nameof(AssemblyPackerEntryPoint)} ", node => {
+            builder.AddNode($"internal partial class {generatedClassName} : {nameof(AssemblyPackerEntryPoint)} ", node => {
 
                 var namespaceName = "defaultNamespace";
                 // Put all the generated formatters class here
                 var finalParser = TransformParserToConsumable(parsers, namespaceName).ToList();
-                foreach (var parser in finalParser)
+                foreach (var parser in finalParser) {
+                    node.AddPlain("");
+                    node.AddPlain($"#region {parser.TypeInfo.TypeSymbol.Name}");
                     node.AddPlain(parser.ClassSourceText);
+                    node.AddPlain($"#endregion");
+                }
 
                 // Define the entry function
                 node.AddNode($"public override void {nameof(AssemblyPackerEntryPoint.LoadContext)} ({nameof(INamespaceRoot)} root)", node => {
@@ -52,17 +63,18 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 });
             });
 
-            return ($"{generatedClassName}.cs", builder.ToString());
+            return ($"{generatedClassName}.Generated.cs", builder.ToString());
         }
 
         private static IEnumerable<EmbeddedClass> TransformParserToConsumable(IEnumerable<GeneratedParser> parsers, string nsName) {
             foreach (var parser in parsers) {
                 var formatInfo = parser.TypeInfo.FormatInfo;
-                if (!formatInfo.HasValue)
-                    continue;
+                //if (!formatInfo.HasValue)
+                //    continue;
                 // Check if it's a sealed parser
-                if (formatInfo.Value.IsSealed)
+                if (formatInfo.HasValue && formatInfo.Value.IsSealed)
                     yield return new EmbeddedClass {
+                        TypeInfo = parser.TypeInfo,
                         ClassSourceText = parser.ParserSourceText,
                         FunctionSourceText = $"{nsName}.{nameof(IDefaultParserNamespace.AddParserProvider)}(new {parser.ParserClassName}(root))"
                     };
@@ -102,6 +114,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             });
 
             return new EmbeddedClass {
+                TypeInfo = parser.TypeInfo,
                 ClassSourceText = node.ToString(),
                 // bool AddGenericParserProvider(Type parserProvider, Type genericType) where TParser : GenericParserProvider;
                 FunctionSourceText = $"{nsName}.{nameof(IDefaultParserNamespace.AddGenericParserProvider)}({parserProviderName}, typeof({parser.TypeInfo.TypeSymbol}).GetGenericTypeDefinition())"
@@ -132,9 +145,10 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             });
 
             return new EmbeddedClass {
+                TypeInfo = parser.TypeInfo,
                 ClassSourceText = node.ToString(),
                 // bool AddParserProvider<TProvider, TType>(TProvider provider) where TProvider : IParserProvider<TType>;
-                FunctionSourceText = $"{nsName}.AddPraserProvider<{parserProviderName}, {parser.TypeInfo.TypeSymbol}(new {parserProviderName}())"
+                FunctionSourceText = $"{nsName}.AddParserProvider<{parserProviderName}, {parser.TypeInfo.TypeSymbol}>(new {parserProviderName}())"
             };
         }
     }

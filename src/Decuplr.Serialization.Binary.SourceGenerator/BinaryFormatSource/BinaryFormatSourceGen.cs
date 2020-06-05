@@ -45,7 +45,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.BinaryFormatSource {
                 return false;
             }
             // We pump a constructor for our sweet partial class here
-            parser = new TypeParserGenerator(typeLayout, new PartialTypeDeserialize(typeLayout), new PartialTypeSerialize(typeLayout)).GetFormatterCode();
+            parser = new TypeParserGenerator(typeLayout, new PartialTypeDeserialize(context.Compilation, typeLayout), new PartialTypeSerialize(context.Compilation, typeLayout)).GetFormatterCode();
             return true;
         }
     }

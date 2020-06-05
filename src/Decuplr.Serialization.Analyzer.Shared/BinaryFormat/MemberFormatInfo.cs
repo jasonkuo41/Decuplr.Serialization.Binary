@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using Decuplr.Serialization.Binary;
 using Decuplr.Serialization.Binary.Analyzers;
+using Decuplr.Serialization.Binary.Annotations;
 using Decuplr.Serialization.Binary.Annotations.Namespaces;
 using Microsoft.CodeAnalysis;
 
@@ -42,24 +44,24 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
             Index = index;
             TypeSymbol = member.MemberSymbol is IPropertySymbol propSymbol ? propSymbol.Type : member.MemberSymbol is IFieldSymbol field ? field.Type : throw new ArgumentException("Serializable member can only be property or field");
             Analyzed = member;
-            DecisionAnnotation = annotation;
+            DecisionAnnotation = GetDecisionAnnotation(member, TypeSymbol, diagnostics);
             ConstantInfo = GetConstantInfo(member, associated, diagnostics);
-            FormatConditions = formatConditions;
+            FormatConditions = GetFormatConditions(member, diagnostics);
             UsedNamespaces = GetUsingNamespace(member, diagnostics);
         }
 
         public static IEnumerable<MemberFormatInfo> CreateFormatInfo(IReadOnlyList<AnalyzedMember> members, BinaryLayout layout, IList<Diagnostic> diagnostics) {
+            // we capture all associated propertysymbol so we can make sure the "constant"cy of a member is
+            var asProp = members.Select(member => member.MemberSymbol is IFieldSymbol symbol ? symbol.AssociatedSymbol as IPropertySymbol : null)
+                                .Where(x => x != null)
+                                .Distinct();
+
             // We elect members we actually want to serialize
             var targetMembers = new List<AnalyzedMember>();
             foreach (var member in members) {
                 if (ShouldCreateFormatInfo(member, layout, diagnostics))
                     targetMembers.Add(member);
             }
-
-            // we capture all associated propertysymbol so we can make sure the "constant"cy of a member is
-            var asProp = targetMembers.Select(member => member.MemberSymbol is IFieldSymbol symbol ? symbol.AssociatedSymbol as IPropertySymbol : null)
-                                      .Where(x => x != null)
-                                      .Distinct();
 
             for (int i = 0; i < targetMembers.Count; i++) {
                 yield return new MemberFormatInfo(i, targetMembers[i], members, new HashSet<IPropertySymbol>(asProp!), diagnostics);
@@ -107,8 +109,9 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
                 return null;
             if (!member.ContainsAttribute<ConstantAttribute>()) {
                 diagnostics.Add(Diagnostic.Create(DiagnosticHelper.ShouldApplyConstant, member.FirstLocation, member.MemberSymbol.Name));
+                var containsConstant = member.ContainsAttribute<ConstantAttribute>();
                 return new ConstantInfo {
-                    NeverVerify = ((bool?)member.GetAttributes<ConstantAttribute>().First().Data.NamedArguments.First(x => x.Key == nameof(ConstantAttribute.NeverVerify)).Value.Value) ?? false
+                    NeverVerify = containsConstant && (((bool?)member.GetAttributes<ConstantAttribute>().First().Data.NamedArguments.First(x => x.Key == nameof(ConstantAttribute.NeverVerify)).Value.Value) ?? false)
                 };
             }
             if (propertySymbol.IsWriteOnly) {
@@ -119,7 +122,34 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
         }
 
         private static IReadOnlyList<string> GetUsingNamespace(AnalyzedMember member, IList<Diagnostic> diagnostics) {
+            var analyzer = member.Analyzer;
+            var useNamespaceSymbol = analyzer.GetSymbol<UseNamespaceAttribute>();
+            var namespaces = new List<string>();
+            // checks for mutliple attribute layout
+            // TODO : Make ApplyNamespace Usable
+            var foundNamespaceLocation = false;
+            foreach(var partial in member.Declarations) {
+                foreach (var attribute in partial.Attributes.SelectMany(x => x)) {
+                    if (foundNamespaceLocation)
+                        diagnostics.Add(Diagnostic.Create(DiagnosticHelper.CannotApplyNamespacePartial, attribute.Location, attribute.Data.AttributeClass?.Name));
+                    if (attribute.Data.AttributeClass?.Equals(useNamespaceSymbol, SymbolEqualityComparer.Default) ?? false) {
+                        namespaces.Add((string)attribute.Data.ConstructorArguments[0].Value!);
+                    }
+                }
+                // We check how many namespaces we have added
+                if (namespaces.Count > 0)
+                    foundNamespaceLocation = true;
+            }
+            return namespaces;
+        }
 
+        private static IReadOnlyList<Condition> GetFormatConditions(AnalyzedMember member, IList<Diagnostic> diagnostics) {
+            // TODO: Make this a feature
+            return Array.Empty<Condition>();
+        }
+
+        private static TypeDecisionAnnotation GetDecisionAnnotation(AnalyzedMember member, ITypeSymbol returnSymbol, IList<Diagnostic> diagnostics) {
+            return new DefaultTypeDecisionAnnotation(returnSymbol);
         }
     }
 

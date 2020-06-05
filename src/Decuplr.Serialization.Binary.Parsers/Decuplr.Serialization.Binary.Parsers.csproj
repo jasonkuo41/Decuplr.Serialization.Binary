@@ -2,7 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <LangVersion>latest</LangVersion>
+	  
+	  <LangVersion>preview</LangVersion>
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>Debug;Release;NoAutogen</Configurations>
   </PropertyGroup>
@@ -13,7 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Decuplr.Serialization.Binary.Shared\Decuplr.Serialization.Binary.Shared.csproj" />
-    <ProjectReference Include="..\src\Decuplr.Serialization.Binary.SourceGenerator\Decuplr.Serialization.Binary.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Decuplr.Serialization.Binary.SourceGenerator\Decuplr.Serialization.Binary.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

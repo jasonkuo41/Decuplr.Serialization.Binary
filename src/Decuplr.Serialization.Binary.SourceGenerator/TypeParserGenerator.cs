@@ -27,24 +27,27 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
         }
 
         private void AddConstructor(CodeNodeBuilder node, string? outName = null) {
-            var isTryPattern = string.IsNullOrEmpty(outName);
+            var isTryPattern = !string.IsNullOrEmpty(outName);
             if (isTryPattern)
                 node.AddStatement($"{outName} = false");
             node.AddStatement("fixedSize = 0");
             for (var i = 0; i < TypeInfo.Member.Count; ++i) {
                 var annotation = TypeInfo.Member[i].DecisionAnnotation;
                 var currentMember = TypeInfo.Member[i];
-                var currentNamespace = TypeInfo.Member[i].UsedNamespaces;
-                node.AddStatement($"var parserSpace_{i} = parser.WithNamespace({string.Join(",", currentNamespace)})");
+                var usedNamespaces = TypeInfo.Member[i].UsedNamespaces;
+                if (usedNamespaces.Count != 0)
+                    node.AddStatement($"var parserSpace_{i} = parser.WithNamespace({string.Join(",", usedNamespaces)})");
+                else
+                    node.AddStatement($"var parserSpace_{i} = parser");
                 for (var j = 0; j < annotation.RequestParserType.Count; ++j) {
 
                     if (isTryPattern) {
-                        node.AddNode($"if (!parserSpace_{i}.TryGetParser(out ParserCollections.parser_{i}_{j})", node => {
+                        node.AddNode($"if (!parserSpace_{i}.TryGetParser(out ParserCollections.Parser_{i}_{j}))", node => {
                             node.AddStatement("return");
                         });
                     }
                     else {
-                        node.AddStatement($"ParserCollections.parser_{i}_{j} = parserSpace_{i}.GetParser<{annotation.RequestParserType[j]}>()");
+                        node.AddStatement($"ParserCollections.Parser_{i}_{j} = parserSpace_{i}.GetParser<{annotation.RequestParserType[j]}>()");
                     }
 
                     // force capture of i
@@ -55,7 +58,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                         // surely there is optimization we could do to improve this
                         // for example check for the largest fixedsize in the group
                         // but we'll ignore that for now
-                        node.AddStatement($"fixedSize += {currentMember.ConstantLength?.ToString() ?? (annotation.RequestParserType.Count == 1 ? $"parser_{captureI}_{0}.FixedSize" : "null")} ");
+                        node.AddStatement($"fixedSize += {currentMember.ConstantLength?.ToString() ?? (annotation.RequestParserType.Count == 1 ? $"ParserCollections.Parser_{captureI}_{0}.FixedSize" : "null")} ");
                     });
                 }
             }
@@ -73,7 +76,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 for (var i = 0; i < TypeInfo.Member.Count; ++i) {
                     var annotation = TypeInfo.Member[i].DecisionAnnotation;
                     for (var j = 0; j < annotation.RequestParserType.Count; ++j) {
-                        node.AddPlain($"public TypeParser<{annotation.RequestParserType[j]}> Parser_{i}_{j} {{ get; set; }}");
+                        node.AddPlain($"public TypeParser<{annotation.RequestParserType[j]}> Parser_{i}_{j};");
                     }
                 }
 

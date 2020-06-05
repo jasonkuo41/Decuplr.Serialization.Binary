@@ -1,5 +1,8 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using Decuplr.Serialization.Analyzer.BinaryFormat;
+using Decuplr.Serialization.Binary.Annotations.Internal;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.SourceGenerator {
@@ -22,7 +25,19 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
 
         public static string GetDefaultParserCollectionName(this TypeFormatLayout layout) => $"{layout.TypeSymbol.ToString().Replace('.', '_') }_TypeParserArgs";
 
-        public static string GetDefaultAssemblyEntryClass(this IAssemblySymbol assemblySymbol) => $"AssemblyFormatProvider_{assemblySymbol.ToString().Replace('.', '_')}";
+        public static string GetDefaultAssemblyEntryClass(this Compilation compilation) {
+            var assembly = compilation.Assembly;
+            var symbol = compilation.GetTypeByMetadataName(typeof(DefaultParserAssemblyAttribute).FullName);
+            var data = assembly.GetAttributes().FirstOrDefault(x => x.AttributeClass?.Equals(symbol, SymbolEqualityComparer.Default) ?? false);
+            if (data is null)
+                return $"AssemblyFormatProvider_{assembly.Name.ToString().Replace('.', '_')}";
+            return $"{((ITypeSymbol)data.ConstructorArguments[0].Value!).Name}";
+        }
+
+        public static bool IsDefaultAssembly(this Compilation compilation) {
+            var symbol = compilation.GetTypeByMetadataName(typeof(DefaultParserAssemblyAttribute).FullName)!;
+            return compilation.Assembly.GetAttributes().Any(x => x.AttributeClass?.Equals(symbol, SymbolEqualityComparer.Default) ?? false);
+        }
     }
 
 }

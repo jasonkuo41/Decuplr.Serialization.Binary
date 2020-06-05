@@ -13,7 +13,7 @@ namespace Decuplr.Serialization.Binary.Analyzers
                     return new AnalyzedAttribute {
                         // This get's the AttributeData from the type
                         // TODO : Please make sure this works!
-                        Data = typeAttributes.Where(x => ho.GetReference().Equals(x.ApplicationSyntaxReference)).First(),
+                        Data = typeAttributes.Where(x => ho.GetReference().Span.Equals(x.ApplicationSyntaxReference?.Span)).First(),
                         Location = ho.GetLocation()
                     };
                 }).ToList();
@@ -21,7 +21,7 @@ namespace Decuplr.Serialization.Binary.Analyzers
         }
 
         public static T? GetNamedArgumentValue<T>(this AttributeData data, string propertyName) where T : struct {
-            var value = data.NamedArguments.First(x => x.Key == propertyName).Value.Value;
+            var value = data.NamedArguments.FirstOrDefault(x => x.Key == propertyName).Value.Value;
             if (value is null)
                 return default;
             return (T)value;

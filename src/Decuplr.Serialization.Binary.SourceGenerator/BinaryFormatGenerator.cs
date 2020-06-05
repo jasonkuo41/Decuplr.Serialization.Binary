@@ -1,5 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using Decuplr.Serialization.Binary.Analyzers;
 using Decuplr.Serialization.Binary.SourceGenerator.BinaryFormatSource;
 using Microsoft.CodeAnalysis;
@@ -28,31 +31,38 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
         }
 
         public void Execute(SourceGeneratorContext context) {
-            if (!(context.SyntaxReceiver is CandidateSyntaxReceiver receiver))
-                return;
-            // We also need to dump struct output (markdown file) for output
-            IParserGenerateSource[]? generationSources = new IParserGenerateSource[] {
+            try {
+                if (!(context.SyntaxReceiver is CandidateSyntaxReceiver receiver))
+                    return;
+                // We also need to dump struct output (markdown file) for output
+                IParserGenerateSource[]? generationSources = new IParserGenerateSource[] {
                     // Responsible for [BinaryFormat] tags
                     new BinaryFormatSourceGen(),
-                // Responsible for [BinaryParser] tags
-                //new BinaryParserSG()
-            };
+                    // Responsible for [BinaryParser] tags
+                    //new BinaryParserSG()
+                };
 
-            IEnumerable<Analyzer.BinaryFormat.AnalyzedType>? types = SourceCodeAnalyzer.AnalyzeTypeSyntax(receiver.CandidateTypes, context.Compilation, context.CancellationToken);
+                IEnumerable<Analyzer.BinaryFormat.AnalyzedType>? types = SourceCodeAnalyzer.AnalyzeTypeSyntax(receiver.CandidateTypes, context.Compilation, context.CancellationToken);
 
-            List<GeneratedParser>? generatedResults = new List<GeneratedParser>();
+                List<GeneratedParser>? generatedResults = new List<GeneratedParser>();
 
-            // We loop through all the internal generators
-            foreach (IParserGenerateSource? source in generationSources) {
-                // If anything fails, we would halt compilation immediately so we don't output junk
-                if (!source.TryGenerateParser(types, context, out IEnumerable<GeneratedParser>? parsers))
-                    return;
-                generatedResults.AddRange(parsers);
+                // We loop through all the internal generators
+                foreach (IParserGenerateSource? source in generationSources) {
+                    // If anything fails, we would halt compilation immediately so we don't output junk
+                    if (!source.TryGenerateParser(types, context, out IEnumerable<GeneratedParser>? parsers))
+                        return;
+                    generatedResults.AddRange(parsers);
+                }
+
+                foreach (GeneratedSourceCode additionalFiles in generatedResults.SelectMany(x => x.GeneratedSourceCodes))
+                    context.AddSource(additionalFiles, Encoding.UTF8, true);
+                //if (generatedResults.Count != 0)
+                    context.AddSource(BinaryPackerEntryPointGenerator.CreateSourceText(context.Compilation, generatedResults), Encoding.UTF8, true);
             }
-
-            foreach (GeneratedSourceCode additionalFiles in generatedResults.SelectMany(x => x.GeneratedSourceCodes))
-                context.AddSource(additionalFiles);
-            context.AddSource(BinaryPackerEntryPointGenerator.CreateSourceText(context.Compilation, generatedResults));
+            catch (Exception e) {
+                File.WriteAllText("error.txt", $"{e} {e.Message} {e.StackTrace}");
+                context.ReportDiagnostic(Diagnostic.Create("SGExcept-01", "Compile Error", $"{e} {e.Message} {e.StackTrace}", DiagnosticSeverity.Error, DiagnosticSeverity.Error, true, 4));
+            }
         }
 
     }

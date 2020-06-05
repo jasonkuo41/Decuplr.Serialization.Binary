@@ -85,5 +85,11 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
                 "Property cannot be write only",
                 "Property `{0}` cannot be write only, it must contain get methods",
                 Category, DiagnosticSeverity.Error, true);
+
+        public static DiagnosticDescriptor CannotApplyNamespacePartial { get; }
+            = new DiagnosticDescriptor($"{IdTitle}-014",
+                "Cannot apply namespaces across different declaring location",
+                "Cannot apply namespace `{0}` because other namespace apply were declared else where, making it impossible to determinate order",
+                Category, DiagnosticSeverity.Error, true);
     }
 }

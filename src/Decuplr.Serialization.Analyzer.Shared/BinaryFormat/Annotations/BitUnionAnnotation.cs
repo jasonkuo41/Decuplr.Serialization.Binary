@@ -8,7 +8,7 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
 
         public int[][] UnionLayout { get; }
 
-        public override IReadOnlyList<INamedTypeSymbol> RequestParserType => throw new System.NotImplementedException();
+        public override IReadOnlyList<ITypeSymbol> RequestParserType => throw new System.NotImplementedException();
     }
 
 }

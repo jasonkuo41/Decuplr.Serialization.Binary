@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Drawing;
-using System.Runtime.CompilerServices;
+using Decuplr.Serialization.Binary.Annotations.Namespaces;
 
 namespace Decuplr.Serialization.Binary.ConsoleTests {
-    class Program {
-        static void Main(string[] args) {
-            BinaryPacker.Shared.GetParser<int>().Serialize(123, new byte[32]);
+    internal class Program {
+        private static void Main(string[] args) {
+            byte[] target = new byte[12];
+            BinaryPacker.Shared.GetParser<int>().Serialize(123, target);
             Console.WriteLine("Hello World!dd");
             //DebugContent.PrintDebugInfo();
         }
@@ -28,35 +27,13 @@ namespace Decuplr.Serialization.Binary.ConsoleTests {
         [Endianess(ByteOrder.BigEndian)]
         public FoamStruct InfoData { get; }
 
-        [Index(1, FixedSize = 3)]
+        [Index(1)]
         public List<byte> FormatData { get; }
 
         [Index(2)]
         public (bool IsValid, bool IsCurrent, bool IsCompressed) ConditionGroup { get; }
 
         public int Test => 3;
-
-        /* Reserved concept
-        [Index(3)]
-        [TypeProvider("Index[2].IsCompressed ? 0 : 1", typeof(ClassB), typeof(ClassC))]
-        public BaseA NextData { get; }
-
-        internal static Type FormatCondition([IndexSelect(2, Union = 3)] bool isCompressed) {
-            if (isCompressed)
-                return typeof(ClassB);
-            return typeof(ClassC);
-        }
-        */
-
-        /*
-        [Index(4)]
-        [IgnoreIf(3, Union = 3)]
-        public int CompressionSize { get; }
-
-        [Index(5)]
-        [LengthProvider(Index = 3)]
-        public ReadOnlySpan<byte> RemainContent { get; }
-        */
 
         [BinaryFormat]
         public partial class NestedClassTarget {

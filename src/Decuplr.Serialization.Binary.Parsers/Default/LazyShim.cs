@@ -17,8 +17,8 @@ namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
     ///         (1) travel through every point to get the length info and sum together, which might be counter productive
     ///         (2) if we have a bug in our code, that would could be a disater as we misallign everything
     ///  
-    [Parser(typeof(Lazy<>))]
-    [ParserNamespace("Default")]
+    [BinaryParser(typeof(Lazy<>))]
+    [BinaryParserNamespace("Default")]
     internal class LazyShim<T> : ITypeConvertible<Lazy<T>> {
 
         public LazyShim(Lazy<T> lazy) {
