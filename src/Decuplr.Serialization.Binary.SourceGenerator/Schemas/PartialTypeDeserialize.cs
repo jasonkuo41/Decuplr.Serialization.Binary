@@ -4,10 +4,10 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Decuplr.Serialization.Analyzer.BinaryFormat;
-using Decuplr.Serialization.Binary.SourceGenerator.BinaryFormatSource;
+using Decuplr.Serialization.Binary.SourceGenerator.BinaryFormats;
 using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Serialization.Binary.SourceGenerator {
+namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
 
     internal class PartialTypeDeserialize : IDeserializeSolution {
 

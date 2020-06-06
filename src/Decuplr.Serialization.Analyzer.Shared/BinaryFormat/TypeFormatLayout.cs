@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Analyzer.BinaryFormat {
 
-    public struct FormatInfo {
+    public struct SchemaPrecusor {
         public bool NeverDeserialize { get; set; }
 
         public bool IsSealed { get; set; }
@@ -29,15 +29,15 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
 
         public Location FirstLocation => Type.Declarations[0].DeclaredLocation;
 
-        public FormatInfo FormatInfo { get; }
+        public SchemaPrecusor FormatInfo { get; }
 
-        private TypeFormatLayout(AnalyzedType type, FormatInfo formatInfo, IReadOnlyList<MemberFormatInfo> member) {
+        private TypeFormatLayout(AnalyzedType type, SchemaPrecusor formatInfo, IReadOnlyList<MemberFormatInfo> member) {
             Type = type;
             Member = member;
             FormatInfo = formatInfo;
         }
 
-        public static bool TryGetLayout(AnalyzedType type, ref FormatInfo formatInfo, out IList<Diagnostic> diagnostics, out TypeFormatLayout? layout) {
+        public static bool TryGetLayout(AnalyzedType type, ref SchemaPrecusor precusor, out IList<Diagnostic> diagnostics, out TypeFormatLayout? layout) {
             diagnostics = new List<Diagnostic>();
             layout = default;
 
@@ -47,13 +47,13 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
                 .Select(member => (Member: member, Attribute: member.GetAttributes<IndexAttribute>().First()))
                 .ToList();
 
-            var binaryLayout = formatInfo.RequestLayout;
+            var binaryLayout = precusor.RequestLayout;
             if (!TryEnsureLayout(type, ref binaryLayout, indexAttributes.Select(x => x.Attribute).ToList(), diagnostics))
                 return false;
-            formatInfo.RequestLayout = binaryLayout;
+            precusor.RequestLayout = binaryLayout;
 
             IReadOnlyList<AnalyzedMember> orderedMembers;
-            if (formatInfo.RequestLayout == BinaryLayout.Explicit) {
+            if (precusor.RequestLayout == BinaryLayout.Explicit) {
                 // with explicit we use index attribute as our order guidance
                 var indexs = indexAttributes.Select(x => (Index: (int)x.Attribute.Data.ConstructorArguments[0].Value!, x.Member)).ToList();
                 {
@@ -73,7 +73,7 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
                 Debug.Assert(type.Declarations.Count == 1);
                 orderedMembers = type.Declarations[0].Members.Where(type => !type.ContainsAttribute<IgnoreAttribute>()).ToList();
             }
-            layout = new TypeFormatLayout(type, formatInfo, MemberFormatInfo.CreateFormatInfo(orderedMembers, binaryLayout, diagnostics).ToList());
+            layout = new TypeFormatLayout(type, precusor, MemberFormatInfo.CreateFormatInfo(orderedMembers, binaryLayout, diagnostics).ToList());
             return true;
         }
 

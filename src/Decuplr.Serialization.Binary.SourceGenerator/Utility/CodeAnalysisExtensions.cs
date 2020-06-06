@@ -93,6 +93,12 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             return false;
         }
 
+        public static bool Implements(this INamedTypeSymbol symbol, INamedTypeSymbol interfaceType) {
+            return symbol.AllInterfaces.Any(x => x.Equals(interfaceType, SymbolEqualityComparer.Default));
+        }
+
         public static bool InheritFrom<T>(this AnalyzedType type) => InheritFrom(type.TypeSymbol, type.Analyzer.GetSymbol<T>()!);
+        public static bool Implements<T>(this AnalyzedType type) => Implements(type.TypeSymbol, type.Analyzer.GetSymbol<T>()!);
+        public static bool Implements(this AnalyzedType type, Type interfaceType) => Implements(type.TypeSymbol, type.Analyzer.GetSymbol(interfaceType)!);
     }
 }

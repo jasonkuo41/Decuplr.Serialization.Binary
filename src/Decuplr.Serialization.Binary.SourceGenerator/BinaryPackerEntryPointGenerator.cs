@@ -1,34 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading;
-using Decuplr.Serialization.Analyzer.BinaryFormat;
-using Decuplr.Serialization.Binary.Annotations.Internal;
+﻿using System.Collections.Generic;
 using Decuplr.Serialization.Binary.Internal;
 using Decuplr.Serialization.Binary.Namespaces;
+using Decuplr.Serialization.Binary.SourceGenerator.Schemas;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.SourceGenerator {
+
     internal class BinaryPackerEntryPointGenerator {
-
-        private struct EmbeddedClass {
-            public TypeFormatLayout TypeInfo { get; set; }
-            public string ClassSourceText { get; set; }
-            public string FunctionSourceText { get; set; }
-        }
-
-        private enum ParserType {
-            Sealed,
-            ParserProvider,
-            GenericParserProvider
-        }
 
         public static GeneratedSourceCode CreateSourceText(Compilation compilation, IEnumerable<GeneratedParser> parsers) {
             var generatedClassName = compilation.GetDefaultAssemblyEntryClass();
 
-            var builder = new CodeSnippetBuilder("Decuplr.Serialization.Binary.Internal");
+            CodeSnippetBuilder? builder = new CodeSnippetBuilder("Decuplr.Serialization.Binary.Internal");
             builder.Using("System");
             builder.Using("System.Threading");
             builder.Using("System.ComponentModel");
@@ -44,13 +27,12 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             builder.AddAttribute(CommonAttributes.HideFromEditor);
             builder.AddNode($"internal partial class {generatedClassName} : {nameof(AssemblyPackerEntryPoint)} ", node => {
 
-                var namespaceName = "defaultNamespace";
+                string? namespaceName = "defaultNamespace";
                 // Put all the generated formatters class here
-                var finalParser = TransformParserToConsumable(parsers, namespaceName).ToList();
-                foreach (var parser in finalParser) {
+                foreach (GeneratedParser parser in parsers) {
                     node.AddPlain("");
-                    node.AddPlain($"#region {parser.TypeInfo.TypeSymbol.Name}");
-                    node.AddPlain(parser.ClassSourceText);
+                    node.AddPlain($"#region {parser.ParserTypeName}");
+                    node.AddPlain(parser.EmbeddedCode);
                     node.AddPlain($"#endregion");
                 }
 
@@ -66,90 +48,5 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             return ($"{generatedClassName}.Generated.cs", builder.ToString());
         }
 
-        private static IEnumerable<EmbeddedClass> TransformParserToConsumable(IEnumerable<GeneratedParser> parsers, string nsName) {
-            foreach (var parser in parsers) {
-                var formatInfo = parser.TypeInfo.FormatInfo;
-                //if (!formatInfo.HasValue)
-                //    continue;
-                // Check if it's a sealed parser
-                if (formatInfo.IsSealed)
-                    yield return new EmbeddedClass {
-                        TypeInfo = parser.TypeInfo,
-                        ClassSourceText = parser.ParserSourceText,
-                        FunctionSourceText = $"{nsName}.{nameof(IDefaultParserNamespace.AddParserProvider)}(new {parser.ParserClassName}(root))"
-                    };
-                // Check if it's a generic type 
-                if (parser.TypeInfo.TypeSymbol.IsUnboundGenericType)
-                    yield return WrapAsGenericParserProvider(nsName, parser);
-                yield return WrapAsParserProvider(nsName, parser);
-            }
-        }
-
-        // Returns the class name
-        private static EmbeddedClass WrapAsGenericParserProvider(string nsName, GeneratedParser parser) {
-            var parserProviderName = $"{parser.ParserClassName}_GenericProvider";
-            var genParam = parser.TypeInfo.TypeSymbol.TypeParameters;
-            var node = new CodeNodeBuilder();
-            // TODO : Please make sure this works, I have no doc over this!! (or at least it's undoced)
-            node.AddNode($"private class {parserProviderName}<{string.Join(",", genParam.Select(x => x.Name))}> : GenericParserProvider", node => {
-                // Embed the source code in this class
-                node.AddPlain(parser.ParserSourceText);
-
-                node.AddNode("public override TypeParser ProviderParser(IParserDiscovery discovery)", node => {
-                    node.AddStatement($"return new {parser.ParserClassName}(discovery)");
-                });
-
-                node.AddNode("public override bool TryProvideParser(IParserDiscovery discovery, out TypeParser parser)", node => {
-                    // Code Review :
-                    // Duplicate code as below, but eliminating this might lead to confusion, since they actually respresent different meaning
-                    // Just the output code is the same, the compiler would understand that it's different context
-                    //
-                    node.AddStatement($"parser = new {parser.ParserClassName}(discovery, out var isSuccess)");
-                    node.AddNode("if(!isSuccess)", node => {
-                        // we don't want a half baked parser to be returned and possibly used
-                        node.AddStatement("parser = null");
-                    });
-                    node.AddStatement($"return isSuccess");
-                });
-            });
-
-            return new EmbeddedClass {
-                TypeInfo = parser.TypeInfo,
-                ClassSourceText = node.ToString(),
-                // bool AddGenericParserProvider(Type parserProvider, Type genericType) where TParser : GenericParserProvider;
-                FunctionSourceText = $"{nsName}.{nameof(IDefaultParserNamespace.AddGenericParserProvider)}({parserProviderName}, typeof({parser.TypeInfo.TypeSymbol}).GetGenericTypeDefinition())"
-            };
-        }
-
-        private static EmbeddedClass WrapAsParserProvider(string nsName, GeneratedParser parser) {
-            var parserProviderName = $"{parser.ParserClassName}_Provider";
-
-            var node = new CodeNodeBuilder();
-            
-            // Add the parser to our source, not nested but outside
-            node.AddPlain(parser.ParserSourceText);
-
-            node.AddNode($"private class {parserProviderName} : IParserProvider<{parser.TypeInfo.TypeSymbol}>", node => {
-                node.AddNode($"public TypeParser<{parser.TypeInfo.TypeSymbol}> ProvideParser(IParserDiscovery discovery)", node => {
-                    node.AddStatement($"return new {parser.ParserClassName}(discovery)");
-                });
-
-                node.AddNode($"public bool TryProvideParser(IParserDiscovery discovery, out TypeParser<{parser.TypeInfo.TypeSymbol}> parser)", node => {
-                    node.AddStatement($"parser = new {parser.ParserClassName}(discovery, out var isSuccess)");
-                    node.AddNode("if(!isSuccess)", node => {
-                        // we don't want a half baked parser to be returned and possibly used
-                        node.AddStatement("parser = null");
-                    });
-                    node.AddStatement($"return isSuccess");
-                });
-            });
-
-            return new EmbeddedClass {
-                TypeInfo = parser.TypeInfo,
-                ClassSourceText = node.ToString(),
-                // bool AddParserProvider<TProvider, TType>(TProvider provider) where TProvider : IParserProvider<TType>;
-                FunctionSourceText = $"{nsName}.AddParserProvider<{parserProviderName}, {parser.TypeInfo.TypeSymbol}>(new {parserProviderName}())"
-            };
-        }
     }
 }

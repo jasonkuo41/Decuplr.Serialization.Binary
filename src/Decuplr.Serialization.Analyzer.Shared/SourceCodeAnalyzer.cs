@@ -15,11 +15,13 @@ namespace Decuplr.Serialization.Binary.Analyzers {
         private readonly Compilation Compilation;
         private readonly Dictionary<Type, INamedTypeSymbol?> CachedSymbols = new Dictionary<Type, INamedTypeSymbol?>();
 
-        public INamedTypeSymbol? GetSymbol<T>() {
-            if (CachedSymbols.TryGetValue(typeof(T), out var symbol))
+        public INamedTypeSymbol? GetSymbol<T>() => GetSymbol(typeof(T));
+
+        public INamedTypeSymbol? GetSymbol(Type type) {
+            if (CachedSymbols.TryGetValue(type, out var symbol))
                 return symbol;
-            symbol = Compilation.GetTypeByMetadataName(typeof(T).FullName);
-            CachedSymbols.Add(typeof(T), symbol);
+            symbol = Compilation.GetTypeByMetadataName(type.FullName);
+            CachedSymbols.Add(type, symbol);
             return symbol;
         }
 

@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Net.Http.Headers;
 using Decuplr.Serialization.Analyzer.BinaryFormat;
 using Decuplr.Serialization.Binary.Namespaces;
 
-namespace Decuplr.Serialization.Binary.SourceGenerator {
+namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
     class TypeParserGenerator {
 
         private readonly TypeFormatLayout TypeInfo;
@@ -11,9 +13,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
         private readonly GeneratedFormatFunction Serialize;
         private readonly GeneratedFormatFunction GetLength;
         private readonly List<GeneratedSourceCode> AdditionalSourceCode = new List<GeneratedSourceCode>();
-
-        public IReadOnlyList<GeneratedSourceCode> AdditionalCode => AdditionalSourceCode;
-
+        
         public TypeParserGenerator(TypeFormatLayout typeInfo, IDeserializeSolution deserializeSolution, ISerializeSolution serializeSolution) {
             TypeInfo = typeInfo;
 
@@ -24,6 +24,33 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             Serialize = serializeSolution.GetSerializeFunction();
             GetLength = serializeSolution.GetBinaryLengthFunction();
             AdditionalSourceCode.AddRange(serializeSolution.GetAdditionalFiles());
+        }
+
+        private IParserKindProvider GetProviderFromType(string parserName, ref EmbeddedCode embeddedCode) {
+            if (TypeInfo.FormatInfo.IsSealed)
+                return new SealedParserKindProvider(parserName, true);
+            if (TypeInfo.TypeSymbol.IsUnboundGenericType) {
+                var wrapper = new GenericParserProviderWrapper(TypeInfo.TypeSymbol, parserName);
+                embeddedCode = wrapper.Provide(embeddedCode, out var provider);
+                return provider;
+            }
+            {
+                var wrapper = new GenericParserProviderWrapper(TypeInfo.TypeSymbol, parserName);
+                embeddedCode = wrapper.Provide(embeddedCode, out var provider);
+                return provider;
+            }
+        }
+
+        private void AddParserCollection(CodeNodeBuilder node) {
+            node.AddNode($"internal struct {TypeInfo.GetDefaultParserCollectionName()}", node => {
+                // Declare the parser we will be using
+                for (var i = 0; i < TypeInfo.Member.Count; ++i) {
+                    var annotation = TypeInfo.Member[i].DecisionAnnotation;
+                    for (var j = 0; j < annotation.RequestParserType.Count; ++j) {
+                        node.AddPlain($"public TypeParser<{annotation.RequestParserType[j]}> Parser_{i}_{j};");
+                    }
+                }
+            });
         }
 
         private void AddConstructor(CodeNodeBuilder node, string? outName = null) {
@@ -66,25 +93,11 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                 node.AddStatement($"{outName} = true");
         }
 
-        public GeneratedParser GetFormatterCode() {
-            var parserName = $"{TypeInfo.TypeSymbol.ToString().Replace('.', '_').Replace('`', '_') }_TypeParser";
-            var parserCollection = TypeInfo.GetDefaultParserCollectionName();
-
-            var node = new CodeNodeBuilder();
-            node.AddNode($"internal struct {parserCollection}", node => {
-                // Declare the parser we will be using
-                for (var i = 0; i < TypeInfo.Member.Count; ++i) {
-                    var annotation = TypeInfo.Member[i].DecisionAnnotation;
-                    for (var j = 0; j < annotation.RequestParserType.Count; ++j) {
-                        node.AddPlain($"public TypeParser<{annotation.RequestParserType[j]}> Parser_{i}_{j};");
-                    }
-                }
-
-            });
+        private void AddTypeParser(CodeNodeBuilder node, string parserName) {
 
             node.AddNode($"private sealed class {parserName} : TypeParser <{TypeInfo.TypeSymbol}>", node => {
 
-                node.AddStatement($"private readonly {parserCollection} ParserCollections");
+                node.AddStatement($"private readonly {TypeInfo.GetDefaultParserCollectionName()} ParserCollections");
 
                 // Figure out if this is actually fixed in size
                 node.AddStatement($"private readonly int? fixedSize");
@@ -144,13 +157,28 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
 
             });
 
-            return new GeneratedParser {
-                TypeInfo = TypeInfo,
-                ParserClassName = parserName,
-                ParserSourceText = node.ToString(),
-                GeneratedSourceCodes = AdditionalCode
-            };
         }
 
+        public GeneratedParser GetFormatterCode() {
+            var parserName = $"{TypeInfo.TypeSymbol.ToString().Replace('.', '_').Replace('`', '_') }_TypeParser";
+
+            var node = new CodeNodeBuilder();
+            AddParserCollection(node);
+            AddTypeParser(node, parserName);
+
+            var currentCode = new EmbeddedCode {
+                CodeNamespaces = Array.Empty<string>(),
+                SourceCode = node.ToString(),
+            };
+            var parserKind = GetProviderFromType(parserName, ref currentCode);
+
+            return new GeneratedParser {
+                ParserTypeName = TypeInfo.TypeSymbol.Name,
+                AdditionalSourceFiles = AdditionalSourceCode,
+                ParserNamespaces = TypeInfo.FormatInfo.TargetNamespaces,
+                ParserKinds = new IParserKindProvider[] { parserKind },
+                EmbeddedCode = currentCode,
+            };
+        }
     }
 }

@@ -7,7 +7,7 @@ using System.Text;
 using Decuplr.Serialization.Analyzer.BinaryFormat;
 using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Serialization.Binary.SourceGenerator.Solutions {
+namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
     class PartialTypeSerialize : ISerializeSolution {
 
         private readonly TypeFormatLayout TypeInfo;

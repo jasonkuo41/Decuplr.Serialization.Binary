@@ -3,15 +3,17 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Decuplr.Serialization.Analyzer.BinaryFormat;
 using Decuplr.Serialization.Binary.Analyzers;
-using Decuplr.Serialization.Binary.SourceGenerator.BinaryFormatSource;
+using Decuplr.Serialization.Binary.SourceGenerator.BinaryFormats;
+using Decuplr.Serialization.Binary.SourceGenerator.Providers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Decuplr.Serialization.Binary.SourceGenerator {
 
     [Generator]
-    public class BinaryFormatGenerator : ISourceGenerator {
+    public class LibraryGenerator : ISourceGenerator {
         private class CandidateSyntaxReceiver : ISyntaxReceiver {
 
             public List<TypeDeclarationSyntax> CandidateTypes { get; } = new List<TypeDeclarationSyntax>();
@@ -34,15 +36,16 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             try {
                 if (!(context.SyntaxReceiver is CandidateSyntaxReceiver receiver))
                     return;
+
                 // We also need to dump struct output (markdown file) for output
                 IParserGenerateSource[]? generationSources = new IParserGenerateSource[] {
                     // Responsible for [BinaryFormat] tags
-                    new BinaryFormatSourceGen(),
+                    new BinaryFormatSourceProvider(),
                     // Responsible for [BinaryParser] tags
-                    //new BinaryParserSG()
+                    new BinaryParserSourceProvider()
                 };
 
-                IEnumerable<Analyzer.BinaryFormat.AnalyzedType>? types = SourceCodeAnalyzer.AnalyzeTypeSyntax(receiver.CandidateTypes, context.Compilation, context.CancellationToken);
+                IEnumerable<AnalyzedType>? types = SourceCodeAnalyzer.AnalyzeTypeSyntax(receiver.CandidateTypes, context.Compilation, context.CancellationToken);
 
                 List<GeneratedParser>? generatedResults = new List<GeneratedParser>();
 
@@ -54,14 +57,13 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                     generatedResults.AddRange(parsers);
                 }
 
-                foreach (GeneratedSourceCode additionalFiles in generatedResults.SelectMany(x => x.GeneratedSourceCodes))
+                foreach (GeneratedSourceCode additionalFiles in generatedResults.SelectMany(x => x.AdditionalSourceFiles))
                     context.AddSource(additionalFiles, Encoding.UTF8, true);
-                //if (generatedResults.Count != 0)
+                if (generatedResults.Count != 0)
                     context.AddSource(BinaryPackerEntryPointGenerator.CreateSourceText(context.Compilation, generatedResults), Encoding.UTF8, true);
             }
             catch (Exception e) {
                 File.WriteAllText("error.txt", $"{e} {e.Message} {e.StackTrace}");
-                context.ReportDiagnostic(Diagnostic.Create("SGExcept-01", "Compile Error", $"{e} {e.Message} {e.StackTrace}", DiagnosticSeverity.Error, DiagnosticSeverity.Error, true, 4));
             }
         }
 

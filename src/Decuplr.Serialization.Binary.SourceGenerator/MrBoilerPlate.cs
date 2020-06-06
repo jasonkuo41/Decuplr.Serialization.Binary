@@ -1,6 +1,8 @@
 ﻿using System;
 using Decuplr.Serialization.Binary.Namespaces;
 
+#if DEBUG
+
 namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
 
     internal class MrBoilerPlate<T> : GenericParserProvider {
@@ -63,3 +65,5 @@ namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
         }
     }
 }
+
+#endif
