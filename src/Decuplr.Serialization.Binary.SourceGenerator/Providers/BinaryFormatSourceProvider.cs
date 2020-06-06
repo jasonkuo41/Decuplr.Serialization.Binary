@@ -6,7 +6,7 @@ using Decuplr.Serialization.Analyzer.BinaryFormat;
 using Decuplr.Serialization.Binary.SourceGenerator.Schemas;
 using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Serialization.Binary.SourceGenerator.BinaryFormats.Providers {
+namespace Decuplr.Serialization.Binary.SourceGenerator.Providers {
     internal class BinaryFormatSourceProvider : IParserGenerateSource {
 
         public bool TryGenerateParser(IEnumerable<AnalyzedType> types, SourceGeneratorContext context, out IEnumerable<GeneratedParser>? parsers) {
