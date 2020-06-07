@@ -25,10 +25,10 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Providers {
 
         public bool TryCreateParser(AnalyzedType type, SourceGeneratorContext context, out GeneratedParser parser) {
             // First we check if the type's layout and dump the output of the analyzed format
-            Analyzers.AnalyzedAttribute attribute = type.GetAttributes<BinaryFormatAttribute>().FirstOrDefault();
+            var attribute = type.GetAttributes<BinaryFormatAttribute>().FirstOrDefault();
             Debug.Assert(!attribute.IsEmpty);
 
-            SchemaPrecusor formatInfo = new SchemaPrecusor {
+            var schemaPrecusor = new SchemaPrecusor {
                 IsSealed = attribute.Data.GetNamedArgumentValue<bool>(nameof(BinaryFormatAttribute.Sealed)) ?? false,
                 NeverDeserialize = attribute.Data.GetNamedArgumentValue<bool>(nameof(BinaryFormatAttribute.NeverDeserialize)) ?? false,
                 RequestLayout = attribute.Data.GetNamedArgumentValue<BinaryLayout>(nameof(BinaryFormatAttribute.Layout)) ?? BinaryLayout.Auto,
@@ -36,7 +36,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Providers {
                 TargetNamespaces = Array.Empty<string>()
             };
 
-            bool result = SchemaParserConverter.TryConvert(type, context.Compilation, formatInfo, out IList<Diagnostic>? diagnostics, out parser);
+            bool result = SchemaParserConverter.TryConvert(type, context.Compilation, schemaPrecusor, out IList<Diagnostic>? diagnostics, out parser);
             foreach (Diagnostic? diagnostic in diagnostics)
                 context.ReportDiagnostic(diagnostic);
             return result;

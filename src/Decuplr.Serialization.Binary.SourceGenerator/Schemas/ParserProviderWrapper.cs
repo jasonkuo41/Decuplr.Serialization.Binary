@@ -11,7 +11,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
             ParserName = parserName;
         }
 
-        public EmbeddedCode WrapAsParserProvider(EmbeddedCode parserClass) {
+        public EmbeddedCode Provide(EmbeddedCode parserClass) {
             var parserProviderName = $"{ParserName}_Provider";
 
             var node = new CodeNodeBuilder();

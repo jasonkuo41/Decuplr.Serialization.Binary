@@ -18,6 +18,6 @@ namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
         [Index(0)]
         public long ActualTime { get; }
 
-        public DateTime Convert() => DateTime.FromBinary(ActualTime);
+        public DateTime ConvertTo() => DateTime.FromBinary(ActualTime);
     }
 }

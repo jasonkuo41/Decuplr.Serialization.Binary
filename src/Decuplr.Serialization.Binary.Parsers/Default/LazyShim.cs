@@ -28,7 +28,7 @@ namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
         [Index(0)]
         public T LazyValue { get; }
 
-        public Lazy<T> Convert() {
+        public Lazy<T> ConvertTo() {
 #if NETSTANDARD2_0
             return new Lazy<T>(() => LazyValue, true);
 #else

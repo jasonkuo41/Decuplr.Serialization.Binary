@@ -25,10 +25,10 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
 
     internal class ParserProviderKindProvider : IParserKindProvider {
 
-        private readonly INamedTypeSymbol ParsedType;
+        private readonly ITypeSymbol ParsedType;
         private readonly string ParserProviderName;
 
-        public ParserProviderKindProvider(INamedTypeSymbol parsedType, string parserProviderName) {
+        public ParserProviderKindProvider(ITypeSymbol parsedType, string parserProviderName) {
             ParserProviderName = parserProviderName;
             ParsedType = parsedType;
         }
@@ -40,10 +40,10 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
     }
 
     internal class GenericParserKindProvider : IParserKindProvider {
-        private readonly INamedTypeSymbol ParsedType;
+        private readonly ITypeSymbol ParsedType;
         private readonly string ParserProviderName;
 
-        public GenericParserKindProvider(INamedTypeSymbol parsedType, string parserProviderName) {
+        public GenericParserKindProvider(ITypeSymbol parsedType, string parserProviderName) {
             ParsedType = parsedType;
             ParserProviderName = parserProviderName;
         }

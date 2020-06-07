@@ -35,7 +35,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
                 return provider;
             }
             {
-                var wrapper = new GenericParserProviderWrapper(TypeInfo.TypeSymbol, parserName);
+                var wrapper = new ParserProviderWrapper(TypeInfo.TypeSymbol, parserName);
                 embeddedCode = wrapper.Provide(embeddedCode, out var provider);
                 return provider;
             }
@@ -160,7 +160,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
         }
 
         public GeneratedParser GetFormatterCode() {
-            var parserName = $"{TypeInfo.TypeSymbol.ToString().Replace('.', '_').Replace('`', '_') }_TypeParser";
+            var parserName = $"{TypeInfo.TypeSymbol.GetEmbedName()}_TypeParser";
 
             var node = new CodeNodeBuilder();
             AddParserCollection(node);

@@ -6,11 +6,11 @@ namespace Decuplr.Serialization.Binary.Annotations {
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
     public sealed class BinaryParserAttribute : Attribute {
-        public BinaryParserAttribute(Type type) {
-            Type = type;
+        public BinaryParserAttribute(params Type[] type) {
+            ParsingType = type;
         }
 
-        public Type Type { get; }
+        public Type[] ParsingType { get; }
         public BinaryLayout Layout { get; set; }
         public bool Sealed { get; set; }
     }

@@ -24,7 +24,8 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
 
             var node = new CodeNodeBuilder();
             // TODO : Please make sure this works, I have no doc over this!! (or at least it's undoced)
-            node.AddNode($"private class {parserProviderName}<{string.Join(",", genParam.Select(x => x.Name))}> : GenericParserProvider", node => {
+            // a roslyn guy says it'll work, so I trust him
+            node.AddNode($"private class {parserProviderName}<{string.Join(",", genParam.Select(x => x.ToString()))}> : GenericParserProvider", node => {
                 // Embed the source code in this class
                 node.AddPlain(parserClass.SourceCode);
 

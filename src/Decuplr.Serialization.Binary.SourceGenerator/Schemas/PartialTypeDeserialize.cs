@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Text;
 using Decuplr.Serialization.Analyzer.BinaryFormat;
-using Decuplr.Serialization.Binary.SourceGenerator.BinaryFormats;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
@@ -21,8 +18,8 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
             Compilation = compilation;
         }
 
-        public GeneratedSourceCode[] GetAdditionalFiles() { 
-             return new GeneratedSourceCode[] { ($"{TypeSymbol.Name}.Generated.PartialDeserialize.cs", CreatePartialClassConstructor()) };
+        public GeneratedSourceCode[] GetAdditionalFiles() {
+            return new GeneratedSourceCode[] { ($"{TypeSymbol.Name}.Generated.PartialDeserialize.cs", CreatePartialClassConstructor()) };
         }
 
         public GeneratedFormatFunction GetDeserializeFunction() {
@@ -36,7 +33,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
         }
 
         private string CreatePartialClassConstructor() {
-            
+
             var builder = new CodeSnippetBuilder(TypeSymbol.ContainingNamespace.ToString());
             builder.Using("System");
             builder.Using("System.ComponentModel");
@@ -65,7 +62,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
                 //
                 node.AddPlain("// This is for \"TryDeserialize\" constructor");
                 node.AddNode($"internal {TypeSymbol.Name} (in {TypeInfo.GetDefaultParserCollectionName()} parsers, ReadOnlySpan<byte> span, out int readBytes, out {nameof(DeserializeResult)} result) {(TypeSymbol.TypeKind == TypeKind.Struct ? ":this()" : null)}", node => {
-                    
+
                     node.AddStatement("readBytes = -1");
                     node.AddStatement("var originalSpanLength = span.Length");
 
