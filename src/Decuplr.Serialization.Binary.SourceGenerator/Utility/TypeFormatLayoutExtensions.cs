@@ -30,7 +30,11 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
         public static string GetTypeParserContructor(this TypeFormatLayout layout) => string.Join(",", layout.GetConstructorMember(true));
         public static string GetTypeParserContructorInvokeParams(this TypeFormatLayout layout) => string.Join(",", layout.GetConstructorMember(false));
 
-        public static string GetDefaultParserCollectionName(this TypeFormatLayout layout) => $"{layout.TypeSymbol.ToString().Replace('.', '_') }_TypeParserArgs";
+        public static string GetDefaultParserCollectionName(this TypeFormatLayout layout) {
+            if (!layout.TypeSymbol.IsGenericType)
+                return $"{layout.TypeSymbol.GetEmbedName()}_TypeParserArgs";
+            return $"{layout.TypeSymbol.GetEmbedName()}_TypeParserArgs<{string.Join(",", layout.TypeSymbol.TypeParameters.Select(x => x.ToString()))}>";
+        }
 
         public static string GetDefaultAssemblyEntryClass(this Compilation compilation) {
             var assembly = compilation.Assembly;
@@ -62,7 +66,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
                     value /= (ulong)Chars.Length;
                 }
 
-                return result.ToString();
+                return result.Slice(0, i).ToString();
             }
         }
 

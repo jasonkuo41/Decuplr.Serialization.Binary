@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis;
 namespace Decuplr.Serialization.Binary.SourceGenerator {
     internal static class CodeBuilderExtensions {
         private static void AddPartialClassNode(this CodeNodeBuilder node, INamedTypeSymbol symbol, Action<CodeNodeBuilder> nodeAction) {
-            node.AddNode(symbol.DeclaredAccessibility, $"{(symbol.IsStatic ? "static" : null)} partial {symbol.TypeKind.ToString().ToLower()} {symbol.Name}", nodeAction);
+            node.AddNode(symbol.DeclaredAccessibility, $"{(symbol.IsStatic ? "static" : null)} partial {symbol.TypeKind.ToString().ToLower()} {symbol.ToDisplayString(NullableFlowState.None, SymbolDisplayFormat.MinimallyQualifiedFormat)}", nodeAction);
         }
 
         internal static void AddPartialClass(this CodeSnippetBuilder builder, INamedTypeSymbol symbol, Action<CodeNodeBuilder> nodeBuilder) {

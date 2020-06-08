@@ -29,7 +29,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
                 // Embed the source code in this class
                 node.AddPlain(parserClass.SourceCode);
 
-                node.AddNode("public override TypeParser ProviderParser(IParserDiscovery discovery)", node => {
+                node.AddNode("public override TypeParser ProvideParser(IParserDiscovery discovery)", node => {
                     node.AddStatement($"return new {ParserName}(discovery)");
                 });
 

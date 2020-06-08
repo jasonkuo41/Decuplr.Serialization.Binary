@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using Decuplr.Serialization.Analyzer.BinaryFormat;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -36,6 +38,8 @@ namespace Decuplr.Serialization.Binary.Analyzers {
             foreach(var member in syntax.Members) {
                 // ct?
                 var memberSymbol = model.GetDeclaredSymbol(member)!;
+                if (memberSymbol is null)
+                    continue;
                 if (memberDictionary.TryGetValue(memberSymbol, out var analyzedMember)) {
                     analyzedMember.AddSyntax(member, model);
                     continue;

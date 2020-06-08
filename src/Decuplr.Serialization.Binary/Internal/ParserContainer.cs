@@ -57,8 +57,8 @@ namespace Decuplr.Serialization.Binary {
             var genericType = type.GetGenericTypeDefinition();
             if (!Parsers.TryGetValue(genericType, out var provider))
                 return false;
-            var gProvider = provider as GenericParserProvider;
-            Debug.Assert(provider != null);
+            var gProvider = (GenericParserProvider)provider;
+            Debug.Assert(gProvider != null);
             if (!gProvider.TryProvideParser(parserNamespace, out parser))
                 return false;
             // Cache the parser for this type

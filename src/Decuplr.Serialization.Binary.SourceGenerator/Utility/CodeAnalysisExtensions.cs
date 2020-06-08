@@ -65,8 +65,8 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
         public static void AddSource(this SourceGeneratorContext context, GeneratedSourceCode code, Encoding? encoding = null, bool shouldDumpFile = false) {
             context.AddSource(code.DesiredFileName, SourceText.From(code.SourceText, encoding ?? Encoding.UTF8));
             if (shouldDumpFile) {
-                Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "generated"));
-                File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), "generated", code.DesiredFileName), code.SourceText);
+                Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), ".generated"));
+                File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), ".generated", code.DesiredFileName), code.SourceText);
             }
         }
 

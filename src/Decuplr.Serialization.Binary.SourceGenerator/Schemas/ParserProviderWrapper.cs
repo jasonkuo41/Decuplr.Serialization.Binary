@@ -3,15 +3,15 @@
 namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
     internal class ParserProviderWrapper {
 
-        private readonly INamedTypeSymbol ParsedType;
+        private readonly ITypeSymbol ParsedType;
         private readonly string ParserName;
 
-        public ParserProviderWrapper(INamedTypeSymbol parsedType, string parserName) {
+        public ParserProviderWrapper(ITypeSymbol parsedType, string parserName) {
             ParsedType = parsedType;
             ParserName = parserName;
         }
 
-        public EmbeddedCode Provide(EmbeddedCode parserClass) {
+        public EmbeddedCode Provide(EmbeddedCode parserClass, out IParserKindProvider kindProvider) {
             var parserProviderName = $"{ParserName}_Provider";
 
             var node = new CodeNodeBuilder();
@@ -33,7 +33,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
                     node.AddStatement($"return isSuccess");
                 });
             });
-
+            kindProvider = new ParserProviderKindProvider(ParsedType, parserProviderName);
             return new EmbeddedCode {
                 CodeNamespaces = parserClass.CodeNamespaces,
                 SourceCode = node.ToString(),

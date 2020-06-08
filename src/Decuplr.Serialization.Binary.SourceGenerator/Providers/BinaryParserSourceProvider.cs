@@ -122,7 +122,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Providers {
         // Slightly native
         private bool TryGetSealedTypeParser(AnalyzedType type, SourceGeneratorContext context, BinaryParserInfo parserInfo, out GeneratedParser parser) {
             parser = default;
-            var providedParserType = type.TypeSymbol.TypeParameters[0];
+            var providedParserType = GetTypeParameter(type.TypeSymbol);
             // Sealed Native Type can only have default constructor and they are always sealed
             if (!type.TypeSymbol.Constructors.Any(x => x.Parameters.Length == 0)) {
                 context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.TypeParserRequiresDefaultConstructor, type.Declarations[0].DeclaredLocation, type.TypeSymbol.Name));
@@ -137,6 +137,16 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Providers {
                 ParserTypeName = type.TypeSymbol.Name
             };
             return true;
+
+            ITypeSymbol GetTypeParameter(ITypeSymbol symbol) {
+                while (symbol.BaseType != null) {
+                    if (symbol.BaseType.IsGenericType 
+                        && symbol.BaseType.ConstructUnboundGenericType().Equals(type.Analyzer.GetSymbol(typeof(TypeParser<>))!.ConstructUnboundGenericType(), SymbolEqualityComparer.Default))
+                        return symbol.BaseType.TypeParameters[0];
+                    symbol = symbol.BaseType;
+                }
+                throw new ArgumentException("Symbol doesn't inherit TypeParser<>");
+            }
         }
 
         private bool TryGetSchemaTypeParser(AnalyzedType type, SourceGeneratorContext context, BinaryParserInfo parserInfo, out IEnumerable<GeneratedParser> parsers) {
@@ -145,10 +155,28 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Providers {
             // It much come with either combination, a constructor taking a type and with the type we have CovertTo (or implement ITypeConvertibale), or we have implicit operators
 
             // In common, we have constructors that take only one type, so we select that
-            var explicitStateType = parserInfo.Attribute.Data.ConstructorArguments.Length != 0;
-            var inputTypes = new HashSet<ITypeSymbol>(type.TypeSymbol.Constructors.Where(x => x.Parameters.Length == 1).Select(x => x.Parameters[0].Type));
-            foreach(var i in parserInfo.Attribute.Data) {
-
+            var explicitStateType = parserInfo.TargetTypes.Count != 0;
+            if (!TryGetInputTypes(out var inputTypes))
+                return false;
+            
+            bool TryGetInputTypes(out IReadOnlyList<ITypeSymbol> symbols) {
+                var constructorEnumerable = type.TypeSymbol.Constructors
+                    .Where(x => x.Parameters.Length == 1)
+                    .Select(x => GetUnconstraintOrNormalType(x.Parameters[0].Type));
+                var constructorTypes = new HashSet<ITypeSymbol>(constructorEnumerable);
+                if (!explicitStateType) {
+                    symbols = constructorTypes.ToList();
+                    return true;
+                }
+                foreach (var designatedType in parserInfo.TargetTypes) {
+                    if (!constructorTypes.Contains(designatedType)) {
+                        context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.ExplicitTypeMushHaveConstructor, parserInfo.Attribute.Location, designatedType));
+                        symbols = Array.Empty<ITypeSymbol>();
+                        return false;
+                    }
+                }
+                symbols = parserInfo.TargetTypes;
+                return true;
             }
 
             // Then we look if it
@@ -157,13 +185,13 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Providers {
             // TODO:  3) Implements implict conversion operators (Not Implemented in this version)
 
             // Type, ConvertFunction combo
-            var outputTypes = new Dictionary<ITypeSymbol, Func<string, string>>();
+            var outputTypes = new Dictionary<ITypeSymbol, (Location Location, ITypeSymbol SourceSymbol, Func<string, string> Conversion)>();
             {
                 // 1) we look for types that implement interface
                 foreach (var interfaceType in type.TypeSymbol.AllInterfaces
                                                             .Where(x => x.IsGenericType)
                                                             .Where(x => x.ConstructUnboundGenericType().Equals(type.Analyzer.GetSymbol(typeof(ITypeConvertible<>)), SymbolEqualityComparer.Default))) {
-                    outputTypes[interfaceType.TypeArguments[0]] = itemName => $"(({interfaceType}){itemName}).ConvertTo()";
+                    outputTypes[GetUnconstraintOrNormalType(interfaceType.TypeArguments[0])] = (interfaceType.Locations[0], interfaceType.TypeArguments[0], itemName => $"(({interfaceType}){itemName}).ConvertTo()");
                 }
 
                 // 2) we look for functions that has "ConvertTo" signature
@@ -171,11 +199,13 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Providers {
                                                             .Where(x => x is IMethodSymbol && x.Name.StartsWith("ConvertTo"))
                                                             .Select(x => (IMethodSymbol)x)) {
                     // Warn user that this function would be ignored if the interface is implemented
-                    if (outputTypes.ContainsKey(functionTypes.ReturnType)) {
-
+                    var normalizedType = GetUnconstraintOrNormalType(functionTypes.ReturnType);
+                    if (outputTypes.ContainsKey(normalizedType)) {
+                        if (functionTypes.Name != "ConvertTo")
+                            context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.ConvertToIsIgnoredIfHasInterface, functionTypes.Locations[0], functionTypes.Name));
                         continue;
                     }
-                    outputTypes[functionTypes.ReturnType] = itemName => $"{itemName}.{functionTypes.Name}())";
+                    outputTypes[normalizedType] = (functionTypes.Locations[0], functionTypes.ReturnType, itemName => $"{itemName}.{functionTypes.Name}()");
                 }
 
                 // 3) we look for functions that has implicit conversion operators
@@ -187,11 +217,33 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Providers {
                                                   .ToList();
                 */
             }
-            if (!TryGetActualTargetTypes(out var electedTypes))
-                return false;
-            "Undone here";
 
-            // Fire up schema to type parser, then we would wrap it around our own flavor
+            var finalTypes = new Dictionary<ITypeSymbol, (ITypeSymbol SourceSymbol, Func<string, string> Conversion)>();
+            foreach(var inputType in inputTypes) {
+                if (!outputTypes.ContainsKey(inputType) && explicitStateType) {
+                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.ExplicitTypeMushHaveConstructor, parserInfo.Attribute.Location, inputType.Name));
+                    return false;
+                }
+                var (_, sourceSymbol, conversion) = outputTypes[inputType];
+                var (key, value) = (inputType, (sourceSymbol, conversion));
+                finalTypes.Add(key, value);
+            }
+            // Check if some outputTypes are actually missing out
+            foreach(var outputType in outputTypes) {
+                // Just a warning
+                if (!finalTypes.ContainsKey(outputType.Key))
+                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.DeconstructIsIgnoredDueToNoConstructor, outputType.Value.Item1, outputType.Key));
+            }
+            // Check if there's actually qualified type
+            if (finalTypes.Count == 0) {
+                context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.CannotFindMatchingParserType, type.Declarations[0].DeclaredLocation, type.TypeSymbol.Name));
+                return false;
+            }
+
+            ////
+            // Finally,
+            // We fire up schema to type parser, then we would wrap it around our own flavor
+            ////
             var attribute = parserInfo.Attribute;
             var schemaPrecusor = new SchemaPrecusor {
                 IsSealed = attribute.Data.GetNamedArgumentValue<bool>(nameof(BinaryParserAttribute.Sealed)) ?? false,
@@ -201,36 +253,43 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Providers {
                 // BinaryParser's namespace is provided by `ParserNamespace`
                 TargetNamespaces = parserInfo.Namespaces
             };
-            bool result = SchemaParserConverter.TryConvert(type, context.Compilation, schemaPrecusor, out IList<Diagnostic>? diagnostics, out var parser);
+            bool result = SchemaParserConverter.TryConvert(type, context.Compilation, schemaPrecusor, out IList<Diagnostic>? diagnostics, out var helperParser);
             foreach(Diagnostic? diagnostic in diagnostics) {
                 context.ReportDiagnostic(diagnostic);
             }
             if (!result)
                 return false;
+            var parserlist = new List<GeneratedParser>{ helperParser };
 
             // Then we wrap the parser around so we can actually provider parser for our type
+            foreach(var finalType in finalTypes) {
+                var (className, sourceCode) = ParserProviderWrapper(type.TypeSymbol, finalType.Value.SourceSymbol, finalType.Value.Conversion);
 
-            bool TryGetActualTargetTypes(out IReadOnlyList<ITypeSymbol>? symbols) {
-                var candidatePool = new HashSet<ITypeSymbol>(inputTypes);
-                // Check if the types are explicitly stated
-                if (parserInfo.TargetTypes.Count != 0) {
-                    var actualParsingTypes = new List<ITypeSymbol>();
-                    foreach (var parseType in parserInfo.TargetTypes) {
-                        // If we found a type that is not within the constructor but explicitly stated, we dump error
-                        if (!candidatePool.Contains(parseType)) {
-                            symbols = null;
-                            context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.ExplicitTypeMushHaveConstructor, parserInfo.Attribute.Location, parseType.Name));
-                            return false;
-                        }
-                        actualParsingTypes.Add(parseType);
-                    }
-                    symbols = actualParsingTypes;
-                    return true;
+                IParserKindProvider kindProvider;
+                var embeddedCode = new EmbeddedCode {
+                    CodeNamespaces = Array.Empty<string>(),
+                    SourceCode = sourceCode
+                };
+
+                // If it's a generic type we wrap it with generic parser
+                if (finalType.Key is INamedTypeSymbol namedType && namedType.IsUnboundGenericType) {
+                    var provider = new GenericParserProviderWrapper(namedType, className);
+                    embeddedCode = provider.Provide(embeddedCode, out kindProvider);
                 }
-                symbols = inputTypes;
-                return true;
-            }
+                else {
+                    var provider = new ParserProviderWrapper(finalType.Key, className);
+                    embeddedCode = provider.Provide(embeddedCode, out kindProvider);
+                }
 
+                parserlist.Add(new GeneratedParser {
+                    EmbeddedCode = embeddedCode,
+                    ParserKinds = new IParserKindProvider[] { kindProvider },
+                    ParserNamespaces = parserInfo.Namespaces,
+                    ParserTypeName = finalType.Key.ToString()
+                });
+            }
+            parsers = parserlist;
+            return true;
         }
 
         private (string ClassName, string SourceCode) ParserProviderWrapper(ITypeSymbol parserProviderType, ITypeSymbol parsedType, Func<string, string> convertFunction) {
@@ -240,24 +299,30 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Providers {
             node.AddNode($"private class {wrapperName} : TypeParser<{parsedType}>", node => {
                 node.AddStatement($"private readonly TypeParser<{parserProviderType}> Parser");
                 node.AddNode($"public {wrapperName} (IParserDiscovery discovery)", node => {
-                    node.AddStatement("Parser = discovert.GetParser");
+                    node.AddStatement($"Parser = discovery.GetParser<{parserProviderType}>()");
                 });
 
                 node.AddNode($"public {wrapperName} (IParserDiscovery discovery, out bool isSuccess)", node => {
-
+                    node.AddStatement($"isSuccess = discovery.TryGetParser<{parserProviderType}>(out Parser)");
                 });
 
                 node.AddStatement($"public override bool TrySerialize({parsedType} value, Span<byte> destination, out int writtenBytes) => Parser.TrySerialize(new {parserProviderType}(value), destination, out writtenBytes)");
                 node.AddStatement($"public override int Serialize({parsedType} value, Span<byte> destination) => Parser.Serialize(new {parserProviderType}(value), destination)");
-                node.AddStatement($"public override int GetBinaryLength({parsedType} value) => Parser.GetBinaryLength(value)");
+                node.AddStatement($"public override int GetBinaryLength({parsedType} value) => Parser.GetBinaryLength(new {parserProviderType}(value))");
                 node.AddNode($"public override DeserializeResult TryDeserialize(ReadOnlySpan<byte> span, out int readBytes, out {parsedType} result)", node => {
-                    node.AddStatement("var deserializeResult = TryDeserialize(span, out readBytes, out var ogResult)");
+                    node.AddStatement("var deserializeResult = Parser.TryDeserialize(span, out readBytes, out var ogResult)");
                     node.AddStatement($"result = {convertFunction("ogResult")}");
                     node.AddStatement("return deserializeResult");
                 });
             });
 
             return (wrapperName, node.ToString());
+        }
+
+        private ITypeSymbol GetUnconstraintOrNormalType(ITypeSymbol symbol) {
+            if (symbol is INamedTypeSymbol namedSymbol && namedSymbol.IsGenericType)
+                return namedSymbol.ConstructUnboundGenericType();
+            return symbol;
         }
 
     }

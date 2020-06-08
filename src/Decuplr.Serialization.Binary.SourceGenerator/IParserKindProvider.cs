@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.SourceGenerator {
     internal interface IParserKindProvider {
-        string GetFunction(string namespaceName, string rootName);
+        string GetFunction(string rootName);
     }
 
     internal class SealedParserKindProvider : IParserKindProvider {
@@ -18,8 +18,8 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             AcceptsRoot = acceptsRoot;
         }
 
-        public string GetFunction(string namespaceName, string rootName) {
-            return $"{namespaceName}.{nameof(IMutableNamespace.AddSealedParser)}(new {ParserName}({(AcceptsRoot ? rootName : null)}))";
+        public string GetFunction(string rootName) {
+            return $"{nameof(IMutableNamespace.AddSealedParser)}(new {ParserName}({(AcceptsRoot ? rootName : null)}))";
         }
     }
 
@@ -34,8 +34,8 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
         }
 
         // bool AddParserProvider<TProvider, TType>(TProvider provider) where TProvider : IParserProvider<TType>;
-        public string GetFunction(string namespaceName, string rootName) {
-            return $"{namespaceName}.{nameof(IMutableNamespace.AddParserProvider)}<{ParserProviderName}, {ParsedType}>(new {ParserProviderName}())";
+        public string GetFunction(string rootName) {
+            return $"{nameof(IMutableNamespace.AddParserProvider)}<{ParserProviderName}, {ParsedType}>(new {ParserProviderName}())";
         }
     }
 
@@ -48,8 +48,8 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
             ParserProviderName = parserProviderName;
         }
 
-        public string GetFunction(string namespaceName, string rootName) {
-            return $"{namespaceName}.{nameof(IDefaultParserNamespace.AddGenericParserProvider)}({ParserProviderName}, typeof({ParsedType}).{nameof(Type.GetGenericTypeDefinition)}())";
+        public string GetFunction(string rootName) {
+            return $"{nameof(IDefaultParserNamespace.AddGenericParserProvider)}(typeof({ParserProviderName}<>), typeof({ParsedType}).{nameof(Type.GetGenericTypeDefinition)}())";
         }
     }
 }

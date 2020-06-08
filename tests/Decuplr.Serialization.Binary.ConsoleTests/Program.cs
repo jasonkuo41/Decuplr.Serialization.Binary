@@ -1,23 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Decuplr.Serialization.Binary.Annotations.Namespaces;
 
 namespace Decuplr.Serialization.Binary.ConsoleTests {
     internal class Program {
         private static void Main(string[] args) {
-            byte[] target = new byte[12];
-            BinaryPacker.Shared.GetParser<int>().Serialize(123, target);
-            Console.WriteLine("Hello World!dd");
+            /*
+            var foamStruct = new FoamStruct {
+                Data = 123,
+                Implement = 12345678765334
+            };
+            */
+            var foamStruct = new FoamStruct(123, 12345678765334);
+            var foamParser = BinaryPacker.Shared.GetParser<FoamStruct>();
+            Span<byte> stack = stackalloc byte[foamParser.GetBinaryLength(foamStruct)];
+            foamParser.Serialize(foamStruct, stack);
+
+            var xresult = foamParser.TryDeserialize(stack, out _, out var result);
+            Console.Write(result);
             //DebugContent.PrintDebugInfo();
         }
     }
 
-    [BinaryFormat(Sealed = true)]
+    [BinaryFormat]
     public partial struct FoamStruct {
-        [Index(0)]
-        public int Data { get; set; }
-        [Index(1)]
-        public int Implement { get; set; }
+        public FoamStruct(int value, long impl) {
+            Data = value;
+            Implement = impl;
+        }
+        //[Index(0)]
+        public int Data { get; }
+        //[Index(1)]
+        public long Implement { get; }
+
+        public override string ToString() => $"{Data} {Implement}";
     }
 
     [BinaryFormat]
@@ -51,22 +68,6 @@ namespace Decuplr.Serialization.Binary.ConsoleTests {
         }
     }
 
-    public interface IConditionAttribute {
-
-    }
-
-    public class FormatConditionAttribute : Attribute {
-        public FormatConditionAttribute(string condition) {
-
-        }
-
-    }
-
-    public class BaseA { }
-
-    public class ClassB : BaseA { }
-
-    public class ClassC : BaseA { }
 
     [BinaryFormat]
     public partial struct TestStruct {

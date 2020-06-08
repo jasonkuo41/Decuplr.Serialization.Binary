@@ -33,7 +33,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Providers {
                 NeverDeserialize = attribute.Data.GetNamedArgumentValue<bool>(nameof(BinaryFormatAttribute.NeverDeserialize)) ?? false,
                 RequestLayout = attribute.Data.GetNamedArgumentValue<BinaryLayout>(nameof(BinaryFormatAttribute.Layout)) ?? BinaryLayout.Auto,
                 // Because we aren't supporting it rn
-                TargetNamespaces = Array.Empty<string>()
+                TargetNamespaces = new string[] { "Default" }
             };
 
             bool result = SchemaParserConverter.TryConvert(type, context.Compilation, schemaPrecusor, out IList<Diagnostic>? diagnostics, out parser);

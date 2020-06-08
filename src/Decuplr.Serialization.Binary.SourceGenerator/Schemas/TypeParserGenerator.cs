@@ -29,8 +29,8 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
         private IParserKindProvider GetProviderFromType(string parserName, ref EmbeddedCode embeddedCode) {
             if (TypeInfo.FormatInfo.IsSealed)
                 return new SealedParserKindProvider(parserName, true);
-            if (TypeInfo.TypeSymbol.IsUnboundGenericType) {
-                var wrapper = new GenericParserProviderWrapper(TypeInfo.TypeSymbol, parserName);
+            if (TypeInfo.TypeSymbol.IsGenericType) {
+                var wrapper = new GenericParserProviderWrapper(TypeInfo.TypeSymbol.ConstructUnboundGenericType(), parserName);
                 embeddedCode = wrapper.Provide(embeddedCode, out var provider);
                 return provider;
             }
@@ -162,22 +162,27 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
         public GeneratedParser GetFormatterCode() {
             var parserName = $"{TypeInfo.TypeSymbol.GetEmbedName()}_TypeParser";
 
-            var node = new CodeNodeBuilder();
-            AddParserCollection(node);
-            AddTypeParser(node, parserName);
-
-            var currentCode = new EmbeddedCode {
+            var parserCollectionNode = new CodeNodeBuilder();
+            AddParserCollection(parserCollectionNode);
+            var parserCollectionCode = new EmbeddedCode {
                 CodeNamespaces = Array.Empty<string>(),
-                SourceCode = node.ToString(),
+                SourceCode = parserCollectionNode.ToString(),
             };
-            var parserKind = GetProviderFromType(parserName, ref currentCode);
+
+            var parserTypeNode = new CodeNodeBuilder();
+            AddTypeParser(parserTypeNode, parserName);
+            var parserTypeCode = new EmbeddedCode {
+                CodeNamespaces = Array.Empty<string>(),
+                SourceCode = parserTypeNode.ToString(),
+            };
+            var parserKind = GetProviderFromType(parserName, ref parserTypeCode);
 
             return new GeneratedParser {
                 ParserTypeName = TypeInfo.TypeSymbol.Name,
                 AdditionalSourceFiles = AdditionalSourceCode,
                 ParserNamespaces = TypeInfo.FormatInfo.TargetNamespaces,
                 ParserKinds = new IParserKindProvider[] { parserKind },
-                EmbeddedCode = currentCode,
+                EmbeddedCode = parserCollectionCode.Merge(parserTypeCode),
             };
         }
     }
