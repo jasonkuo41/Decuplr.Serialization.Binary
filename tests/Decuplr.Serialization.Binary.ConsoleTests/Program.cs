@@ -18,7 +18,10 @@ namespace Decuplr.Serialization.Binary.ConsoleTests {
             foamParser.Serialize(foamStruct, stack);
 
             var xresult = foamParser.TryDeserialize(stack, out _, out var result);
-            Console.Write(result);
+            Console.WriteLine(result);
+            Console.WriteLine(foamParser.FixedSize);
+            Console.WriteLine(BinaryPacker.Shared.GetParser<int>().FixedSize);
+            Console.WriteLine(BinaryPacker.Shared.GetParser<DateTime>().FixedSize);
             //DebugContent.PrintDebugInfo();
         }
     }

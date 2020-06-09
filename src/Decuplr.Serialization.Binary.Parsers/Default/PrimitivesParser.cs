@@ -92,11 +92,41 @@ namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
         protected override void WriteBytes(Span<byte> destination, int value) => BinaryPrimitives.WriteInt32LittleEndian(destination, value);
     }
 
-    [BinaryParser]
-    [BinaryParserNamespace("Default")]
     internal class Int64Parser : UnmanagedParserBase<long> {
         protected override long GetValue(ReadOnlySpan<byte> value) => BinaryPrimitives.ReadInt64LittleEndian(value);
         protected override void WriteBytes(Span<byte> destination, long value) => BinaryPrimitives.WriteInt64LittleEndian(destination, value);
+    }
+
+    [BinaryParser]
+    [BinaryParserNamespace("Default")]
+    internal sealed class Int64ParserImproved : TypeParser<long> {
+
+        public override int? FixedSize => sizeof(long);
+
+        public override int GetBinaryLength(long value) => sizeof(long);
+
+        public override int Serialize(long value, Span<byte> destination) {
+            BinaryPrimitives.WriteInt64LittleEndian(destination, value);
+            return sizeof(long);
+        }
+
+        public override DeserializeResult TryDeserialize(ReadOnlySpan<byte> span, out int readBytes, out long result) {
+            result = default;
+            readBytes = -1;
+            if (span.Length < sizeof(long))
+                return DeserializeResult.InsufficientSize;
+            result = BinaryPrimitives.ReadInt64LittleEndian(span);
+            readBytes = sizeof(long);
+            return DeserializeResult.Success;
+        }
+
+        public override bool TrySerialize(long value, Span<byte> destination, out int writtenBytes) {
+            writtenBytes = -1;
+            if (destination.Length < sizeof(long))
+                return false;
+            writtenBytes = Serialize(value, destination);
+            return true;
+        }
     }
 
     [BinaryParser]

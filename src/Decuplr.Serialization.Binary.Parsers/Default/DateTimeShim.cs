@@ -10,7 +10,7 @@ namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
     // Uses Microsoft ToBinary and FromBinary
     [BinaryParser(typeof(DateTime))]
     [BinaryParserNamespace("Default")]
-    internal partial class DateTimeShim : ITypeConvertible<DateTime> {
+    internal partial struct DateTimeShim : ITypeConvertible<DateTime> {
         public DateTimeShim (DateTime time) {
             ActualTime = time.ToBinary();
         }

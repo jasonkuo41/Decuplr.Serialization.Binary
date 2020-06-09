@@ -10,6 +10,7 @@
     <PackageReference Include="Apex.Serialization" Version="2.0.0" />
     <PackageReference Include="AutoFixture" Version="4.11.0" />
     <PackageReference Include="BenchmarkDotNet" Version="0.12.0" />
+    <PackageReference Include="BenchmarkDotNet.Diagnostics.Windows" Version="0.12.0" />
     <PackageReference Include="MessagePack" Version="2.1.115" />
   </ItemGroup>
 

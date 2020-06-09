@@ -296,7 +296,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Providers {
             var wrapperName = $"TypeParserWrapper_{parsedType.GetEmbedName()}_As_{parserProviderType.GetEmbedName()}";
             var node = new CodeNodeBuilder();
 
-            node.AddNode($"private class {wrapperName} : TypeParser<{parsedType}>", node => {
+            node.AddNode($"private sealed class {wrapperName} : TypeParser<{parsedType}>", node => {
                 node.AddStatement($"private readonly TypeParser<{parserProviderType}> Parser");
                 node.AddNode($"public {wrapperName} (IParserDiscovery discovery)", node => {
                     node.AddStatement($"Parser = discovery.GetParser<{parserProviderType}>()");
@@ -306,6 +306,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Providers {
                     node.AddStatement($"isSuccess = discovery.TryGetParser<{parserProviderType}>(out Parser)");
                 });
 
+                node.AddStatement($"public override int? FixedSize => Parser.FixedSize");
                 node.AddStatement($"public override bool TrySerialize({parsedType} value, Span<byte> destination, out int writtenBytes) => Parser.TrySerialize(new {parserProviderType}(value), destination, out writtenBytes)");
                 node.AddStatement($"public override int Serialize({parsedType} value, Span<byte> destination) => Parser.Serialize(new {parserProviderType}(value), destination)");
                 node.AddStatement($"public override int GetBinaryLength({parsedType} value) => Parser.GetBinaryLength(new {parserProviderType}(value))");

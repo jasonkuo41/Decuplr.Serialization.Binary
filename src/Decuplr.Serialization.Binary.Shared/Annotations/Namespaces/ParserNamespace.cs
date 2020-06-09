@@ -5,7 +5,7 @@ namespace Decuplr.Serialization.Binary.Annotations.Namespaces {
     /// <summary>
     /// Marks the parser to load into certain namespace
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
     public sealed class BinaryParserNamespaceAttribute : Attribute {
         public BinaryParserNamespaceAttribute(string targetNamespace) {
             Namespace = targetNamespace;

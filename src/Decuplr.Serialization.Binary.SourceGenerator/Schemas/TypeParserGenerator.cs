@@ -85,7 +85,12 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
                         // surely there is optimization we could do to improve this
                         // for example check for the largest fixedsize in the group
                         // but we'll ignore that for now
-                        node.AddStatement($"fixedSize += {currentMember.ConstantLength?.ToString() ?? (annotation.RequestParserType.Count == 1 ? $"ParserCollections.Parser_{captureI}_{0}.FixedSize" : "null")} ");
+                        if (currentMember.ConstantLength.HasValue)
+                            node.AddStatement($"fixedSize += {currentMember.ConstantLength}");
+                        if (annotation.RequestParserType.Count == 1)
+                            node.AddStatement($"fixedSize += ParserCollections.Parser_{captureI}_{0}.FixedSize");
+                        else
+                            node.AddStatement($"fixedSize = null");
                     });
                 }
             }

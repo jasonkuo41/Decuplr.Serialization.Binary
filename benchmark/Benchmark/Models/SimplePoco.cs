@@ -9,10 +9,10 @@ namespace Benchmark.Models {
     [MessagePackObject, BinaryFormat]
     public partial class SimplePoco {
         [Key(0)]
-        public int OldAccountId { get; set; }
+        public long OldAccountId { get; set; }
 
         [Key(1)]
-        public int NewAccountId { get; set; }
+        public long NewAccountId { get; set; }
 
         [Key(2)]
         public long InfoId { get; set; }
@@ -27,6 +27,6 @@ namespace Benchmark.Models {
         public DateTime FastChangeTime { get; set; }
 
         [Key(6)]
-        public ushort FinalCommentId { get; set; }
+        public long FinalCommentId { get; set; }
     }
 }
