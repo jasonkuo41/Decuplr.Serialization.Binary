@@ -57,7 +57,8 @@ namespace Decuplr.Serialization.Binary {
             var genericType = type.GetGenericTypeDefinition();
             if (!Parsers.TryGetValue(genericType, out var provider))
                 return false;
-            var gProvider = (GenericParserProvider)provider;
+            // uh-oh, AOT unfriendly!
+            var gProvider = Activator.CreateInstance(((Type)provider).MakeGenericType(type.GetGenericArguments())) as GenericParserProvider;
             Debug.Assert(gProvider != null);
             if (!gProvider.TryProvideParser(parserNamespace, out parser))
                 return false;

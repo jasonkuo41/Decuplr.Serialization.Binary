@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Buffers.Binary;
-using System.Runtime.CompilerServices;
 using Decuplr.Serialization.Binary.Annotations;
 using Decuplr.Serialization.Binary.Annotations.Namespaces;
+using Decuplr.Serialization.Binary.Internal;
 
-namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
+namespace Decuplr.Serialization.Binary.Parsers {
     /*
      * Generated using the following code
      * 

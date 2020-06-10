@@ -145,7 +145,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
                 node.AddPlain("");
                 node.AddPlain("// GetBinaryLength Function");
                 node.AddNode($"public override int GetBinaryLength({TypeInfo.TypeSymbol} value)", node => {
-                    node.AddStatement($"return {GetLength.FunctionName}(in ParserCollections, value)");
+                    node.AddStatement($"return fixedSize ?? {GetLength.FunctionName}(in ParserCollections, value)");
                 });
 
                 node.AddPlain("");

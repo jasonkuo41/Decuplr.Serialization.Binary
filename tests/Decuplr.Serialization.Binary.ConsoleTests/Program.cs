@@ -22,7 +22,7 @@ namespace Decuplr.Serialization.Binary.ConsoleTests {
             Console.WriteLine(foamParser.FixedSize);
             Console.WriteLine(BinaryPacker.Shared.GetParser<int>().FixedSize);
             Console.WriteLine(BinaryPacker.Shared.GetParser<DateTime>().FixedSize);
-            //DebugContent.PrintDebugInfo();
+            Console.WriteLine(BinaryPacker.Shared.GetParser<Lazy<DateTime>>().FixedSize);
         }
     }
 

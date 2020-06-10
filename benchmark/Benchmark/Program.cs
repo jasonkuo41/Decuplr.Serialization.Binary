@@ -111,7 +111,7 @@ namespace Benchmark {
     //[InliningDiagnoser(true, new string[] { "Decuplr.Serialization.Binary", "Decuplr.Serialization.Binary.Internal", "Decuplr.Serialization.Binary.Internal.DefaultParsers", "Decuplr.Serialization.Binary.Parsers" })]
     public class SerializeTest {
 
-        public ArrayBufferWriter<byte> MsgPackWriter { get; } = new ArrayBufferWriter<byte>();
+        public ArrayBufferWriter<byte> MsgPackWriter { get; } = new ArrayBufferWriter<byte>(100);
         private SimplePoco poco;
         private TypeParser<SimplePoco> PocoParser;
 
@@ -128,6 +128,11 @@ namespace Benchmark {
         [Benchmark]
         public void MessagePackSerialize() {
             MessagePackSerializer.Serialize(poco);
+        }
+
+        [Benchmark]
+        public void MessagePackSerializeNoAlloc() {
+            MessagePackSerializer.Serialize(MsgPackWriter, poco);
         }
 
         [Benchmark]
