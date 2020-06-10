@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Decuplr.Serialization.Binary.Annotations;
 using Decuplr.Serialization.Binary.Annotations.Namespaces;
 using Decuplr.Serialization.Binary.Internal;
@@ -92,7 +94,7 @@ namespace Decuplr.Serialization.Binary.Parsers {
         protected override void WriteBytes(Span<byte> destination, int value) => BinaryPrimitives.WriteInt32LittleEndian(destination, value);
     }
 
-    internal class Int64Parser : UnmanagedParserBase<long> {
+    internal sealed class Int64Parser : UnmanagedParserBase<long> {
         protected override long GetValue(ReadOnlySpan<byte> value) => BinaryPrimitives.ReadInt64LittleEndian(value);
         protected override void WriteBytes(Span<byte> destination, long value) => BinaryPrimitives.WriteInt64LittleEndian(destination, value);
     }
@@ -125,6 +127,7 @@ namespace Decuplr.Serialization.Binary.Parsers {
             if (destination.Length < sizeof(long))
                 return false;
             writtenBytes = Serialize(value, destination);
+            Span<object>.DangerousCreate();
             return true;
         }
     }

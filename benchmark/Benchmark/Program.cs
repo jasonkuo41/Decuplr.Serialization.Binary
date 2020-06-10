@@ -18,12 +18,12 @@ namespace Benchmark {
 
 
         public static void Main() {
-            BenchmarkRunner.Run<SerializeTest>();
-            //BenchmarkRunner.Run<PrimitiveTest>();
+            //BenchmarkRunner.Run<SerializeTest>();
+            BenchmarkRunner.Run<PrimitiveTest>();
         }
     }
 
-    [HardwareCounters(HardwareCounter.BranchMispredictions , HardwareCounter.CacheMisses , HardwareCounter.InstructionRetired)]
+    //[HardwareCounters(HardwareCounter.BranchMispredictions , HardwareCounter.CacheMisses , HardwareCounter.InstructionRetired)]
     public class PrimitiveTest {
 
         private sealed class MyLongParser : TypeParser<long> {
@@ -66,7 +66,7 @@ namespace Benchmark {
             MyLong2 = new MyLongParser();
         }
 
-        //[Benchmark]
+        [Benchmark]
         public int SerializeLong() {
             return LongParser.Serialize(Value, Space);
         }
@@ -117,22 +117,23 @@ namespace Benchmark {
 
         private readonly byte[] BinaryTarget = new byte[100];
 
+        private byte[] MsgPackResult;
+        private byte[] BinPackResult;
+
         [GlobalSetup]
         public void Setup() {
             var fixture = new Fixture();
             poco = fixture.Build<SimplePoco>().Create();
             PocoParser = BinaryPacker.Shared.GetParser<SimplePoco>();
-            MessagePackSerializer.Serialize(poco);
+            MsgPackResult = MessagePackSerializer.Serialize(poco);
+            var count = PocoParser.Serialize(poco, BinaryTarget);
+            BinPackResult = new byte[count];
+            BinaryTarget.AsSpan(0, count).CopyTo(BinPackResult);
         }
 
         [Benchmark]
         public void MessagePackSerialize() {
             MessagePackSerializer.Serialize(poco);
-        }
-
-        [Benchmark]
-        public void MessagePackSerializeNoAlloc() {
-            MessagePackSerializer.Serialize(MsgPackWriter, poco);
         }
 
         [Benchmark]
@@ -182,6 +183,18 @@ namespace Benchmark {
             span = span.Slice(8);
 
             return BinaryTarget.Length - span.Length;
+        }
+
+
+        [Benchmark]
+        public SimplePoco MsgPackDeserialize() {
+            return MessagePackSerializer.Deserialize<SimplePoco>(MsgPackResult, out _);
+        }
+
+        [Benchmark]
+        public SimplePoco DecuplrBinaryDeserialize() {
+            PocoParser.TryDeserialize(BinPackResult, out _, out var result);
+            return result;
         }
     }
 }

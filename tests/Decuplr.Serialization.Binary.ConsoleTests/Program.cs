@@ -20,6 +20,15 @@ namespace Decuplr.Serialization.Binary.ConsoleTests {
             var xresult = foamParser.TryDeserialize(stack, out _, out var result);
             Console.WriteLine(result);
             Console.WriteLine(foamParser.FixedSize);
+
+            var lazy = new Lazy<DateTime>(() => DateTime.Now);
+            var lazyParser = BinaryPacker.Shared.GetParser<Lazy<DateTime>>();
+            stack = stackalloc byte[lazyParser.GetBinaryLength(lazy)];
+            lazyParser.Serialize(lazy, stack);
+            xresult = lazyParser.TryDeserialize(stack, out _, out var dateResult);
+            Console.WriteLine(dateResult.Value);
+
+
             Console.WriteLine(BinaryPacker.Shared.GetParser<int>().FixedSize);
             Console.WriteLine(BinaryPacker.Shared.GetParser<DateTime>().FixedSize);
             Console.WriteLine(BinaryPacker.Shared.GetParser<Lazy<DateTime>>().FixedSize);

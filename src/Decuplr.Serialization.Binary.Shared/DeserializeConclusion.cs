@@ -1,5 +1,5 @@
 ﻿namespace Decuplr.Serialization {
-    public enum DeserializeConclusion {
+    public enum DeserializeConclusion : byte {
         InsufficientSize,
         Faulted,
         Success,
