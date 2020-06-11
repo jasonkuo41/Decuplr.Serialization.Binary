@@ -19,7 +19,7 @@ namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
     ///  
     [BinaryParser(typeof(Lazy<>))]
     [BinaryParserNamespace("Default")]
-    internal partial class LazyShim<T> : ITypeConvertible<Lazy<T>> {
+    internal partial struct LazyShim<T> : ITypeConvertible<Lazy<T>> {
 
         public LazyShim(Lazy<T> lazy) {
             LazyValue = lazy.Value;
@@ -30,7 +30,8 @@ namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
 
         public Lazy<T> ConvertTo() {
 #if NETSTANDARD2_0
-            return new Lazy<T>(() => LazyValue, true);
+            var value = LazyValue;
+            return new Lazy<T>(() => value, true);
 #else
             return new Lazy<T>(LazyValue);
 #endif

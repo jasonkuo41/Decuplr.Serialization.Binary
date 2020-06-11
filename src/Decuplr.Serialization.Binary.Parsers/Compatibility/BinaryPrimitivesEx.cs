@@ -15,7 +15,7 @@ namespace Decuplr {
     // This code belongs to the .net foundation
     // These parts of the code would also become part of .Net 5, but since it wouldn't be included in .Net Standard 2.0 and .Net Standard 2.1
     // We made them this way.
-    public static class BinaryPrimitivesEx {
+    internal static class BinaryPrimitivesEx {
 
         /// <summary>
         /// Writes a <see cref="double" /> into a span of bytes, as little endian.
@@ -158,7 +158,7 @@ namespace Decuplr {
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int SingleToInt32Bits(float value) {
+        public static int SingleToInt32Bits(float value) {
 #if NETSTANDARD2_0
             return Unsafe.As<float, int>(ref value);
 #else
@@ -167,7 +167,7 @@ namespace Decuplr {
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float Int32BitsToSingle(int value) {
+        public static float Int32BitsToSingle(int value) {
 #if NETSTANDARD2_0
             return Unsafe.As<int, float>(ref value);
 #else

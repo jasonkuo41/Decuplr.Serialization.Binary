@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using AutoFixture;
 using Benchmark.Models;
 using BenchmarkDotNet.Attributes;
@@ -10,19 +11,60 @@ using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Running;
 using Decuplr.Serialization;
 using Decuplr.Serialization.Binary;
+using Decuplr.Serialization.Binary.Parsers;
 using MessagePack;
 
 namespace Benchmark {
+    public class C {
+
+        public byte a;
+        public byte b;
+        public byte d;
+        public byte c;
+
+        public void Setup() {
+            var rand = new Random();
+            a = (byte)rand.Next(0, 255);
+            b = (byte)rand.Next(0, 255);
+            c = (byte)rand.Next(0, 255);
+            d = (byte)rand.Next(0, 255);
+        }
+
+        [Benchmark]
+        public int M() {
+            Span<int> data = stackalloc int[1];
+            var value = MemoryMarshal.AsBytes(data);
+            value[0] = a;
+            value[1] = b;
+            value[2] = c;
+            value[3] = d;
+            return data[0];
+        }
+
+        [Benchmark]
+        public int K() {
+            Span<byte> data = stackalloc Byte[sizeof(int)];
+            data[0] = a;
+            data[1] = b;
+            data[2] = c;
+            data[3] = d;
+            return MemoryMarshal.Read<int>(data);
+        }
+    }
+
     public class Program {
 
 
 
         public static void Main() {
             //BenchmarkRunner.Run<SerializeTest>();
-            BenchmarkRunner.Run<PrimitiveTest>();
+            //BenchmarkRunner.Run<PrimitiveTest>();
+            BenchmarkRunner.Run<C>();
         }
     }
 
+
+    [MemoryDiagnoser]
     //[HardwareCounters(HardwareCounter.BranchMispredictions , HardwareCounter.CacheMisses , HardwareCounter.InstructionRetired)]
     public class PrimitiveTest {
 
@@ -47,50 +89,61 @@ namespace Benchmark {
         }
 
         private long Value;
+        private long Value2;
+        private long Value3;
+        private long Value4;
+        private long Value5;
         private DateTime Time;
         private TypeParser<long> LongParser;
-        private TypeParser<long> MyLong;
+        private TypeParserEx<long> MyLong;
         private MyLongParser MyLong2;
         private TypeParser<DateTime> DateTimeParser;
+        private long[] Values;
         private byte[] Space;
 
         [GlobalSetup]
         public void Setup() {
-            Space = new byte[8];
+            Space = new byte[40];
             var random = new Random();
             Value = (random.Next() << 4) + random.Next();
+            Value2 = (random.Next() << 4) + random.Next();
+            Value3 = (random.Next() << 4) + random.Next();
+            Value4 = (random.Next() << 4) + random.Next();
+            Value5 = (random.Next() << 4) + random.Next();
             Time = DateTime.FromBinary(Value);
             LongParser = BinaryPacker.Shared.GetParser<long>();
             DateTimeParser = BinaryPacker.Shared.GetParser<DateTime>();
-            MyLong = new MyLongParser();
             MyLong2 = new MyLongParser();
+            Values = new long[] { Value, Value2, Value3 };
         }
 
-        [Benchmark]
+        //[Benchmark]
         public int SerializeLong() {
-            return LongParser.Serialize(Value, Space);
-        }
-
-        [Benchmark]
-        public int SerializeLong1() {
-            return MyLong.Serialize(Value, Space);
-        }
-
-        [Benchmark]
-        public int SerializeLong2() {
             return MyLong2.Serialize(Value, Space);
         }
 
         //[Benchmark]
-        public int SerializeLongManual() {
-            MemoryMarshal.Write(Space, ref Value);
-            return sizeof(long);
+        public int SerializeLong1() {
+            return MyLong.Serialize(Value, Space);
+        }
+
+        //[Benchmark]
+        public int SerializeLong2() {
+            return LongParser.Serialize(Value, Space);
         }
 
         [Benchmark]
+        public int SerializeLongManual() {
+            MemoryMarshal.Write(Space, ref Value);
+            MemoryMarshal.Write(Space.AsSpan(8), ref Value2);
+            MemoryMarshal.Write(Space.AsSpan(16), ref Value3);
+            return sizeof(long);
+        }
+
+        //[Benchmark]
         public int SerializeLongManual2() {
             BinaryPrimitives.WriteInt64LittleEndian(Space, Value);
-            return sizeof(int);
+            return sizeof(int) * 3;
         }
 
         //[Benchmark]
@@ -107,7 +160,7 @@ namespace Benchmark {
     }
 
     [MemoryDiagnoser]
-    //[HardwareCounters(HardwareCounter.CacheMisses | HardwareCounter.BranchMispredictions)]
+    //[HardwareCounters(HardwareCounter.CacheMisses , HardwareCounter.BranchMispredictions , HardwareCounter.InstructionRetired)]
     //[InliningDiagnoser(true, new string[] { "Decuplr.Serialization.Binary", "Decuplr.Serialization.Binary.Internal", "Decuplr.Serialization.Binary.Internal.DefaultParsers", "Decuplr.Serialization.Binary.Parsers" })]
     public class SerializeTest {
 
@@ -131,26 +184,26 @@ namespace Benchmark {
             BinaryTarget.AsSpan(0, count).CopyTo(BinPackResult);
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void MessagePackSerialize() {
             MessagePackSerializer.Serialize(poco);
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void DecuplrBinarySerialize() {
             // This suppose to be a bug :(
             PocoParser.GetBinaryLength(poco);
             PocoParser.Serialize(poco, BinaryTarget);
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void DecuplrBinarySerialize2() {
             // This suppose to be a bug :(
             //PocoParser.GetBinaryLength(poco);
             PocoParser.Serialize(poco, BinaryTarget);
         }
 
-        [Benchmark]
+        //[Benchmark]
         public int ManuallySerialize() {
             var span = BinaryTarget.AsSpan();
             var id = poco.OldAccountId;
@@ -183,6 +236,36 @@ namespace Benchmark {
             span = span.Slice(8);
 
             return BinaryTarget.Length - span.Length;
+        }
+
+        [Benchmark]
+        public SimplePoco ManuallyDeserialize() {
+            var ogLength = BinPackResult.Length;
+            var span = BinPackResult.AsSpan();
+            var poco = new SimplePoco();
+            poco.OldAccountId = MemoryMarshal.Read<long>(span);
+            span = span.Slice(sizeof(long));
+
+            poco.NewAccountId = MemoryMarshal.Read<long>(span);
+            span = span.Slice(sizeof(long));
+
+            poco.InfoId = MemoryMarshal.Read<long>(span);
+            span = span.Slice(sizeof(long));
+
+            poco.LastChangeTime = DateTime.FromBinary(MemoryMarshal.Read<long>(span));
+            span = span.Slice(sizeof(long));
+
+            poco.FinalChangeTime = DateTime.FromBinary(MemoryMarshal.Read<long>(span));
+            span = span.Slice(sizeof(long));
+
+            poco.FastChangeTime = DateTime.FromBinary(MemoryMarshal.Read<long>(span));
+            span = span.Slice(sizeof(long));
+
+            poco.FinalCommentId = MemoryMarshal.Read<long>(span);
+            span = span.Slice(sizeof(long));
+
+            var readBytes = ogLength - span.Length;
+            return poco;
         }
 
 

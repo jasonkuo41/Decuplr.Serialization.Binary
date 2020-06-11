@@ -33,8 +33,8 @@ namespace Decuplr.Serialization.Binary.Internal {
         }
 
         public override int Serialize(T value, Span<byte> destination) {
-            if (destination.Length < fixedSize)
-                throw new ArgumentOutOfRangeException("Destination not large enough");
+            //if (destination.Length < fixedSize)
+            //    throw new ArgumentOutOfRangeException("Destination not large enough");
             WriteBytes(destination, value);
             return fixedSize;
         }
