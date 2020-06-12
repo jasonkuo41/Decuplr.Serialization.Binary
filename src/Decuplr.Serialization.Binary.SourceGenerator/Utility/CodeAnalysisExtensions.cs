@@ -100,5 +100,25 @@ namespace Decuplr.Serialization.Binary.SourceGenerator {
         public static bool InheritFrom<T>(this AnalyzedType type) => InheritFrom(type.TypeSymbol, type.Analyzer.GetSymbol<T>()!);
         public static bool Implements<T>(this AnalyzedType type) => Implements(type.TypeSymbol, type.Analyzer.GetSymbol<T>()!);
         public static bool Implements(this AnalyzedType type, Type interfaceType) => Implements(type.TypeSymbol, type.Analyzer.GetSymbol(interfaceType)!);
+
+        public static bool IsPrimitiveType(this ITypeSymbol symbol) {
+            switch (symbol.SpecialType) {
+                case SpecialType.System_Boolean:
+                case SpecialType.System_SByte:
+                case SpecialType.System_Int16:
+                case SpecialType.System_Int32:
+                case SpecialType.System_Int64:
+                case SpecialType.System_Byte:
+                case SpecialType.System_UInt16:
+                case SpecialType.System_UInt32:
+                case SpecialType.System_UInt64:
+                case SpecialType.System_Single:
+                case SpecialType.System_Double:
+                case SpecialType.System_Char:
+                    return true;
+                default:
+                    return false;
+            }
+        }
     }
 }

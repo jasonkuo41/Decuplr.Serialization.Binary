@@ -15,51 +15,13 @@ using Decuplr.Serialization.Binary.Parsers;
 using MessagePack;
 
 namespace Benchmark {
-    public class C {
-
-        public byte a;
-        public byte b;
-        public byte d;
-        public byte c;
-
-        public void Setup() {
-            var rand = new Random();
-            a = (byte)rand.Next(0, 255);
-            b = (byte)rand.Next(0, 255);
-            c = (byte)rand.Next(0, 255);
-            d = (byte)rand.Next(0, 255);
-        }
-
-        [Benchmark]
-        public int M() {
-            Span<int> data = stackalloc int[1];
-            var value = MemoryMarshal.AsBytes(data);
-            value[0] = a;
-            value[1] = b;
-            value[2] = c;
-            value[3] = d;
-            return data[0];
-        }
-
-        [Benchmark]
-        public int K() {
-            Span<byte> data = stackalloc Byte[sizeof(int)];
-            data[0] = a;
-            data[1] = b;
-            data[2] = c;
-            data[3] = d;
-            return MemoryMarshal.Read<int>(data);
-        }
-    }
-
     public class Program {
 
 
 
         public static void Main() {
             //BenchmarkRunner.Run<SerializeTest>();
-            //BenchmarkRunner.Run<PrimitiveTest>();
-            BenchmarkRunner.Run<C>();
+            BenchmarkRunner.Run<PrimitiveTest>();
         }
     }
 
@@ -94,8 +56,7 @@ namespace Benchmark {
         private long Value4;
         private long Value5;
         private DateTime Time;
-        private TypeParser<long> LongParser;
-        private TypeParserEx<long> MyLong;
+        private TypeParser<long> MyLong;
         private MyLongParser MyLong2;
         private TypeParser<DateTime> DateTimeParser;
         private long[] Values;
@@ -111,8 +72,8 @@ namespace Benchmark {
             Value4 = (random.Next() << 4) + random.Next();
             Value5 = (random.Next() << 4) + random.Next();
             Time = DateTime.FromBinary(Value);
-            LongParser = BinaryPacker.Shared.GetParser<long>();
-            DateTimeParser = BinaryPacker.Shared.GetParser<DateTime>();
+            //DateTimeParser = BinaryPacker.Shared.GetParser<DateTime>();
+            MyLong = new MyLongParser();
             MyLong2 = new MyLongParser();
             Values = new long[] { Value, Value2, Value3 };
         }
@@ -122,21 +83,22 @@ namespace Benchmark {
             return MyLong2.Serialize(Value, Space);
         }
 
-        //[Benchmark]
+        [Benchmark]
         public int SerializeLong1() {
             return MyLong.Serialize(Value, Space);
         }
 
-        //[Benchmark]
+        [Benchmark]
         public int SerializeLong2() {
-            return LongParser.Serialize(Value, Space);
+            PrimitiveParsers.WriteInt64Unsafe(Value, Space, true);
+            return sizeof(long);
         }
 
         [Benchmark]
         public int SerializeLongManual() {
             MemoryMarshal.Write(Space, ref Value);
-            MemoryMarshal.Write(Space.AsSpan(8), ref Value2);
-            MemoryMarshal.Write(Space.AsSpan(16), ref Value3);
+            //MemoryMarshal.Write(Space.AsSpan(8), ref Value2);
+            //MemoryMarshal.Write(Space.AsSpan(16), ref Value3);
             return sizeof(long);
         }
 

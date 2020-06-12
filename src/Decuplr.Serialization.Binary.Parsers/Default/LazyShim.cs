@@ -19,6 +19,7 @@ namespace Decuplr.Serialization.Binary.Internal.DefaultParsers {
     ///  
     [BinaryParser(typeof(Lazy<>))]
     [BinaryParserNamespace("Default")]
+    [ExportPublicParser("LazyParser", typeof(Lazy<>), ExportNamespace = "Decuplr.Serialization.Binary.Parsers")]
     internal partial struct LazyShim<T> : ITypeConvertible<Lazy<T>> {
 
         public LazyShim(Lazy<T> lazy) {

@@ -9,8 +9,6 @@ using System.Text;
 namespace Decuplr.Serialization.Binary.Parsers {
     public static partial class PrimitiveParsers {
 
-
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float ReadSingle(in ReadOnlySequence<byte> sequence, bool isSmallEndian) {
             // We predict that sequence would always provide enough space for us to read
