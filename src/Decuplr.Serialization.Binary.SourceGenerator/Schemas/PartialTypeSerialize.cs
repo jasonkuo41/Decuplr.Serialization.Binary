@@ -62,6 +62,7 @@ namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
                 node.AddNode($"internal static int {SerializeFuncName} (in {TypeInfo.GetDefaultParserCollectionName()} parsers, {TypeSymbol} value, Span<byte> destination)", node => {
                     node.AddStatement("var oglength = destination.Length");
                     node.AddStatement("int currentWrittenBytes");
+                    // TODO : we must verify if the member is property or not, if it's property, we need to local copy it, otherwise we pass by `in`
                     for (var i = 0; i < Members.Count; ++i) {
                         WriteMemberNodes(node, i, "parsers", "currentWrittenBytes", false);
                     }
