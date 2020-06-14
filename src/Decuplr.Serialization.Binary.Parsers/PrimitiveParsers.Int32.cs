@@ -19,7 +19,6 @@ using Decuplr.Serialization.Binary.Internal;
 
 namespace Decuplr.Serialization.Binary.Parsers {
 
-    [PrimitiveParserTemplate(typeof(int), ApplySpecialWith = "Decuplr.BinaryPrimitivesEx", SpecialTypes = new [] { typeof(float), typeof(double) })]
     public static partial class PrimitiveParsers {
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
