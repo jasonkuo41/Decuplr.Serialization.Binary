@@ -9,7 +9,7 @@ using Decuplr.Serialization.Binary.Annotations.Internal;
 using Microsoft.CodeAnalysis;
 using Standart.Hash.xxHash;
 
-namespace Decuplr.Serialization.Binary.SourceGenerator {
+namespace Decuplr.Serialization.Binary {
     internal static class TypeFormatLayoutExtensions {
         // This isn't good but it would do the job 
         private static readonly Regex ArrayRegex = new Regex(@"\[([\,\s]*|[^\]])\]", RegexOptions.Compiled);

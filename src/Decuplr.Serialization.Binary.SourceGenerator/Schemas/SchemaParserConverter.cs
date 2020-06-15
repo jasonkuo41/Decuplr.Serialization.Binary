@@ -4,7 +4,7 @@ using System.Text;
 using Decuplr.Serialization.Analyzer.BinaryFormat;
 using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
+namespace Decuplr.Serialization.Binary.Schemas {
     /// <summary>
     /// Magically turns schema into parsers at no time
     /// </summary>

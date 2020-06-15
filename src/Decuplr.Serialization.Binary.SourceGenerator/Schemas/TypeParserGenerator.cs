@@ -4,7 +4,7 @@ using System.Net.Http.Headers;
 using Decuplr.Serialization.Analyzer.BinaryFormat;
 using Decuplr.Serialization.Binary.Namespaces;
 
-namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
+namespace Decuplr.Serialization.Binary.Schemas {
     class TypeParserGenerator {
 
         private readonly TypeFormatLayout TypeInfo;

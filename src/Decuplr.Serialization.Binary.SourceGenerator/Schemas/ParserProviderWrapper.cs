@@ -1,6 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
+namespace Decuplr.Serialization.Binary.Schemas {
     internal class ParserProviderWrapper {
 
         private readonly ITypeSymbol ParsedType;

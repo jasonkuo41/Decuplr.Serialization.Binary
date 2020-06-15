@@ -4,7 +4,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using System.Linq;
 
-namespace Decuplr.Serialization.Binary.SourceGenerator {
+namespace Decuplr.Serialization.Binary {
     class CodeNodeBuilder {
 
         private class NodeInfo {

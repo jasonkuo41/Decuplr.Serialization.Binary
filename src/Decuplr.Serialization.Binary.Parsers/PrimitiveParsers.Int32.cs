@@ -94,4 +94,5 @@ namespace Decuplr.Serialization.Binary.Parsers {
         }
 
     }
+
 }

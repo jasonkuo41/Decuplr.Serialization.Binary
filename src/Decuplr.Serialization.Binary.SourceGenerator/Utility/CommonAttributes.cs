@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace Decuplr.Serialization.Binary.SourceGenerator {
+namespace Decuplr.Serialization.Binary {
     internal static class CommonAttributes {
 
         internal static string GeneratedCodeAttribute => $"[GeneratedCode (\"{Assembly.GetExecutingAssembly().GetName().Name}\", \"{Assembly.GetExecutingAssembly().GetName().Version}\")]";

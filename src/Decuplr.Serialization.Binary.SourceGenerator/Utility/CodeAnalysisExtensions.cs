@@ -9,7 +9,7 @@ using Decuplr.Serialization.Analyzer.BinaryFormat;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 
-namespace Decuplr.Serialization.Binary.SourceGenerator {
+namespace Decuplr.Serialization.Binary {
     static class CodeAnalysisExtensions {
         /// <summary>
         /// Get's the full name of a class, without namespace

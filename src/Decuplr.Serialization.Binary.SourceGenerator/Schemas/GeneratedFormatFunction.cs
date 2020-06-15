@@ -1,4 +1,4 @@
-﻿namespace Decuplr.Serialization.Binary.SourceGenerator {
+﻿namespace Decuplr.Serialization.Binary {
     struct GeneratedFormatFunction {
         public GeneratedFormatFunction(string name, string functionSource) {
             FunctionName = name;

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text;
 
-namespace Decuplr.Serialization.Binary.SourceGenerator {
+namespace Decuplr.Serialization.Binary {
     class CodeSnippetBuilder : CodeNodeBuilder {
 
         private readonly string ThisNamespace;

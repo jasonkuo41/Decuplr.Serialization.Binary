@@ -9,7 +9,7 @@ using Decuplr.Serialization.Binary.Annotations.Namespaces;
 using Decuplr.Serialization.Binary.SourceGenerator.Schemas;
 using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Serialization.Binary.SourceGenerator.Providers {
+namespace Decuplr.Serialization.Binary.ParserProviders {
 
     /*   [BinaryParser] comes with two flavor
      *   1. Native Base Type : Inherits TypeParser, these are natively consider "sealed" as they cannot be modified, unless it accepts `IParserDiscovery`

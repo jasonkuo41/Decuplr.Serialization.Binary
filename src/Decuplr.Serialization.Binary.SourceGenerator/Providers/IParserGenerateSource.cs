@@ -4,7 +4,7 @@ using System.Text;
 using Decuplr.Serialization.Analyzer.BinaryFormat;
 using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Serialization.Binary.SourceGenerator.Providers {
+namespace Decuplr.Serialization.Binary.ParserProviders {
     interface IParserGenerateSource {
         bool TryGenerateParser(IEnumerable<AnalyzedType> types, SourceGeneratorContext context, out IEnumerable<GeneratedParser>? parser);
     }

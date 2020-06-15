@@ -4,7 +4,7 @@ using Decuplr.Serialization.Binary.Internal;
 using Decuplr.Serialization.Binary.Namespaces;
 using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Serialization.Binary.SourceGenerator {
+namespace Decuplr.Serialization.Binary {
 
     internal class BinaryPackerEntryPointGenerator {
 

@@ -2,7 +2,7 @@
 using System.Linq;
 using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Serialization.Binary.SourceGenerator.Schemas {
+namespace Decuplr.Serialization.Binary.Schemas {
     /// <summary>
     /// Only provides parser wrapper for those who has constructor (IParserDiscovery) and (IParserDiscovery, out bool)
     /// </summary>

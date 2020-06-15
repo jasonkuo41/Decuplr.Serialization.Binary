@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Decuplr.Serialization.Binary.SourceGenerator {
+namespace Decuplr.Serialization.Binary {
     internal struct EmbeddedCode {
         public IReadOnlyList<string> CodeNamespaces { get; set; }
         public string SourceCode { get; set; }

@@ -4,7 +4,7 @@ using System.Text;
 using Decuplr.Serialization.Binary.Namespaces;
 using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Serialization.Binary.SourceGenerator {
+namespace Decuplr.Serialization.Binary {
     internal interface IParserKindProvider {
         string GetFunction(string rootName);
     }

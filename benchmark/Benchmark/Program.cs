@@ -30,26 +30,6 @@ namespace Benchmark {
     //[HardwareCounters(HardwareCounter.BranchMispredictions , HardwareCounter.CacheMisses , HardwareCounter.InstructionRetired)]
     public class PrimitiveTest {
 
-        private sealed class MyLongParser : TypeParser<long> {
-            public override int GetBinaryLength(long value) {
-                return sizeof(long);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-            public override int Serialize(long value, Span<byte> destination) {
-                BinaryPrimitives.WriteInt64LittleEndian(destination, value);
-                return sizeof(long);
-            }
-
-            public override DeserializeResult TryDeserialize(ReadOnlySpan<byte> span, out int readBytes, out long result) {
-                throw new NotImplementedException();
-            }
-
-            public override bool TrySerialize(long value, Span<byte> destination, out int writtenBytes) {
-                throw new NotImplementedException();
-            }
-        }
-
         private long Value;
         private long Value2;
         private long Value3;
@@ -57,7 +37,6 @@ namespace Benchmark {
         private long Value5;
         private DateTime Time;
         private TypeParser<long> MyLong;
-        private MyLongParser MyLong2;
         private TypeParser<DateTime> DateTimeParser;
         private long[] Values;
         private byte[] Space;
@@ -73,20 +52,9 @@ namespace Benchmark {
             Value5 = (random.Next() << 4) + random.Next();
             Time = DateTime.FromBinary(Value);
             //DateTimeParser = BinaryPacker.Shared.GetParser<DateTime>();
-            MyLong = new MyLongParser();
-            MyLong2 = new MyLongParser();
             Values = new long[] { Value, Value2, Value3 };
         }
 
-        //[Benchmark]
-        public int SerializeLong() {
-            return MyLong2.Serialize(Value, Space);
-        }
-
-        [Benchmark]
-        public int SerializeLong1() {
-            return MyLong.Serialize(Value, Space);
-        }
 
         [Benchmark]
         public int SerializeLong2() {
@@ -154,7 +122,7 @@ namespace Benchmark {
         //[Benchmark]
         public void DecuplrBinarySerialize() {
             // This suppose to be a bug :(
-            PocoParser.GetBinaryLength(poco);
+            PocoParser.GetLength(poco);
             PocoParser.Serialize(poco, BinaryTarget);
         }
 

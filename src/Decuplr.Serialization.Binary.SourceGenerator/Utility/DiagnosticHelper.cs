@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Serialization.Binary.SourceGenerator {
+namespace Decuplr.Serialization.Binary {
     static class DiagnosticHelper {
         private const string IdTitle = "BFSG";
         private const string Category = "Decuplr.BinaryPacker.SourceGenerator";

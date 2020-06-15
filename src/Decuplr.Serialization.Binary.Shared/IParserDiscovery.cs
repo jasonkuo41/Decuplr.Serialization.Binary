@@ -1,10 +1,22 @@
 ﻿using System.Collections.Generic;
+using System.Text;
 
 namespace Decuplr.Serialization.Binary {
     /// <summary>
     /// Describes a service that allows discovery of parsers within the given namespace
     /// </summary>
     public interface IParserDiscovery : IParserCollection {
+
+        /// <summary>
+        /// The current binary layout (endianess) of the discovery
+        /// </summary>
+        BinaryLayout BinaryLayout { get; }
+
+        /// <summary>
+        /// The current text encoding of the discovery
+        /// </summary>
+        Encoding TextEncoding { get; }
+
         /// <summary>
         /// Makes a copy of the discovery, and adds the given namespace for discovering types
         /// </summary>

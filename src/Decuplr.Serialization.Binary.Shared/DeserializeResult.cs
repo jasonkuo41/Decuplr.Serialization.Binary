@@ -1,20 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Decuplr.Serialization {
     public readonly struct DeserializeResult {
 
         public DeserializeResult(DeserializeConclusion conculsion, string faultedReason) {
-            Conculsion = conculsion;
+            Conclusion = conculsion;
             FaultedReason = faultedReason;
         }
 
-        public DeserializeConclusion Conculsion { get; }
+        public DeserializeConclusion Conclusion { get; }
 
         public string FaultedReason { get; }
 
-        public bool IsSuccess => Conculsion == DeserializeConclusion.Success;
+        public bool IsSuccess => Conclusion == DeserializeConclusion.Success;
 
         /// <summary>
         /// The serialization was a success
@@ -25,15 +26,23 @@ namespace Decuplr.Serialization {
 
         public static DeserializeResult FaultedFrom(string result) => new DeserializeResult(DeserializeConclusion.Faulted, result);
 
-        public bool Equals(DeserializeConclusion conclusion) => Conculsion == conclusion;
+        public bool Equals(DeserializeConclusion conclusion) => Conclusion == conclusion;
 
-        public bool Equals(DeserializeResult result) => Conculsion == result.Conculsion;
+        public bool Equals(DeserializeResult result) => Conclusion == result.Conclusion;
 
         public override bool Equals(object obj) => (obj is DeserializeResult result && Equals(result)) || (obj is DeserializeConclusion conclusion && Equals(conclusion));
 
-        public override int GetHashCode() => Conculsion.GetHashCode();
+        public override int GetHashCode() => Conclusion.GetHashCode();
 
-        public override string ToString() => $"{Conculsion}{(string.IsNullOrEmpty(FaultedReason) ? null : $" {FaultedReason}")}";
+        public override string ToString() => $"{Conclusion}{(string.IsNullOrEmpty(FaultedReason) ? null : $" {FaultedReason}")}";
+
+        internal string ToDisplayString() => Conclusion switch
+        {
+            DeserializeConclusion.Success => $"{nameof(DeserializeResult)}.{nameof(Success)}",
+            DeserializeConclusion.Faulted => $"{nameof(DeserializeResult)}.{nameof(Faulted)}",
+            DeserializeConclusion.InsufficientSize => $"{nameof(DeserializeResult)}.{nameof(InsufficientSize)}",
+            _ => throw new ArgumentException("Invalid conclusion type")
+        };
 
         public static bool operator ==(DeserializeResult first, DeserializeResult second) => first.Equals(second);
         public static bool operator !=(DeserializeResult first, DeserializeResult second) => !first.Equals(second);

@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Serialization.Binary.SourceGenerator {
+namespace Decuplr.Serialization.Binary {
     internal static class CodeBuilderExtensions {
         private static void AddPartialClassNode(this CodeNodeBuilder node, INamedTypeSymbol symbol, Action<CodeNodeBuilder> nodeAction) {
             node.AddNode(symbol.DeclaredAccessibility, $"{(symbol.IsStatic ? "static" : null)} partial {symbol.TypeKind.ToString().ToLower()} {symbol.ToDisplayString(NullableFlowState.None, SymbolDisplayFormat.MinimallyQualifiedFormat)}", nodeAction);

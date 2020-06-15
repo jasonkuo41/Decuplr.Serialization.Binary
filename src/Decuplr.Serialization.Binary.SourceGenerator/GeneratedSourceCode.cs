@@ -1,4 +1,4 @@
-﻿namespace Decuplr.Serialization.Binary.SourceGenerator {
+﻿namespace Decuplr.Serialization.Binary {
     internal struct GeneratedSourceCode {
 
         public GeneratedSourceCode(string desiredFileName, string sourceText) {
