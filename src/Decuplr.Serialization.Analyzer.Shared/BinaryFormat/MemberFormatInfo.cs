@@ -25,6 +25,7 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
         /// <summary>
         /// The type that the member format wants to be formatted into
         /// </summary>
+        [Obsolete]
         public TypeDecisionAnnotation DecisionAnnotation { get; }
 
         // IgnoreIf

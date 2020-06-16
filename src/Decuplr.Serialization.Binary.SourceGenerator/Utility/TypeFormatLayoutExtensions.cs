@@ -30,6 +30,7 @@ namespace Decuplr.Serialization.Binary {
         public static string GetTypeParserContructor(this TypeFormatLayout layout) => string.Join(",", layout.GetConstructorMember(true));
         public static string GetTypeParserContructorInvokeParams(this TypeFormatLayout layout) => string.Join(",", layout.GetConstructorMember(false));
 
+        [Obsolete("Use Template instead")]
         public static string GetDefaultParserCollectionName(this TypeFormatLayout layout) {
             if (!layout.TypeSymbol.IsGenericType)
                 return $"{layout.TypeSymbol.GetEmbedName()}_TypeParserArgs";

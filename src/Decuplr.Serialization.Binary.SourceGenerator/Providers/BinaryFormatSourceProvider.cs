@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Decuplr.Serialization.Analyzer.BinaryFormat;
-using Decuplr.Serialization.Binary.SourceGenerator.Schemas;
+using Decuplr.Serialization.Binary.Schemas;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.ParserProviders {

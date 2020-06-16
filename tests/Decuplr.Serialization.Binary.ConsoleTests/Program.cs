@@ -14,7 +14,7 @@ namespace Decuplr.Serialization.Binary.ConsoleTests {
             */
             var foamStruct = new FoamStruct(123, 12345678765334);
             var foamParser = BinaryPacker.Shared.GetParser<FoamStruct>();
-            Span<byte> stack = stackalloc byte[foamParser.GetBinaryLength(foamStruct)];
+            Span<byte> stack = stackalloc byte[foamParser.GetLength(foamStruct)];
             foamParser.Serialize(foamStruct, stack);
 
             var xresult = foamParser.TryDeserialize(stack, out _, out var result);
@@ -23,7 +23,7 @@ namespace Decuplr.Serialization.Binary.ConsoleTests {
 
             var lazy = new Lazy<DateTime>(() => DateTime.Now);
             var lazyParser = BinaryPacker.Shared.GetParser<Lazy<DateTime>>();
-            stack = stackalloc byte[lazyParser.GetBinaryLength(lazy)];
+            stack = stackalloc byte[lazyParser.GetLength(lazy)];
             lazyParser.Serialize(lazy, stack);
             xresult = lazyParser.TryDeserialize(stack, out _, out var dateResult);
             Console.WriteLine(dateResult.Value);

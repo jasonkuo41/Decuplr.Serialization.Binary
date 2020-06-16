@@ -32,7 +32,9 @@ namespace Decuplr.Serialization.Binary {
         }
 
         public void Execute(SourceGeneratorContext context) {
+#if DEBUG
             try {
+#endif
                 if (!(context.SyntaxReceiver is CandidateSyntaxReceiver receiver))
                     return;
 
@@ -60,10 +62,12 @@ namespace Decuplr.Serialization.Binary {
                     context.AddSource(additionalFiles, Encoding.UTF8, true);
                 if (generatedResults.Count != 0)
                     context.AddSource(BinaryPackerEntryPointGenerator.CreateSourceText(context.Compilation, generatedResults), Encoding.UTF8, true);
+#if DEBUG
             }
             catch (Exception e) {
                 File.WriteAllText($"error.txt", $"{e} {e.Message} {e.StackTrace}");
             }
+#endif
         }
 
     }

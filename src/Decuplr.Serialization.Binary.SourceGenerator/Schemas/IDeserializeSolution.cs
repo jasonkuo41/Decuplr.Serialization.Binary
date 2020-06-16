@@ -1,6 +1,6 @@
 ﻿namespace Decuplr.Serialization.Binary.Schemas {
     interface IDeserializeSolution {
         GeneratedSourceCode[] GetAdditionalFiles();
-        GeneratedFormatFunction GetDeserializeFunction();
+        string GetDeserializeFunction(string functionName);
     }
 }

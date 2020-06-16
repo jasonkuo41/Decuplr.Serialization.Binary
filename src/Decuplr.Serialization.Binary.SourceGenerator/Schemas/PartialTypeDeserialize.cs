@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Decuplr.Serialization.Analyzer.BinaryFormat;
+using Decuplr.Serialization.Binary.Templates.ParserSource;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.Schemas {
@@ -12,24 +13,26 @@ namespace Decuplr.Serialization.Binary.Schemas {
         private IReadOnlyList<MemberFormatInfo> Member => TypeInfo.Member;
         private readonly TypeFormatLayout TypeInfo;
         private readonly Compilation Compilation;
+        private readonly DependencyCollection Dependencies;
 
-        public PartialTypeDeserialize(Compilation compilation, TypeFormatLayout typeInfo) {
+        public PartialTypeDeserialize(Compilation compilation, TypeFormatLayout typeInfo, DependencyCollection dependencies) {
             TypeInfo = typeInfo;
             Compilation = compilation;
+            Dependencies = dependencies;
         }
 
         public GeneratedSourceCode[] GetAdditionalFiles() {
             return new GeneratedSourceCode[] { ($"{TypeSymbol.Name}.Generated.PartialDeserialize.cs", CreatePartialClassConstructor()) };
         }
 
-        public GeneratedFormatFunction GetDeserializeFunction() {
+        public string GetDeserializeFunction(string functionName) {
             var builder = new CodeNodeBuilder();
             // Standard function name for invocation is "DeserializeResult TryCreateType(in ParserCollection parsers, ReadOnlySpan<byte> span, out int readBytes, out Symbol result)"
-            builder.AddNode($"private static {nameof(DeserializeResult)} TryCreateType(in {TypeInfo.GetDefaultParserCollectionName()} parsers, ReadOnlySpan<byte> span, out int readBytes, out {TypeSymbol} result)", node => {
+            builder.AddNode($"private static {nameof(DeserializeResult)} ${functionName}(in {Dependencies.StructName} parsers, ReadOnlySpan<byte> span, out int readBytes, out {TypeSymbol} result)", node => {
                 node.AddStatement($"result = new {TypeSymbol} (parsers, span, out readBytes, out var deserializeResult);");
                 node.AddStatement($"return deserializeResult");
             });
-            return new GeneratedFormatFunction("TryCreateType", builder.ToString());
+            return builder.ToString();
         }
 
         private string CreatePartialClassConstructor() {
