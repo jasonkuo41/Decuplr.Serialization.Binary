@@ -13,7 +13,7 @@ namespace Decuplr.Serialization.Binary.Analyzer {
 
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     internal class LibraryAnalyzer : DiagnosticAnalyzer {
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => new ImmutableArray<DiagnosticDescriptor>();
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(DiagnosticHelper.AutoAsSequentialTooMuchDeclare);
 
         public override void Initialize(AnalysisContext context) {
             context.EnableConcurrentExecution();
@@ -24,7 +24,8 @@ namespace Decuplr.Serialization.Binary.Analyzer {
         public void SyntaxAnalysis(SyntaxNodeAnalysisContext context) {
             if (!(context.Node is TypeDeclarationSyntax typeDeclareSyntax))
                 return;
-            foreach(var type in SourceCodeAnalyzer.AnalyzeTypeSyntax(new TypeDeclarationSyntax[] { typeDeclareSyntax }, context.Compilation, context.CancellationToken)) {
+            context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.AutoAsSequentialTooMuchDeclare, typeDeclareSyntax.GetLocation()));
+            foreach (var type in SourceCodeAnalyzer.AnalyzeTypeSyntax(new TypeDeclarationSyntax[] { typeDeclareSyntax }, context.Compilation, context.CancellationToken)) {
                 var precusor = new SchemaPrecusor {
                     NeverDeserialize = false,
                     IsSealed = true,

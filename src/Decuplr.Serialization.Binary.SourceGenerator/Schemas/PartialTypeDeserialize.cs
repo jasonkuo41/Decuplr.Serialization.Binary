@@ -13,25 +13,60 @@ namespace Decuplr.Serialization.Binary.Schemas {
         private IReadOnlyList<MemberFormatInfo> Member => TypeInfo.Member;
         private readonly TypeFormatLayout TypeInfo;
         private readonly Compilation Compilation;
-        private readonly DependencyCollection Dependencies;
+        private readonly IEnumerable<DependencyCollection> DependencyStructs;
 
-        public PartialTypeDeserialize(Compilation compilation, TypeFormatLayout typeInfo, DependencyCollection dependencies) {
+
+        private string InheritStrings {
+            get {
+                if (TypeSymbol.TypeKind == TypeKind.Struct)
+                    return ": this()";
+                // If base type != null and the base type is binaryformat / binaryparser then we should inherit the constructor
+                // if (TypeSymbol.BaseType != null)
+                //  return ":base(parsers, span, out int readBytes)";
+                return string.Empty;
+            }
+        }
+
+        public PartialTypeDeserialize(Compilation compilation, TypeFormatLayout typeInfo, IEnumerable<DependencyCollection> dependencyStructs) {
             TypeInfo = typeInfo;
             Compilation = compilation;
-            Dependencies = dependencies;
+            DependencyStructs = dependencyStructs;
         }
 
         public GeneratedSourceCode[] GetAdditionalFiles() {
             return new GeneratedSourceCode[] { ($"{TypeSymbol.Name}.Generated.PartialDeserialize.cs", CreatePartialClassConstructor()) };
         }
 
-        public string GetDeserializeFunction(string functionName) {
+        public string GetDeserializeFunction(string tryDeserializeFunctionName, string deserializeFunctionName) {
             var builder = new CodeNodeBuilder();
-            // Standard function name for invocation is "DeserializeResult TryCreateType(in ParserCollection parsers, ReadOnlySpan<byte> span, out int readBytes, out Symbol result)"
-            builder.AddNode($"private static {nameof(DeserializeResult)} ${functionName}(in {Dependencies.StructName} parsers, ReadOnlySpan<byte> span, out int readBytes, out {TypeSymbol} result)", node => {
-                node.AddStatement($"result = new {TypeSymbol} (parsers, span, out readBytes, out var deserializeResult);");
-                node.AddStatement($"return deserializeResult");
-            });
+            foreach (var dependencyStruct in DependencyStructs) {
+                // "DeserializeResult TryCreateType(in ParserCollection parsers, ReadOnlySpan<byte> span, out int readBytes, out Symbol result)"
+                builder.AddAttribute(CommonAttributes.Inline);
+                builder.AddNode($"private static {nameof(DeserializeResult)} {tryDeserializeFunctionName}(in {dependencyStruct.StructName} parsers, ReadOnlySpan<byte> span, out int readBytes, out {TypeSymbol} result)", node => {
+                    node.AddStatement($"result = new {TypeSymbol} (parsers, span, out readBytes, out var deserializeResult);");
+                    node.AddStatement($"return deserializeResult");
+                });
+
+                // "DeserializeResult TryCreateType(in ParserCollection parsers, ref SequenceCursor<byte> span, out Symbol result)"
+                builder.AddAttribute(CommonAttributes.Inline);
+                builder.AddNode($"private static {nameof(DeserializeResult)} {tryDeserializeFunctionName}(in {dependencyStruct.StructName} parsers, ref SequenceCursor<byte> cursor, out {TypeSymbol} result)", node => {
+                    node.AddStatement($"result = new {TypeSymbol} (parsers, ref cursor, out var deserializeResult)");
+                    node.AddStatement($"return deserializeResult");
+                });
+
+                // "Symbol CreateType(in ParserCollection parsers, ReadOnlySpan<byte> span, out int readBytes)"
+                builder.AddAttribute(CommonAttributes.Inline);
+                builder.AddNode($"private static {TypeSymbol} {deserializeFunctionName}(in {dependencyStruct.StructName} parsers, ReadOnlySpan<byte> span, out int readBytes)", node => {
+                    node.AddStatement($"return new {TypeSymbol} (parsers, span, out readBytes)");
+                });
+
+                // "Symbol CreateType(in ParserCollection parsers, ref SequenceCursor<byte> span)"
+                builder.AddAttribute(CommonAttributes.Inline);
+                builder.AddNode($"private static {TypeSymbol} {deserializeFunctionName}(in {dependencyStruct.StructName} parsers, ref SequenceCursor<byte> cursor)", node => {
+                    node.AddStatement($"return new {TypeSymbol} (parsers, ref cursor)");
+                });
+
+            }
             return builder.ToString();
         }
 
@@ -39,6 +74,7 @@ namespace Decuplr.Serialization.Binary.Schemas {
 
             var builder = new CodeSnippetBuilder(TypeSymbol.ContainingNamespace.ToString());
             builder.Using("System");
+            builder.Using("System.Text");
             builder.Using("System.ComponentModel");
             builder.Using("System.CodeDom.Compiler");
             builder.Using("System.Runtime.CompilerServices");
@@ -54,28 +90,77 @@ namespace Decuplr.Serialization.Binary.Schemas {
             // {public} {partial} {class/ struct} Name {
             builder.AddPartialClass(TypeSymbol, node => {
 
-                node.AddAttribute(CommonAttributes.GeneratedCodeAttribute);
-                node.AddAttribute(CommonAttributes.HideFromEditor);
+                foreach (var dependencyStruct in DependencyStructs) {
 
-                // This is used for non "TryDeserialize" version
-                // Function Signature 
-                // internal {Type} (in ParserCollection parsers, ReadOnlySpan<byte> span, out DeserializeResult result, out int readBytes) {
-                //    
-                // }
-                //
-                node.AddPlain("// This is for \"TryDeserialize\" constructor");
-                node.AddNode($"internal {TypeSymbol.Name} (in {TypeInfo.GetDefaultParserCollectionName()} parsers, ReadOnlySpan<byte> span, out int readBytes, out {nameof(DeserializeResult)} result) {(TypeSymbol.TypeKind == TypeKind.Struct ? ":this()" : null)}", node => {
+                    // TryDeserialize
+                    // internal {Type} (in ParserCollection parsers, ReadOnlySpan<byte> span, out int readBytes, out DeserializeResult result)
+                    node.AddAttribute(CommonAttributes.GeneratedCodeAttribute);
+                    node.AddAttribute(CommonAttributes.HideFromEditor);
+                    node.AddNode($"internal {TypeSymbol.Name} (in {dependencyStruct.StructName} parsers, ReadOnlySpan<byte> span, out int readBytes, out {nameof(DeserializeResult)} result) {InheritStrings}", node => {
 
-                    node.AddStatement("readBytes = -1");
-                    node.AddStatement("var originalSpanLength = span.Length");
+                        node.AddStatement("readBytes = -1");
+                        node.AddStatement("var originalSpanLength = span.Length");
+                        node.AddStatement("var currentReadBytes = 0");
 
-                    for (var i = 0; i < Member.Count; ++i)
-                        node.AddNode(CreateMemberNode(i));
+                        foreach (var member in Member) {
+                            node.AddPlain($"// Deserialization of {member.Symbol.Name}");
+                            node.AddNode($"if (!parsers.{dependencyStruct[member]}.Deserialize(this, span, out currentReadBytes, out var {member.Symbol.Name}_Value, out result)", node => {
+                                node.AddStatement("return");
+                            });
+                            node.AddStatement($"{member.Symbol.Name} = {member.Symbol.Name}_Value");
+                            node.AddStatement($"span = span.Slice(currentReadBytes)");
+                        }
 
-                    node.AddStatement("readBytes = originalSpanLength - span.Length");
-                    // errr can be emitted?
-                    node.AddStatement($"result = {nameof(DeserializeResult)}.Success");
-                });
+                        node.AddStatement("readBytes = originalSpanLength - span.Length");
+                        // errr can be emitted?
+                        node.AddStatement($"result = {nameof(DeserializeResult)}.Success");
+                    });
+
+                    // TryDeserialize
+                    // internal {Type} (in ParserCollection parsers, ref SequenceCursor<byte> cursor, out DeserializeResult result)
+                    node.AddAttribute(CommonAttributes.GeneratedCodeAttribute);
+                    node.AddAttribute(CommonAttributes.HideFromEditor);
+                    node.AddNode($"internal {TypeSymbol.Name} (in {dependencyStruct.StructName} parsers, ref SequenceCursor<byte> cursor, out {nameof(DeserializeResult)} result) {InheritStrings}", node => {
+
+                        foreach (var member in Member) {
+                            node.AddPlain($"// Deserialization of {member.Symbol.Name}");
+                            node.AddNode($"if (!parsers.{dependencyStruct[member]}.Deserialize(this, ref cursor, out var {member.Symbol.Name}_Value, out result)", node => {
+                                node.AddStatement("return");
+                            });
+                            node.AddStatement($"{member.Symbol.Name} = {member.Symbol.Name}_Value");
+                        }
+
+                        node.AddStatement($"result = {DeserializeResult.Success.ToDisplayString()}");
+                    });
+
+                    // Deserialize
+                    // internal {Type} (in ParserCollection parsers, ReadOnlySpan<byte> span, out int readBytes)
+                    node.AddAttribute(CommonAttributes.GeneratedCodeAttribute);
+                    node.AddAttribute(CommonAttributes.HideFromEditor);
+                    node.AddNode($"internal {TypeSymbol.Name} (in {dependencyStruct.StructName} parsers, ReadOnlySpan<byte> span, out int readBytes) {InheritStrings}", node => {
+                        node.AddStatement("readBytes = -1");
+                        node.AddStatement("var originalSpanLength = span.Length");
+                        node.AddStatement("var currentReadBytes = 0");
+                        foreach (var member in Member) {
+                            node.AddPlain($"// Serialization of {member.Symbol.Name}");
+                            node.AddStatement($"{member.Symbol.Name} = parsers.{dependencyStruct[member]}.Deserialize(this, span, out currentReadBytes)");
+                            node.AddStatement($"span.Slice(currentReadBytes)");
+                        }
+                        node.AddStatement("readBytes = originalSpanLength - span.Length");
+                    });
+
+                    // Deserialize
+                    // interanl {Type} (in ParserCollection parsers, ref SequenceCursor<byte> cursor)
+                    node.AddAttribute(CommonAttributes.GeneratedCodeAttribute);
+                    node.AddAttribute(CommonAttributes.HideFromEditor);
+                    node.AddNode($"internal {TypeSymbol.Name} (in {dependencyStruct.StructName} parsers, ref SequenceCursor<byte> cursor)", node => {
+                        foreach(var member in Member) {
+                            // Side note, if we want to have some features that would skip certain field or do some checksums, it should be done here, instead of the dependency struct
+                            node.AddPlain($"// Deserialization of {member.Symbol.Name}");
+                            node.AddStatement($"{member.Symbol.Name} = parsers.{dependencyStruct[member]}.Deserialize(this, ref cursor)");
+                        }
+                    });
+                }
 
                 // In case this class has a default constructor we need to implicit specifiy it for it
                 if (TypeSymbol.Constructors.Any(member => member.Parameters.IsDefaultOrEmpty) && TypeSymbol.TypeKind != TypeKind.Struct)
@@ -84,54 +169,6 @@ namespace Decuplr.Serialization.Binary.Schemas {
             return builder.ToString();
         }
 
-        private Action<CodeNodeBuilder> CreateMemberNode(int current) => node => {
-            var symbol = Member[current].Symbol;
-            node.AddPlain($"// Configure for argument {symbol.Name}");
-            node.AddStatement("var currentReadBytes = 0");
-            // Checks if the field is declared to have a fixed binary length
-            if (Member[current].ConstantLength.HasValue) {
-                node.AddStatement($"var localSpan = span.Slice(0, {Member[current].ConstantLength!.Value})");
-                node.AddStatement($"result = TryDeserialize_{symbol.Name} (in parsers, span, out currentReadBytes, out var desResult)");
-                node.AddStatement($"{symbol.Name} = desResult");
-                // These two check if the result is either insufficient of faulted.
-                // Since this field is required to have a solid size, we rewrites InsufficientSize to "Faulted"
-                node.AddNode($"if (result  == DeserializeResult.{nameof(DeserializeResult.InsufficientSize)})", node => {
-                    node.AddStatement($"result = DeserializeResult.Faulted(\"Expected {symbol.Name} in {TypeSymbol} to have a constant size of {Member[current].ConstantLength!.Value} but was insufficient.\")");
-                    node.AddStatement($"return");
-                });
-                node.AddNode($"if (result == DeserializeResult.{nameof(DeserializeResult.Faulted)}", node => {
-                    node.AddStatement("return");
-                });
-            }
-            else {
-                // Here the field is not declared to have a fixed binary length, thus we only return faulty results back
-                node.AddStatement($"result = TryDeserialize_{symbol.Name} (in parsers, span, out currentReadBytes, out var desResult)");
-                node.AddStatement($"{symbol.Name} = desResult");
-                node.AddNode($"if (result != DeserializeResult.{nameof(DeserializeResult.Success)})", node => {
-                    node.AddStatement("return");
-                });
-            }
-            // After completing parsing the data we slice the span for next persons consumption
-            node.AddStatement("span = span.Slice(currentReadBytes)");
-
-            node.AddPlain("");
-            // Local function for the member to actual deserializing work
-            node.AddAttribute(CommonAttributes.Inline);
-            node.AddNode($"DeserializeResult TryDeserialize_{symbol.Name} (in {TypeInfo.GetDefaultParserCollectionName()} parsers,ReadOnlySpan<byte> providedSpan, out int readBytes, out {Member[current].TypeSymbol} value)", node => {
-                switch (Member[current].DecisionAnnotation) {
-                    case BitUnionAnnotation bitUnion:
-
-                        break;
-                    case FormatAsAnnotation formatAs:
-
-                        break;
-                    default:
-                        node.AddStatement($"return parsers.Parser_{current}_0.TryDeserialize(providedSpan, out readBytes, out value)");
-                        break;
-                }
-            });
-            node.AddPlain("");
-        };
     }
 
 }

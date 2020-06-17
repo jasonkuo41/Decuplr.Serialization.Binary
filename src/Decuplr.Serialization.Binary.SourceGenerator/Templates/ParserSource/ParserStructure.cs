@@ -2,48 +2,10 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using Decuplr.Serialization.Analyzer.BinaryFormat;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Decuplr.Serialization.Binary.Templates.ParserSource {
-    internal class DependencyCollection {
-
-        private readonly Dictionary<MemberFormatInfo, ParsingDependency> Dependencies = new Dictionary<MemberFormatInfo, ParsingDependency>();
-
-        public string StructName { get; }
-
-        public DependencyCollection(string structName, TypeFormatLayout layout) {
-            StructName = structName;
-        }
-
-        public ParsingDependency this[MemberFormatInfo info] => Dependencies[info];
-    }
-
-    internal struct ParsingTypeArgs {
-        public string Name { get; set; }
-        public override string ToString() => Name;
-    }
-
-    internal struct TargetFieldArgs {
-        public string Name { get; set; }
-        public override string ToString() => Name;
-    }
-
-    internal struct BufferArgs {
-        public string Name { get; set; }
-        public override string ToString() => Name;
-    }
-
-    internal struct OutArgs<T> {
-        public string Name { get; set; }
-        public override string ToString() => Name;
-    }
-
-    // IParserDiscovery
-    internal struct ParserDiscoveryArgs {
-        public string Name { get; set; }
-        public override string ToString() => Name;
-    }
 
     internal interface IParserDependencyComponent {
         string TypeName { get; }
@@ -59,7 +21,7 @@ namespace Decuplr.Serialization.Binary.Templates.ParserSource {
     }
 
     // Every 
-    internal abstract class ParsingDependency {
+    internal abstract class ParserDependencyPrecusor {
 
         private class ComponentName : IComponentName {
 
@@ -75,7 +37,7 @@ namespace Decuplr.Serialization.Binary.Templates.ParserSource {
         }
 
         private readonly List<(IParserDependencyComponent Item, IComponentName Name)> Components = new List<(IParserDependencyComponent, IComponentName)>();
-        private readonly List<(ParsingDependency Dependecy, IComponentName Name)> Dependencies = new List<(ParsingDependency Dependecy, IComponentName Name)>();
+        private readonly List<(ParserDependencyPrecusor Dependecy, IComponentName Name)> Dependencies = new List<(ParserDependencyPrecusor Dependecy, IComponentName Name)>();
 
         protected IComponentName AddComponent(IParserDependencyComponent component) {
             var name = new ComponentName($"component_{Components.Count}");
@@ -83,7 +45,7 @@ namespace Decuplr.Serialization.Binary.Templates.ParserSource {
             return name;
         }
 
-        protected IComponentName AddExternalDependency(ParsingDependency dependency) {
+        protected IComponentName AddExternalDependency(ParserDependencyPrecusor dependency) {
             var name = new ComponentName($"dependency_{Dependencies.Count}");
             Dependencies.Add((dependency, name));
             return name;
@@ -91,30 +53,30 @@ namespace Decuplr.Serialization.Binary.Templates.ParserSource {
 
         // bool TrySerializeUnsafe(in T value, Span<byte> dest, out int written);
         // Included as : bool TrySerialize{FieldName}(in {Type} type, in T {fieldName}, Span<byte> {destination}, out int {writtenBytes})
-        public abstract string TrySerializeUnsafeSpan(ParsingTypeArgs collectionArgs, TargetFieldArgs fieldName, BufferArgs destination, OutArgs<int> writtenBytes);
+        protected abstract string TrySerializeUnsafeSpan(ParsingTypeArgs collectionArgs, TargetFieldArgs fieldName, BufferArgs destination, OutArgs<int> writtenBytes);
 
         // int SerializeUnsafe(in T value, Span<byte> writer);
-        public abstract string SerializeUnsafeSpan(ParsingTypeArgs collectionArgs, TargetFieldArgs fieldName, BufferArgs destination);
+        protected abstract string SerializeUnsafeSpan(ParsingTypeArgs collectionArgs, TargetFieldArgs fieldName, BufferArgs destination);
 
         // DeserializeResult TryDeserialize(ReadOnlySpan<byte> span, out int read, out T result);
-        public abstract string TryDeserializeSpan(ParsingTypeArgs collectionArgs, BufferArgs source, OutArgs<int> readBytes, OutArgs<object> result);
+        protected abstract string TryDeserializeSpan(ParsingTypeArgs collectionArgs, BufferArgs source, OutArgs<int> readBytes, OutArgs<object> result);
 
         // DeserializeResult TryDeserialize(ref SequenceCursor<byte> cursor);
-        public abstract string TryDeserializeSequence(ParsingTypeArgs collectionArgs, BufferArgs source, OutArgs<object> result);
+        protected abstract string TryDeserializeSequence(ParsingTypeArgs collectionArgs, BufferArgs source, OutArgs<object> result);
 
         // T Deserialize(ReadOnlySpan<byte> span, out int readBytes);
-        public abstract string DeserializeSpan(ParsingTypeArgs collectionArgs, BufferArgs source, OutArgs<int> readBytes);
+        protected abstract string DeserializeSpan(ParsingTypeArgs collectionArgs, BufferArgs source, OutArgs<int> readBytes);
 
         // T Deserialize(ref SequenceCursor<byte> cursor);
-        public abstract string DeserializeSequence(ParsingTypeArgs collectionArgs, BufferArgs source);
+        protected abstract string DeserializeSequence(ParsingTypeArgs collectionArgs, BufferArgs source);
 
         // int GetLength(in T value);
-        public abstract string GetLengthFunction(ParsingTypeArgs collectionArgs, TargetFieldArgs fieldName);
+        protected abstract string GetLengthFunction(ParsingTypeArgs collectionArgs, TargetFieldArgs fieldName);
 
         // Probably get functions out of it 
     }
 
-    internal class TypeParserWrappedDependency : ParsingDependency {
+    internal class TypeParserWrappedDependency : ParserDependencyPrecusor {
 
         private class WrappedTypeParser : IParserDependencyComponent {
 
@@ -168,7 +130,7 @@ namespace Decuplr.Serialization.Binary.Templates.ParserSource {
     }
 
     // For primitives that are only one-byte wide (bool, byte, sbyte)
-    internal class PrimitiveByteDependency : ParsingDependency {
+    internal class PrimitiveByteDependency : ParserDependencyPrecusor {
 
         private class ByteOrderParserType : IParserDependencyComponent {
 

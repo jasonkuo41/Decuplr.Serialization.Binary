@@ -9,20 +9,11 @@ using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Analyzer.BinaryFormat {
 
-    public struct SchemaPrecusor {
-        public bool NeverDeserialize { get; set; }
-
-        public bool IsSealed { get; set; }
-
-        public BinaryLayout RequestLayout { get; set; }
-
-        public IReadOnlyList<string> TargetNamespaces { get; set; }
-    }
-
     public class TypeFormatLayout {
 
         public AnalyzedType Type { get; }
 
+        // The serializable member of this type, in order
         public IReadOnlyList<MemberFormatInfo> Member { get; }
 
         public INamedTypeSymbol TypeSymbol => Type.TypeSymbol;
