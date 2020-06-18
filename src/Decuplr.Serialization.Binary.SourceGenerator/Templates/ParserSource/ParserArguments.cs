@@ -34,6 +34,7 @@ namespace Decuplr.Serialization.Binary.Templates.ParserSource {
     internal struct ParserDiscoveryArgs {
         public string Name { get; set; }
         public override string ToString() => Name;
+        public static implicit operator ParserDiscoveryArgs(string str) => new ParserDiscoveryArgs { Name = str };
     }
 
 }

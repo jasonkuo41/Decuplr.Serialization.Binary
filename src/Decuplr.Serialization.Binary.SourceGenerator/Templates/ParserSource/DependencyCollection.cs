@@ -21,9 +21,22 @@ namespace Decuplr.Serialization.Binary.Templates.ParserSource {
 
     }
 
-    internal interface IParserConditionTransform {
-        // bool TryDeserialize(in TSource value, ReadOnlySpan<byte> span, out int writtenBytes, out T result, out DeserializeResult result)
-        string TryDeserialize(string original, ParsingTypeArgs typeArgs, BufferArgs destination, OutArgs<int> writtenBytes, OutArgs<object> value, OutArgs<DeserializeResult> result);
+    interface IParserTransform {
+        string TrySerializeUnsafeSpan(ParsingTypeArgs collectionArgs, TargetFieldArgs fieldName, BufferArgs destination, OutArgs<int> writtenBytes);
+        string SerializeUnsafeSpan(ParsingTypeArgs collectionArgs, TargetFieldArgs fieldName, BufferArgs destination);
+        string TryDeserializeSpan(ParsingTypeArgs collectionArgs, BufferArgs source, OutArgs<int> readBytes, OutArgs<object> result);
+        string TryDeserializeSequence(ParsingTypeArgs collectionArgs, BufferArgs source, OutArgs<object> result);
+        string DeserializeSpan(ParsingTypeArgs collectionArgs, BufferArgs source, OutArgs<int> readBytes);
+        string DeserializeSequence(ParsingTypeArgs collectionArgs, BufferArgs source);
+        string GetLengthFunction(ParsingTypeArgs collectionArgs, TargetFieldArgs fieldName);
+    }
 
+    interface IParserTransformFunction : IParserTransform { }
+
+    interface IParserTransformBody : IParserTransform { }
+
+
+    interface IParserConditionTransformProvider {
+        IParserTransformBody GetTransform(IParserTransformFunction transform);
     }
 }
