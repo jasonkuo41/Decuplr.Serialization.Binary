@@ -104,7 +104,8 @@ namespace Decuplr.Serialization.Binary.Schemas {
 
                         foreach (var member in Member) {
                             node.AddPlain($"// Deserialization of {member.Symbol.Name}");
-                            node.AddNode($"if (!parsers.{dependencyStruct[member]}.Deserialize(this, span, out currentReadBytes, out var {member.Symbol.Name}_Value, out result)", node => {
+                            node.AddStatement($"result = parsers.{dependencyStruct[member]}.Deserialize(this, span, out currentReadBytes, out var {member.Symbol.Name}_Value)");
+                            node.AddNode($"if (result.{nameof(DeserializeResult.Conclusion)} != {nameof(DeserializeConclusion)}.Success)", node => {
                                 node.AddStatement("return");
                             });
                             node.AddStatement($"{member.Symbol.Name} = {member.Symbol.Name}_Value");
@@ -124,7 +125,8 @@ namespace Decuplr.Serialization.Binary.Schemas {
 
                         foreach (var member in Member) {
                             node.AddPlain($"// Deserialization of {member.Symbol.Name}");
-                            node.AddNode($"if (!parsers.{dependencyStruct[member]}.Deserialize(this, ref cursor, out var {member.Symbol.Name}_Value, out result)", node => {
+                            node.AddStatement($"result = parsers.{dependencyStruct[member]}.Deserialize(this, ref cursor, out var {member.Symbol.Name}_Value)");
+                            node.AddNode($"if (result.{nameof(DeserializeResult.Conclusion)} != {nameof(DeserializeConclusion)}.Success)", node => {
                                 node.AddStatement("return");
                             });
                             node.AddStatement($"{member.Symbol.Name} = {member.Symbol.Name}_Value");

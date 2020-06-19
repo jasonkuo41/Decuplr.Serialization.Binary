@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 
 namespace Decuplr.Serialization.Binary {
+    [Obsolete]
     internal struct EmbeddedCode {
         public IReadOnlyList<string> CodeNamespaces { get; set; }
         public string SourceCode { get; set; }

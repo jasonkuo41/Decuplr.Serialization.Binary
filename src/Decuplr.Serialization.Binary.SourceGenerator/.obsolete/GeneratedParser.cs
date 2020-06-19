@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using Decuplr.Serialization.Analyzer.BinaryFormat;
 
 namespace Decuplr.Serialization.Binary {
+
+    [Obsolete]
     internal class GeneratedParser {
 
         /// <summary> The name used to identify this parser </summary>
