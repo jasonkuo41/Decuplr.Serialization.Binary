@@ -5,40 +5,36 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Decuplr.Serialization.Binary {
-    internal interface IGeneratedType {
-        GeneratedPlacement Placement { get; }
-        INamedTypeSymbol TargetType { get; }
-        GeneratedTypeKind TypeKind { get; }
-        GeneratedPurpose Purpose { get; }
-        string? Category { get; }
-        string Name { get; }
-        string SourceCode { get; }
-        string DesiredFilename { get; }
 
-        /// <summary>
-        /// The kind of the parser this type supplies, empty if not applicable
-        /// </summary>
-        IReadOnlyCollection<IParserKindProvider> ParserKinds { get; }
+    internal struct ParserInfo {
+        public IReadOnlyList<string> ParserNamespaces { get; set; }
+        public IParserKindProvider ParserKind { get; set; }
     }
 
     internal class GeneratedTypeBuilder : IGeneratedType {
 
         private readonly List<string> namespaces = new List<string>();
-        private readonly List<IParserKindProvider> kinds = new List<IParserKindProvider>();
+        private readonly List<ParserInfo> parsers = new List<ParserInfo>();
 
         public GeneratedTypeKind TypeKind { get; set; }
 
+        /// <summary>
+        /// The purpose of this type
+        /// </summary>
         public GeneratedPurpose Purpose { get; set; }
 
+        /// <summary>
+        /// Where the type should be placed
+        /// </summary>
         public GeneratedPlacement Placement { get; set; }
 
         public IReadOnlyCollection<string> UsingNamespaces => namespaces;
 
         public INamedTypeSymbol TargetType { get; }
 
-        public IReadOnlyCollection<IParserKindProvider> ParserKinds => kinds;
+        public IReadOnlyCollection<ParserInfo> Parsers => parsers;
 
-        public string Name { get; }
+        public string TypeName { get; }
 
         public string Category { get; set; } = string.Empty;
 
@@ -51,7 +47,7 @@ namespace Decuplr.Serialization.Binary {
             Purpose = purpose;
             Placement = placement;
             TargetType = targetType;
-            Name = name;
+            TypeName = name;
             SourceCode = sourceCode;
         }
 
@@ -66,9 +62,29 @@ namespace Decuplr.Serialization.Binary {
 
     internal enum GeneratedPurpose {
         Other,
+        /// <summary>
+        /// The type is created for deserializing a target type
+        /// </summary>
         Deserialization,
+
+        /// <summary>
+        /// The type is created for serializing a target type
+        /// </summary>
         Serialization,
-        Dependency,
+
+        /// <summary>
+        /// The type is a dependency (a combination of ways to serialize a member) for deserialize / serializing a target type
+        /// </summary>
+        MemberDependency,
+
+        /// <summary>
+        /// The type is a collection of dependency to construct or deconstruct a type
+        /// </summary>
+        TypeConstructorArgs,
+
+        /// <summary>
+        /// The type is meant as a wrapper over other type
+        /// </summary>
         Wrapper,
     }
 

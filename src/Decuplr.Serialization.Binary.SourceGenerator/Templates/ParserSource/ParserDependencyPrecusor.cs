@@ -150,7 +150,7 @@ namespace Decuplr.Serialization.Binary.Templates.ParserSource {
 
             });
 
-            return new GeneratedTypeBuilder(targetTypeSymbol, uniqueName, GeneratedTypeKind.Struct, GeneratedPurpose.Dependency, GeneratedPlacement.PartialNestedExtension, node.ToString());
+            return new GeneratedTypeBuilder(targetTypeSymbol, uniqueName, GeneratedTypeKind.Struct, GeneratedPurpose.MemberDependency, GeneratedPlacement.PartialNestedExtension, node.ToString());
         }
 
         private void AddActualParsingCore(CodeNodeBuilder node, ParserFunctionTemplate template) {
