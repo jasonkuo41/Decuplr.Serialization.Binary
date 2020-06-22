@@ -28,8 +28,6 @@ namespace Decuplr.Serialization.Binary {
         /// </summary>
         public GeneratedPlacement Placement { get; set; }
 
-        public IReadOnlyCollection<string> UsingNamespaces => namespaces;
-
         public INamedTypeSymbol TargetType { get; }
 
         public IReadOnlyCollection<ParserInfo> Parsers => parsers;
@@ -42,6 +40,8 @@ namespace Decuplr.Serialization.Binary {
 
         public string SourceCode { get; }
 
+        public bool HasModifiedConstructor { get; set; }
+
         public GeneratedTypeBuilder(INamedTypeSymbol targetType, string name, GeneratedTypeKind kind, GeneratedPurpose purpose, GeneratedPlacement placement, string sourceCode) {
             TypeKind = kind;
             Purpose = purpose;
@@ -51,13 +51,13 @@ namespace Decuplr.Serialization.Binary {
             SourceCode = sourceCode;
         }
 
-        public void AddNamespace(string namespaceName) => namespaces.Add(namespaceName);
     }
 
     internal enum GeneratedTypeKind : byte {
         Other,
         Class,
-        Struct
+        Struct,
+        Nested
     }
 
     internal enum GeneratedPurpose {

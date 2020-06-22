@@ -1,4 +1,6 @@
-﻿namespace Decuplr.Serialization.Binary.Templates.ParserSource {
+﻿using Decuplr.Serialization.Binary.Arguments;
+
+namespace Decuplr.Serialization.Binary.Templates.ParserSource {
     internal interface IParserDependencyComponent {
         string TypeName { get; }
 

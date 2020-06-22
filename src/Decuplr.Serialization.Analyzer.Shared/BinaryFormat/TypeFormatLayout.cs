@@ -39,7 +39,7 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
                 .ToList();
 
             var binaryLayout = precusor.RequestLayout;
-            if (!TryEnsureLayout(type, ref binaryLayout, indexAttributes.Select(x => x.Attribute).ToList(), diagnostics))
+            if (!TryEnsureLayoutOrder(type, ref binaryLayout, indexAttributes.Select(x => x.Attribute).ToList(), diagnostics))
                 return false;
             precusor.RequestLayout = binaryLayout;
 
@@ -68,7 +68,7 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
             return true;
         }
 
-        private static bool TryEnsureLayout(AnalyzedType type, ref BinaryLayout statedLayout, IReadOnlyList<AnalyzedAttribute> indexAttributes, IList<Diagnostic> diagnostics) {
+        private static bool TryEnsureLayoutOrder(AnalyzedType type, ref BinaryLayout statedLayout, IReadOnlyList<AnalyzedAttribute> indexAttributes, IList<Diagnostic> diagnostics) {
 
             // If it's auto or sequential, we will now try to locate if there's Index set of our member.
             // 

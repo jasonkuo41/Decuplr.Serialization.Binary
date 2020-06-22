@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Decuplr.Serialization.Analyzer.BinaryFormat;
+using Decuplr.Serialization.Binary.Arguments;
 
 namespace Decuplr.Serialization.Binary.Templates.ParserSource {
     // Every 

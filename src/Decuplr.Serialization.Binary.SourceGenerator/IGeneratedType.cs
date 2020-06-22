@@ -39,6 +39,11 @@ namespace Decuplr.Serialization.Binary {
         string DesiredFilename { get; }
 
         /// <summary>
+        /// If the generated type has modified the constructors of the target type (Requires check if need to add back default constructors)
+        /// </summary>
+        bool HasModifiedConstructor { get; }
+
+        /// <summary>
         /// The info of the parser that this type supplies, empty if it does not inherit TypeParser, TypeParserProvider or GenericParserProvider
         /// </summary>
         IReadOnlyCollection<ParserInfo> Parsers { get; }

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Decuplr.Serialization.Binary.Templates.ParserSource {
+namespace Decuplr.Serialization.Binary.Arguments {
 
     // Provides easy to read arguments that actually just takes the string and output the string
 
@@ -36,5 +36,13 @@ namespace Decuplr.Serialization.Binary.Templates.ParserSource {
         public override string ToString() => Name;
         public static implicit operator ParserDiscoveryArgs(string str) => new ParserDiscoveryArgs { Name = str };
     }
+
+    // i.e. Type_0X5JHH14_Constructor ctor; in TypeParser
+    internal struct ParserConstructArgs {
+        public string Name { get; set; }
+        public override string ToString() => Name;
+        public static implicit operator ParserConstructArgs(string str) => new ParserConstructArgs { Name = str };
+    }
+
 
 }

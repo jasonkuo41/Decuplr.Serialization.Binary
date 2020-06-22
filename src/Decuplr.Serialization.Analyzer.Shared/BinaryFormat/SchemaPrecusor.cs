@@ -10,6 +10,8 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
         public BinaryLayout RequestLayout { get; set; }
 
         public IReadOnlyList<string> TargetNamespaces { get; set; }
+
+        // public InheritIndexRule InheritRule { get; set; }
     }
 
 }

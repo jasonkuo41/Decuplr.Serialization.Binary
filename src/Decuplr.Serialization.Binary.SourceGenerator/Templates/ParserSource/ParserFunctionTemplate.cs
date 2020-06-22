@@ -1,4 +1,5 @@
 ﻿using System;
+using Decuplr.Serialization.Binary.Arguments;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.Templates.ParserSource {

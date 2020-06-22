@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <Compile Include=".obsolete\EmbeddedCode.cs" />
+    <Compile Include=".obsolete\GeneratedFormatFunction.cs" />
     <Compile Include=".obsolete\GeneratedParser.cs" />
     <Compile Include=".obsolete\GeneratedSourceCode.cs" />
   </ItemGroup>
