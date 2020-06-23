@@ -15,7 +15,7 @@ namespace Decuplr.Serialization.Binary {
         public override void Initialize(AnalysisContext context) {
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
-            context.RegisterSyntaxNodeAction(SyntaxAnalysis, SyntaxKind.StructDeclaration | SyntaxKind.ClassDeclaration);
+            context.RegisterSyntaxNodeAction(SyntaxAnalysis, SyntaxKind.StructDeclaration, SyntaxKind.ClassDeclaration);
         }
 
         public void SyntaxAnalysis(SyntaxNodeAnalysisContext context) {

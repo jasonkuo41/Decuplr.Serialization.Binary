@@ -1,17 +1,38 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using Decuplr.Serialization.Binary.Analyzers;
+using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Decuplr.Serialization.Binary.AnalyzeService {
-    class SourceCodeAnalysis {
+
+    internal class SourceCodeAnalysis {
 
         private readonly Compilation Compilation;
         private readonly Dictionary<Type, INamedTypeSymbol?> CachedSymbols = new Dictionary<Type, INamedTypeSymbol?>();
+        private readonly List<TypeMetaInfo> Types = new List<TypeMetaInfo>();
 
-        public SourceCodeAnalysis(Compilation compilation) {
+        public IReadOnlyList<TypeMetaInfo> ContainingType => Types;
+
+        // We currently don't support partial methods since it's fairly limited, and none of our feature would utilize it
+        public SourceCodeAnalysis(IEnumerable<TypeDeclarationSyntax> typeSyntaxes, Compilation compilation, CancellationToken ct, params SymbolKind[] memberKinds) {
             Compilation = compilation;
+            var types = new Dictionary<INamedTypeSymbol, List<SyntaxModelPair>>();
+            foreach (var syntax in typeSyntaxes) {
+                var model = compilation.GetSemanticModel(syntax.SyntaxTree, true);
+                var typeSymbol = model.GetDeclaredSymbol(syntax, ct);
+                if (typeSymbol is null)
+                    continue;
+                if (types.TryGetValue(typeSymbol, out var syntaxList))
+                    syntaxList.Add((syntax, model));
+                else
+                    types.Add(typeSymbol, new List<SyntaxModelPair>() { (syntax, model) });
+            }
+
+            foreach (var type in types) {
+                Types.Add(new TypeMetaInfo(this, type.Key, type.Value, memberKinds, ct));
+            }
         }
 
         public INamedTypeSymbol? GetSymbol<T>() => GetSymbol(typeof(T));
@@ -24,20 +45,6 @@ namespace Decuplr.Serialization.Binary.AnalyzeService {
             return symbol;
         }
 
-
     }
 
-    class TypeMetaInfo {
-        public bool IsPartial { get; }
-
-        public INamedTypeSymbol Symbol { get; }
-
-        public IReadOnlyList<MemberMetaInfo> Members { get; }
-
-        public IReadOnlyList<AnalyzedPartialType> Declartions { get; }
-    }
-
-    class MemberMetaInfo {
-
-    }
 }

@@ -1,12 +1,8 @@
 ﻿using System;
 using System.Buffers;
 using System.Buffers.Binary;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text;
-using Decuplr.Serialization.Binary.Internal;
 
 /*  Replaced with the following code
  *  
@@ -43,7 +39,7 @@ namespace Decuplr.Serialization.Binary.Parsers {
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int ReadInt32(ReadOnlySpan<byte> span, bool isSmallEndian) 
+        public static int ReadInt32(ReadOnlySpan<byte> span, bool isSmallEndian)
             => isSmallEndian ? BinaryPrimitives.ReadInt32LittleEndian(span) : BinaryPrimitives.ReadInt32BigEndian(span);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -87,7 +83,7 @@ namespace Decuplr.Serialization.Binary.Parsers {
                 MemoryMarshal.AsBytes(values).CopyTo(destination);
                 return;
             }
-            for(var i = 0; i < destination.Length / sizeof(int); ++i) {
+            for (var i = 0; i < destination.Length / sizeof(int); ++i) {
                 Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), values[i]);
                 destination = destination.Slice(sizeof(int));
             }
