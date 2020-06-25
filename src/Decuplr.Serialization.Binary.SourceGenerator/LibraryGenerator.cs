@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Decuplr.Serialization.Analyzer.BinaryFormat;
+using Decuplr.Serialization.Binary.AnalysisService;
 using Decuplr.Serialization.Binary.Analyzers;
 using Decuplr.Serialization.Binary.ParserProviders;
 using Microsoft.CodeAnalysis;

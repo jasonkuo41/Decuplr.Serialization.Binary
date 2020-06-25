@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Decuplr.Serialization.Binary.AnalyzeService {
+namespace Decuplr.Serialization.Binary.AnalysisService {
     internal class MemberMetaInfo {
 
         private readonly IReadOnlyDictionary<AttributeData, Location> AttributeLocationLookup;

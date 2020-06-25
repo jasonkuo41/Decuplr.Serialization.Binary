@@ -293,7 +293,7 @@ namespace Decuplr.Serialization.Binary.ParserProviders {
         }
 
         private (string ClassName, string SourceCode) ParserProviderWrapper(ITypeSymbol parserProviderType, ITypeSymbol parsedType, Func<string, string> convertFunction) {
-            var wrapperName = $"TypeParserWrapper_{parsedType.GetEmbedName()}_As_{parserProviderType.GetEmbedName()}";
+            var wrapperName = $"TypeParserWrapper_{parsedType.GetUniqueLegalName()}_As_{parserProviderType.GetUniqueLegalName()}";
             var node = new CodeNodeBuilder();
 
             node.AddNode($"private sealed class {wrapperName} : TypeParser<{parsedType}>", node => {

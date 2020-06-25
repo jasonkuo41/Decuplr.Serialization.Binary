@@ -4,7 +4,7 @@ using System.Text;
 using Decuplr.Serialization.Analyzer.BinaryFormat;
 using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Serialization.Binary.AnalyzeService {
+namespace Decuplr.Serialization.Binary.AnalysisService {
 
     interface IOrderSelector {
 

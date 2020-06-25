@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Decuplr.Serialization.Binary.AnalyzeService {
+namespace Decuplr.Serialization.Binary.AnalysisService {
 
     internal class SourceCodeAnalysis {
 
@@ -13,7 +13,7 @@ namespace Decuplr.Serialization.Binary.AnalyzeService {
         private readonly Dictionary<Type, INamedTypeSymbol?> CachedSymbols = new Dictionary<Type, INamedTypeSymbol?>();
         private readonly List<TypeMetaInfo> Types = new List<TypeMetaInfo>();
 
-        public IReadOnlyList<TypeMetaInfo> ContainingType => Types;
+        public IReadOnlyList<TypeMetaInfo> ContainingTypes => Types;
 
         // We currently don't support partial methods since it's fairly limited, and none of our feature would utilize it
         public SourceCodeAnalysis(IEnumerable<TypeDeclarationSyntax> typeSyntaxes, Compilation compilation, CancellationToken ct, params SymbolKind[] memberKinds) {

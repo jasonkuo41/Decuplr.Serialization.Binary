@@ -33,8 +33,8 @@ namespace Decuplr.Serialization.Binary {
         [Obsolete("Use Template instead")]
         public static string GetDefaultParserCollectionName(this TypeFormatLayout layout) {
             if (!layout.TypeSymbol.IsGenericType)
-                return $"{layout.TypeSymbol.GetEmbedName()}_TypeParserArgs";
-            return $"{layout.TypeSymbol.GetEmbedName()}_TypeParserArgs<{string.Join(",", layout.TypeSymbol.TypeParameters.Select(x => x.ToString()))}>";
+                return $"{layout.TypeSymbol.GetUniqueLegalName()}_TypeParserArgs";
+            return $"{layout.TypeSymbol.GetUniqueLegalName()}_TypeParserArgs<{string.Join(",", layout.TypeSymbol.TypeParameters.Select(x => x.ToString()))}>";
         }
 
         public static string GetDefaultAssemblyEntryClass(this Compilation compilation) {
@@ -80,7 +80,7 @@ namespace Decuplr.Serialization.Binary {
         /// <summary>
         /// Create's a name for a symbol that can easily identify class but with high uniqueness
         /// </summary>
-        public static string GetEmbedName(this ITypeSymbol symbol) => $"{ReplaceToValidVarName(symbol.Name)}_{symbol.ToString().HashString()}";
+        public static string GetUniqueLegalName(this ITypeSymbol symbol) => $"{ReplaceToValidVarName(symbol.Name)}_{symbol.ToString().HashString()}";
     }
 
 }

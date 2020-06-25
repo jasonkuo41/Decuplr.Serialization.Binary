@@ -5,7 +5,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
-namespace Decuplr.Serialization.Binary.AnalyzeService {
+namespace Decuplr.Serialization.Binary.AnalysisService {
     internal class TypeMetaInfo {
 
         private readonly SourceCodeAnalysis Analysis;
@@ -28,7 +28,7 @@ namespace Decuplr.Serialization.Binary.AnalyzeService {
             IsPartial = syntax.Any(x => x.Syntax.Modifiers.Any(SyntaxKind.PartialKeyword));
             Analysis = analysis;
             Symbol = symbol;
-            UniqueName = symbol.GetEmbedName();
+            UniqueName = symbol.GetUniqueLegalName();
             Declarations = syntax.Select(x => new TypePartialMetaInfo(this, x, kinds, ct)).ToList();
             FirstLocation = syntax.First().Syntax.GetLocation();
             Attributes = Declarations.SelectMany(x => x.Attributes).ToList();

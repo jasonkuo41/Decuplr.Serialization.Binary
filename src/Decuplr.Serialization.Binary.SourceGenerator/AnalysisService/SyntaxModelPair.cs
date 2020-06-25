@@ -1,7 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Decuplr.Serialization.Binary.AnalyzeService {
+namespace Decuplr.Serialization.Binary.AnalysisService {
     internal struct SyntaxModelPair {
         public TypeDeclarationSyntax Syntax { get; set; }
         public SemanticModel Model { get; set; }

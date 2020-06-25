@@ -3,7 +3,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Decuplr.Serialization.Binary.AnalyzeService {
+namespace Decuplr.Serialization.Binary.AnalysisService {
     internal static class AnalysisExtensions {
         public static AttributeListing GetAttributes(this MemberDeclarationSyntax syntax, ISymbol sourceSymbol) {
             var typeAttributes = sourceSymbol.GetAttributes();

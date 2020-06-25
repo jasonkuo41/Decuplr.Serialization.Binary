@@ -165,7 +165,7 @@ namespace Decuplr.Serialization.Binary.Schemas {
         }
 
         public GeneratedParser GetFormatterCode() {
-            var parserName = $"{TypeInfo.TypeSymbol.GetEmbedName()}_TypeParser";
+            var parserName = $"{TypeInfo.TypeSymbol.GetUniqueLegalName()}_TypeParser";
 
             var parserCollectionNode = new CodeNodeBuilder();
             AddParserCollection(parserCollectionNode);

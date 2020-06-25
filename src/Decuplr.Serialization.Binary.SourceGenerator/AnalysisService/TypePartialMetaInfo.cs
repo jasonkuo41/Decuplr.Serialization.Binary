@@ -6,7 +6,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
-namespace Decuplr.Serialization.Binary.AnalyzeService {
+namespace Decuplr.Serialization.Binary.AnalysisService {
     internal class TypePartialMetaInfo {
 
         private readonly IReadOnlyDictionary<AttributeData, Location> AttributeLocationLookup;
