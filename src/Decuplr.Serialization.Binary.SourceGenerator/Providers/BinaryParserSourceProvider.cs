@@ -67,16 +67,16 @@ namespace Decuplr.Serialization.Binary.ParserProviders {
             if (targetTypes.Count != 0) {
                 // It can't be target type with count over 1
                 if (targetTypes.Count > 1) {
-                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.ParserProviderCountTooMuch, attributeData.Location, parser.Name));
+                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelperLegacy.ParserProviderCountTooMuch, attributeData.Location, parser.Name));
                     return false;
                 }
                 // However if user explicitly state the wrong type of symbol, we dump error
                 if (!targetTypes[0].Equals(providedParserType, SymbolEqualityComparer.Default)) {
-                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.ParserProviderTypeMismatch, attributeData.Location, providedParserType.Name, targetTypes[0]));
+                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelperLegacy.ParserProviderTypeMismatch, attributeData.Location, providedParserType.Name, targetTypes[0]));
                     return false;
                 }
                 // Otherwise it's just uneccessary
-                context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.ParserProviderImplicitReport, attributeData.Location, providedParserType.Name));
+                context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelperLegacy.ParserProviderImplicitReport, attributeData.Location, providedParserType.Name));
             }
             return true;
         }
@@ -93,9 +93,9 @@ namespace Decuplr.Serialization.Binary.ParserProviders {
             if (isGenericParser) {
                 if (targetTypes.Count != 1) {
                     if (targetTypes.Count == 0)
-                        context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.ShouldStateTypeWithGenericParser, attributeData.Location, type.TypeSymbol.Name));
+                        context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelperLegacy.ShouldStateTypeWithGenericParser, attributeData.Location, type.TypeSymbol.Name));
                     else
-                        context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.ParserProviderCountTooMuch, attributeData.Location, type.TypeSymbol.Name));
+                        context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelperLegacy.ParserProviderCountTooMuch, attributeData.Location, type.TypeSymbol.Name));
                     return false;
                 }
                 providedParserType = targetTypes[0];
@@ -125,7 +125,7 @@ namespace Decuplr.Serialization.Binary.ParserProviders {
             var providedParserType = GetTypeParameter(type.TypeSymbol);
             // Sealed Native Type can only have default constructor and they are always sealed
             if (!type.TypeSymbol.Constructors.Any(x => x.Parameters.Length == 0)) {
-                context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.TypeParserRequiresDefaultConstructor, type.Declarations[0].DeclaredLocation, type.TypeSymbol.Name));
+                context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelperLegacy.TypeParserRequiresDefaultConstructor, type.Declarations[0].DeclaredLocation, type.TypeSymbol.Name));
                 return false;
             }
             // Sealed Native Type has the same limitation as IParserProvider when it comes to designating typeprovidedParserType = type.TypeSymbol.TypeParameters[0];
@@ -170,7 +170,7 @@ namespace Decuplr.Serialization.Binary.ParserProviders {
                 }
                 foreach (var designatedType in parserInfo.TargetTypes) {
                     if (!constructorTypes.Contains(designatedType)) {
-                        context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.ExplicitTypeMushHaveConstructor, parserInfo.Attribute.Location, designatedType));
+                        context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelperLegacy.ExplicitTypeMushHaveConstructor, parserInfo.Attribute.Location, designatedType));
                         symbols = Array.Empty<ITypeSymbol>();
                         return false;
                     }
@@ -202,7 +202,7 @@ namespace Decuplr.Serialization.Binary.ParserProviders {
                     var normalizedType = GetUnconstraintOrNormalType(functionTypes.ReturnType);
                     if (outputTypes.ContainsKey(normalizedType)) {
                         if (functionTypes.Name != "ConvertTo")
-                            context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.ConvertToIsIgnoredIfHasInterface, functionTypes.Locations[0], functionTypes.Name));
+                            context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelperLegacy.ConvertToIsIgnoredIfHasInterface, functionTypes.Locations[0], functionTypes.Name));
                         continue;
                     }
                     outputTypes[normalizedType] = (functionTypes.Locations[0], functionTypes.ReturnType, itemName => $"{itemName}.{functionTypes.Name}()");
@@ -221,7 +221,7 @@ namespace Decuplr.Serialization.Binary.ParserProviders {
             var finalTypes = new Dictionary<ITypeSymbol, (ITypeSymbol SourceSymbol, Func<string, string> Conversion)>();
             foreach(var inputType in inputTypes) {
                 if (!outputTypes.ContainsKey(inputType) && explicitStateType) {
-                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.ExplicitTypeMushHaveConstructor, parserInfo.Attribute.Location, inputType.Name));
+                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelperLegacy.ExplicitTypeMushHaveConstructor, parserInfo.Attribute.Location, inputType.Name));
                     return false;
                 }
                 var (_, sourceSymbol, conversion) = outputTypes[inputType];
@@ -232,11 +232,11 @@ namespace Decuplr.Serialization.Binary.ParserProviders {
             foreach(var outputType in outputTypes) {
                 // Just a warning
                 if (!finalTypes.ContainsKey(outputType.Key))
-                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.DeconstructIsIgnoredDueToNoConstructor, outputType.Value.Item1, outputType.Key));
+                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelperLegacy.DeconstructIsIgnoredDueToNoConstructor, outputType.Value.Item1, outputType.Key));
             }
             // Check if there's actually qualified type
             if (finalTypes.Count == 0) {
-                context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.CannotFindMatchingParserType, type.Declarations[0].DeclaredLocation, type.TypeSymbol.Name));
+                context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelperLegacy.CannotFindMatchingParserType, type.Declarations[0].DeclaredLocation, type.TypeSymbol.Name));
                 return false;
             }
 

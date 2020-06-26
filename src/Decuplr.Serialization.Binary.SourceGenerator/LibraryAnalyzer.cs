@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace Decuplr.Serialization.Binary {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class LibraryAnalyzer : DiagnosticAnalyzer {
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(DiagnosticHelper.CannotFindMatchingParserType);
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(DiagnosticHelperLegacy.CannotFindMatchingParserType);
 
 
         public override void Initialize(AnalysisContext context) {
@@ -21,7 +21,7 @@ namespace Decuplr.Serialization.Binary {
         public void SyntaxAnalysis(SyntaxNodeAnalysisContext context) {
             if (!(context.Node is TypeDeclarationSyntax typeDeclareSyntax))
                 return;
-            context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelper.CannotFindMatchingParserType, typeDeclareSyntax.GetLocation()));
+            context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelperLegacy.CannotFindMatchingParserType, typeDeclareSyntax.GetLocation()));
             foreach (var type in SourceCodeAnalyzer.AnalyzeTypeSyntax(new TypeDeclarationSyntax[] { typeDeclareSyntax }, context.Compilation, context.CancellationToken)) {
                 var precusor = new SchemaPrecusor {
                     NeverDeserialize = false,

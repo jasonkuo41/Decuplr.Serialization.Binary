@@ -1,19 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net.Http.Headers;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary {
-    static class DiagnosticHelper {
+    static class DiagnosticHelperLegacy {
         private const string IdTitle = "BFSG";
         private const string Category = "Decuplr.BinaryPacker.SourceGenerator";
 
-        // Move check to analyzed shared
-        public static DiagnosticDescriptor ShouldDeclarePartial { get; }
+        public static IReadOnlyDictionary<string, DiagnosticDescriptor> Descriptors = new Dictionary<string, DiagnosticDescriptor> {
+            [nameof(ShouldDeclarePartial)] 
             = new DiagnosticDescriptor($"{IdTitle}001",
                 "Target type has member that can only be access by partial",
                 "Add `partial` keyword to type `{0}` since it's members contain format that cannot be accessed via internal or public",
-                Category, DiagnosticSeverity.Error, true);
+                Category, DiagnosticSeverity.Error, true),
+
+            [nameof(ShouldStateTypeWithGenericParser)]
+            = new DiagnosticDescriptor($"{IdTitle}002",
+                "Generic Parser Provider cannot determinate the type being parsed by usage",
+                "Generic Parser Provider `{0}` cannot determinate the type being parsed by usage, state the type explicitly with `[BinaryParser]` Attribute",
+                Category, DiagnosticSeverity.Error, true)
+        };
+
+        // Move check to analyzed shared
+        public static DiagnosticDescriptor ShouldDeclarePartial => Descriptors[nameof(ShouldDeclarePartial)];
 
         public static DiagnosticDescriptor ShouldStateTypeWithGenericParser { get; }
             = new DiagnosticDescriptor($"{IdTitle}002",
@@ -26,6 +37,10 @@ namespace Decuplr.Serialization.Binary {
                 "Generic Parser Provider or Parser Provider cannot designate more then one parsing type",
                 "Generic Parser Provider / Parser Provider `{0}` cannot designate more then one parsing type at once",
                 Category, DiagnosticSeverity.Error, true);
+
+        internal static DiagnosticDescriptor NeverFormatKind(string v) {
+            throw new NotImplementedException();
+        }
 
         public static DiagnosticDescriptor ParserProviderTypeMismatch { get; }
             = new DiagnosticDescriptor($"{IdTitle}004",

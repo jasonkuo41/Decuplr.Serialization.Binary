@@ -27,7 +27,7 @@ namespace Decuplr.Serialization.Binary.Schemas {
             //}
             // Otherwise the type must be partial, or else we don't like it
             if (!typeLayout!.Type.IsPartial) {
-                diagnosticReports = new List<Diagnostic> { Diagnostic.Create(DiagnosticHelper.ShouldDeclarePartial, typeLayout.Type.Declarations[0].DeclaredLocation, typeLayout.Type.TypeSymbol.Name) };
+                diagnosticReports = new List<Diagnostic> { Diagnostic.Create(DiagnosticHelperLegacy.ShouldDeclarePartial, typeLayout.Type.Declarations[0].DeclaredLocation, typeLayout.Type.TypeSymbol.Name) };
                 return false;
             }
             // We pump a constructor for our sweet partial class here
