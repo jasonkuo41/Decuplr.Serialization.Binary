@@ -1,4 +1,5 @@
-﻿using Decuplr.Serialization.Binary;
+﻿using System;
+using Decuplr.Serialization.Binary;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Analyzer.BinaryFormat {
@@ -6,12 +7,14 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
         private const string IdTitle = "BPSA"; // BinaryPacker Shared Analyzer
         private const string Category = "Decuplr.BinaryPacker.Analyzer";
 
+        [Obsolete]
         public static DiagnosticDescriptor SequentialShouldNotIndex { get; }
             = new DiagnosticDescriptor($"{IdTitle}-001",
                 "Sequential layout shouldn't include any IndexAttribute",
                 "When BinaryFormat is marked as BinaryLayout.Sequential, it shouldn't include any IndexAttribute",
                 Category, DiagnosticSeverity.Error, true);
 
+        [Obsolete]
         public static DiagnosticDescriptor AutoAsSequentialTooMuchDeclare { get; }
             = new DiagnosticDescriptor($"{IdTitle}-002",
                 "Auto layout (assume as sequential layout with no [Index] attribute present in type) shouldn't contain multiple declaration",
@@ -19,6 +22,7 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
                 "To specify an ordering, either make all instances within the same declaration or mark [Index] attribute to define order",
                 Category, DiagnosticSeverity.Error, true);
 
+        [Obsolete]
         public static DiagnosticDescriptor SequentialTooMuchDeclare { get; }
             = new DiagnosticDescriptor($"{IdTitle}-003",
                 "Sequetial layout shouldn't contain mutliple declaration",
@@ -32,18 +36,21 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
                 "Explicit layout requires [Index] attribute to indentify what should be formatted in what order",
                 Category, DiagnosticSeverity.Error, true);
 
+        [Obsolete]
         public static DiagnosticDescriptor ExplicitDontNeedNeverFormat { get; }
             = new DiagnosticDescriptor($"{IdTitle}-005",
                 $"Explicit layout ignores {nameof(IgnoreAttribute)}",
                 $"Explicit layout ignores {nameof(IgnoreAttribute)} as it uses IndexAttribute to determinate what should be formatted",
                 Category, DiagnosticSeverity.Warning, true);
 
+        [Obsolete]
         public static DiagnosticDescriptor StaticNeverFormats { get; }
             = new DiagnosticDescriptor($"{IdTitle}-006",
                 "Static type members will never be serialized",
                 "Static type member `{0}` will never be serialized, and should not be marked with any IndexAttribute and alike",
                 Category, DiagnosticSeverity.Error, true);
 
+        [Obsolete]
         public static DiagnosticDescriptor ConstNeverFormats { get; }
             = new DiagnosticDescriptor($"{IdTitle}-007",
                 "Const members will never be serialized",
@@ -56,6 +63,7 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
                 "Type members `{0}` will never be serialized as it is not property or field",
                 Category, DiagnosticSeverity.Warning, true);
 
+        [Obsolete]
         public static DiagnosticDescriptor DelegatesNeverFormats { get; }
             = new DiagnosticDescriptor($"{IdTitle}-009",
                 "Property or field returning delegates will not be correctly serialized",
@@ -68,6 +76,7 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
                $"Property or field `{{0}}` returning delegates is not supported for serializing or formatting, consider adding {nameof(IgnoreAttribute)} for clearity",
                 Category, DiagnosticSeverity.Info, true);
 
+        [Obsolete]
         public static DiagnosticDescriptor DuplicateIndexs { get; }
             = new DiagnosticDescriptor($"{IdTitle}-011",
                 "Found duplicate indexs",
