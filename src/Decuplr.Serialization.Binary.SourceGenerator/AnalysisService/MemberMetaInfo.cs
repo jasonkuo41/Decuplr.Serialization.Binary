@@ -10,15 +10,15 @@ namespace Decuplr.Serialization.Binary.AnalysisService {
         private readonly SourceCodeAnalysis _analysis;
         private readonly IReadOnlyDictionary<AttributeData, Location> _attributeLocationLookup;
 
-        public bool IsStatic => MemberSymbol.IsStatic;
+        public bool IsStatic => Symbol.IsStatic;
 
-        public bool IsConst => MemberSymbol is IFieldSymbol fieldSymbol && fieldSymbol.IsConst;
+        public bool IsConst => Symbol is IFieldSymbol fieldSymbol && fieldSymbol.IsConst;
 
         public TypeMetaInfo ContainingFullType => ContainingType.Full;
 
         public TypePartialMetaInfo ContainingType { get; }
 
-        public ISymbol MemberSymbol { get; }
+        public ISymbol Symbol { get; }
 
         public ITypeSymbol? ReturnType { get; }
 
@@ -26,8 +26,12 @@ namespace Decuplr.Serialization.Binary.AnalysisService {
 
         public IReadOnlyList<IReadOnlyList<AttributeData>> Attributes { get; }
 
-        public bool ContainsAttribute<TAttribute>() where TAttribute : Attribute {
-            var symbol = _analysis.GetSymbol<TAttribute>();
+        public bool ContainsAttribute<TAttribute>() where TAttribute : Attribute => ContainsAttribute(typeof(TAttribute));
+
+        public bool ContainsAttribute(Type attributeType) {
+            if (!attributeType.IsSubclassOf(typeof(Attribute)))
+                throw new InvalidOperationException($"{attributeType} is not a type of Attribute");
+            var symbol = _analysis.GetSymbol(attributeType);
             if (symbol is null)
                 return false;
             return Attributes.SelectMany(x => x).Any(x => x.AttributeClass?.Equals(symbol, SymbolEqualityComparer.Default) ?? false);
@@ -54,8 +58,14 @@ namespace Decuplr.Serialization.Binary.AnalysisService {
 
         public Location? GetLocation<TAttribute>() where TAttribute : Attribute => GetLocations<TAttribute>().FirstOrDefault();
 
-        public IEnumerable<Location> GetLocations<TAttribute>() where TAttribute : Attribute {
-            var symbol = _analysis.GetSymbol<TAttribute>();
+        public Location? GetLocation(Type attributeType) => GetLocations(attributeType).FirstOrDefault();
+
+        public IEnumerable<Location> GetLocations<TAttribute>() where TAttribute : Attribute => GetLocations(typeof(TAttribute));
+
+        public IEnumerable<Location> GetLocations(Type attributeType) {
+            if (!attributeType.IsSubclassOf(typeof(Attribute)))
+                throw new InvalidOperationException($"{attributeType} is not a type of Attribute");
+            var symbol = _analysis.GetSymbol(attributeType);
             if (symbol is null)
                 return Enumerable.Empty<Location>();
             return Attributes.SelectMany(x => x).Where(x => x.AttributeClass?.Equals(symbol, SymbolEqualityComparer.Default) ?? false).Select(x => GetLocation(x));
@@ -65,7 +75,7 @@ namespace Decuplr.Serialization.Binary.AnalysisService {
             var listing = syntax.GetAttributes(memberSymbol);
             Location = syntax.GetLocation();
             ContainingType = typemeta;
-            MemberSymbol = memberSymbol;
+            Symbol = memberSymbol;
             ReturnType = (memberSymbol as IFieldSymbol)?.Type ?? (memberSymbol as IMethodSymbol)?.ReturnType ?? (memberSymbol as IPropertySymbol)?.Type ?? (memberSymbol as IEventSymbol)?.Type;
             Attributes = listing.Lists;
             _attributeLocationLookup = listing.Locations;

@@ -17,5 +17,10 @@ namespace Decuplr.Serialization.Binary.LayoutService.Internal {
                 IsUnrecoverable = true;
             _diagnostics.Add(diagnostic);
         }
+
+        public void ReportDiagnostic(IEnumerable<Diagnostic> diagnostics) {
+            foreach (var diagnostic in diagnostics)
+                ReportDiagnostic(diagnostic);
+        }
     }
 }

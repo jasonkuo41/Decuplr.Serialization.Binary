@@ -6,31 +6,6 @@ using Decuplr.Serialization.Binary.AnalysisService;
 using Decuplr.Serialization.Binary.LayoutService.Internal;
 using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Serialization.Binary.LayoutService.Internal {
-
-    internal class LayoutMemberCollection : ILayoutMemberCollection {
-
-        private readonly bool InvalidOnOtherScope;
-
-        public LayoutMemberCollection(bool invalidOnOtherScope) {
-            InvalidOnOtherScope = invalidOnOtherScope;
-        }
-
-        public IAttributeRule<MemberMetaInfo> WhereAttribute<TAttribute>() where TAttribute : Attribute {
-            throw new NotImplementedException();
-        }
-
-        public ISymbolRule<MemberMetaInfo> WhereMember(Func<MemberMetaInfo, bool> predicate) {
-            throw new NotImplementedException();
-        }
-        public void ValidateLayout(IEnumerable<MemberMetaInfo> members, IDiagnosticReporter reporter) {
-
-        }
-
-    }
-
-}
-
 namespace Decuplr.Serialization.Binary.LayoutService {
 
     internal class TypeValidator {
@@ -39,18 +14,17 @@ namespace Decuplr.Serialization.Binary.LayoutService {
         private readonly SchemaPrecusor _precusor;
 
         private readonly DiagnosticReporter _reporter = new DiagnosticReporter();
-        private readonly List<LayoutMemberCollection> _members = new List<LayoutMemberCollection>();
+        private readonly LayoutMemberCollection _layoutMembers = new LayoutMemberCollection();
+        private readonly LayoutMemberCollection _anyMembers = new LayoutMemberCollection();
 
         public TypeValidator(TypeMetaInfo type, SchemaPrecusor precusor) {
             _type = type;
             _precusor = precusor;
         }
 
-        public ILayoutMemberCollection WithLayoutMembers(bool invalidOnOtherScope) {
-            var member = new LayoutMemberCollection(invalidOnOtherScope);
-            _members.Add(member);
-            return member;
-        }
+        public ILayoutMemberValidation WithLayoutMembers() => _layoutMembers;
+
+        public ILayoutMemberValidation WithAnyMembers() => _anyMembers;
 
         /// <summary>
         /// Validate if every attribute is correct and can generate correct layout
@@ -59,8 +33,8 @@ namespace Decuplr.Serialization.Binary.LayoutService {
             var selector = new TSelector();
 
             var layoutFilter = new LayoutMemberCollection();
-            selector.ElectMember(layoutFilter);
-            layoutFilter.ValidateLayout(_type.Members, _reporter);
+            selector.ValidateMembers(layoutFilter);
+            layoutFilter.ValidateLayout(_type, _type.Members, _reporter);
 
             // If we fail the elect member should we just skip this step and return early?
             var layoutMembers = selector.GetOrder(_type.Members.Where(memberPredicate), _precusor.RequestLayout, _reporter).ToList();

@@ -34,7 +34,6 @@ namespace Decuplr.Serialization.Binary.LayoutService {
         private static Diagnostic CreateDiagnostic(Location location, IEnumerable<Location> sublocations, object?[]? parameters = null, [CallerMemberName] string name = "")
             => Diagnostic.Create(Descriptors[name], location, sublocations, parameters ?? EmptyArgs);
 
-
     }
 
 }

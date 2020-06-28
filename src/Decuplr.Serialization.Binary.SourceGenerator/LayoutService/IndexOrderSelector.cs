@@ -23,19 +23,19 @@ namespace Decuplr.Serialization.Binary.LayoutService {
             }
         }
 
-        public void ElectMember(ILayoutMemberCollection filter) {
+        public void ValidateMembers(ILayoutMemberValidation filter) {
             filter.WhereAttribute<IndexAttribute>()
                   .InvalidOn(member => member.ContainsAttribute<IgnoreAttribute>())
-                  .ReportDiagnostic((member, location) => DiagnosticHelper.ConflictingAttributes(member, member.GetAttribute<IgnoreAttribute>()!, member.GetAttribute<IndexAttribute>()!))
+                  .ReportDiagnostic(member => DiagnosticHelper.ConflictingAttributes(member, member.GetAttribute<IgnoreAttribute>()!, member.GetAttribute<IndexAttribute>()!))
 
                   .InvalidOn(member => member.IsStatic)
-                  .ReportDiagnostic((member, location) => DiagnosticHelper.InvalidKeyword("static", member))
+                  .ReportDiagnostic(member => DiagnosticHelper.InvalidKeyword("static", member))
 
                   .InvalidOn(member => member.IsConst)
-                  .ReportDiagnostic((member, location) => DiagnosticHelper.InvalidKeyword("const", member))
+                  .ReportDiagnostic(member => DiagnosticHelper.InvalidKeyword("const", member))
 
                   .InvalidOn(member => HasUnsupportedReturnType(member.ReturnType))
-                  .ReportDiagnostic((member, location) => DiagnosticHelper.UnsupportedType(member));
+                  .ReportDiagnostic(member => DiagnosticHelper.UnsupportedType(member));
         }
 
         private IEnumerable<MemberMetaInfo> GetSequentialOrder(IEnumerable<MemberMetaInfo> memberInfo, IDiagnosticReporter diagnostic, bool isExplicit) {

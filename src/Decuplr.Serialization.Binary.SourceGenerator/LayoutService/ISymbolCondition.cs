@@ -10,6 +10,6 @@ namespace Decuplr.Serialization.Binary.LayoutService {
         /// <summary>
         /// Report Diagnostic 
         /// </summary>
-        TSource ReportDiagnostic(Func<TMeta, Location, Diagnostic> diagnostic, bool includeFiltered = false);
+        TSource ReportDiagnostic(Func<TMeta, Diagnostic> diagnostic);
     }
 }

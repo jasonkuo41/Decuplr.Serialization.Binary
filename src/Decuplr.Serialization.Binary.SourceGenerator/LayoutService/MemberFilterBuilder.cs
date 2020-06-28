@@ -18,7 +18,7 @@ namespace Decuplr.Serialization.Binary.LayoutService {
 
         public MemberFilterBuilder SelectKind(params SymbolKind[] kinds) {
             var kindSet = new HashSet<SymbolKind>(kinds);
-            _filters += member => kindSet.Contains(member.MemberSymbol.Kind);
+            _filters += member => kindSet.Contains(member.Symbol.Kind);
             return this;
         }
 
