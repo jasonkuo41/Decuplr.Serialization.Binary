@@ -11,9 +11,9 @@ namespace Decuplr.Serialization.Binary.AnalysisService {
 
         private readonly Compilation Compilation;
         private readonly Dictionary<Type, INamedTypeSymbol?> CachedSymbols = new Dictionary<Type, INamedTypeSymbol?>();
-        private readonly List<TypeMetaInfo> Types = new List<TypeMetaInfo>();
+        private readonly List<NamedTypeMetaInfo> Types = new List<NamedTypeMetaInfo>();
 
-        public IReadOnlyList<TypeMetaInfo> ContainingTypes => Types;
+        public IReadOnlyList<NamedTypeMetaInfo> ContainingTypes => Types;
 
         // We currently don't support partial methods since it's fairly limited, and none of our feature would utilize it
         public SourceCodeAnalysis(IEnumerable<TypeDeclarationSyntax> typeSyntaxes, Compilation compilation, CancellationToken ct, params SymbolKind[] memberKinds) {
@@ -31,7 +31,7 @@ namespace Decuplr.Serialization.Binary.AnalysisService {
             }
 
             foreach (var type in types) {
-                Types.Add(new TypeMetaInfo(this, type.Key, type.Value, memberKinds, ct));
+                Types.Add(new NamedTypeMetaInfo(this, type.Key, type.Value, memberKinds, ct));
             }
         }
 

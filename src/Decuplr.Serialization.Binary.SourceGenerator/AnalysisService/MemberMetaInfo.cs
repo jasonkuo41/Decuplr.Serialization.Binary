@@ -14,7 +14,7 @@ namespace Decuplr.Serialization.Binary.AnalysisService {
 
         public bool IsConst => Symbol is IFieldSymbol fieldSymbol && fieldSymbol.IsConst;
 
-        public TypeMetaInfo ContainingFullType => ContainingType.Full;
+        public NamedTypeMetaInfo ContainingFullType => ContainingType.Full;
 
         public TypePartialMetaInfo ContainingType { get; }
 
@@ -37,10 +37,15 @@ namespace Decuplr.Serialization.Binary.AnalysisService {
             return Attributes.SelectMany(x => x).Any(x => x.AttributeClass?.Equals(symbol, SymbolEqualityComparer.Default) ?? false);
         }
 
-        public AttributeData? GetAttribute<TAttribute>() where TAttribute : Attribute => GetAttributes<TAttribute>().FirstOrDefault();
+        public AttributeData? GetAttribute<TAttribute>() where TAttribute : Attribute => GetAttributes<TAttribute>().FirstOrDefault(); 
+        public AttributeData? GetAttribute(Type attributeType) => GetAttributes(attributeType).FirstOrDefault();
 
-        public IEnumerable<AttributeData> GetAttributes<TAttribute>() where TAttribute : Attribute {
-            var symbol = _analysis.GetSymbol<TAttribute>();
+        public IEnumerable<AttributeData> GetAttributes<TAttribute>() where TAttribute : Attribute => GetAttributes(typeof(TAttribute));
+
+        public IEnumerable<AttributeData> GetAttributes(Type attributeType) {
+            if (!attributeType.IsSubclassOf(typeof(Attribute)))
+                throw new InvalidOperationException($"{attributeType} is not a type of Attribute");
+            var symbol = _analysis.GetSymbol(attributeType);
             if (symbol is null)
                 return Enumerable.Empty<AttributeData>();
             return Attributes.SelectMany(x => x).Where(x => x.AttributeClass?.Equals(symbol, SymbolEqualityComparer.Default) ?? false);

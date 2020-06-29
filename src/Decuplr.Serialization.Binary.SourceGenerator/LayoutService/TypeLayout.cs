@@ -3,10 +3,10 @@ using Decuplr.Serialization.Binary.AnalysisService;
 
 namespace Decuplr.Serialization.Binary.LayoutService {
     internal class TypeLayout {
-        public TypeMetaInfo Type { get; }
+        public NamedTypeMetaInfo Type { get; }
         public IReadOnlyList<MemberMetaInfo> Layouts { get; }
 
-        public TypeLayout(TypeMetaInfo type, IReadOnlyList<MemberMetaInfo> typeMembers) {
+        public TypeLayout(NamedTypeMetaInfo type, IReadOnlyList<MemberMetaInfo> typeMembers) {
             Type = type;
             Layouts = typeMembers;
         }

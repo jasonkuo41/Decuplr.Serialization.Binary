@@ -30,7 +30,7 @@ namespace Decuplr.Serialization.Binary {
         /// <param name="member">The property, field or method to be evaulated</param>
         /// <param name="operand">The operand to decide the comparsion type</param>
         /// <param name="value">The value to be evaulated with</param>
-        public IgnoreIfAttribute(string member, Operand operand, object value) {
+        public IgnoreIfAttribute(string member, Operator operand, object value) {
 
         }
     }

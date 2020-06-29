@@ -10,14 +10,14 @@ namespace Decuplr.Serialization.Binary.LayoutService {
 
     internal class TypeValidator {
 
-        private readonly TypeMetaInfo _type;
+        private readonly NamedTypeMetaInfo _type;
         private readonly SchemaPrecusor _precusor;
 
         private readonly DiagnosticReporter _reporter = new DiagnosticReporter();
         private readonly LayoutMemberCollection _layoutMembers = new LayoutMemberCollection();
         private readonly LayoutMemberCollection _anyMembers = new LayoutMemberCollection();
 
-        public TypeValidator(TypeMetaInfo type, SchemaPrecusor precusor) {
+        public TypeValidator(NamedTypeMetaInfo type, SchemaPrecusor precusor) {
             _type = type;
             _precusor = precusor;
         }

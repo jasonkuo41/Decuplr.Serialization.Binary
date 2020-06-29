@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Decuplr.Serialization.Binary.AnalysisService;
+using Decuplr.Serialization.Binary.Annotations;
 using Decuplr.Serialization.Binary.LayoutService.Internal;
 using Microsoft.CodeAnalysis;
 
@@ -56,7 +57,7 @@ namespace Decuplr.Serialization.Binary.LayoutService {
         [Diagnostic(5, DiagnosticSeverity.Error,
             "Sequential layout doesn't support multiple declaration", 
             "Sequenctial layout ({0}) doesn't support multiple declartion (partial) type '{1}', because the order cannot be determianted.")]
-        public static Diagnostic SequentialCannotBePartial(TypeMetaInfo typeInfo, bool isExplicit)
+        public static Diagnostic SequentialCannotBePartial(NamedTypeMetaInfo typeInfo, bool isExplicit)
             => CreateDiagnostic(typeInfo.FirstLocation, typeInfo.Declarations.Select(x => x.Location), new object[] { 
                 isExplicit ? "explicitly defined" : "automatic - as no IndexAttribute is present", 
                 typeInfo.Symbol 
@@ -80,7 +81,7 @@ namespace Decuplr.Serialization.Binary.LayoutService {
             "No suitable member is found for serialization",
             "Type '{0}' will not be a resolved for serialization, because it doesn't contain any serializable member."
         )]
-        public static Diagnostic NoMember(TypeMetaInfo typeInfo) => CreateDiagnostic(typeInfo.FirstLocation, new object[] { typeInfo.Symbol });
+        public static Diagnostic NoMember(NamedTypeMetaInfo typeInfo) => CreateDiagnostic(typeInfo.FirstLocation, new object[] { typeInfo.Symbol });
 
         [Diagnostic(9, DiagnosticSeverity.Warning,
             "Applied attribute is meaningless on target member",
@@ -91,5 +92,46 @@ namespace Decuplr.Serialization.Binary.LayoutService {
                 warningTarget.GetLocation(attribute) ?? throw new ArgumentException("attribute cannot be located"),
                 new object[] { attribute.Name, warningTarget.Symbol.Name }
             );
+
+        [Diagnostic(10, DiagnosticSeverity.Error,
+            "Compared value is not a valid type",
+            "'{0}' is not a valid type for operand '{1}'{2}."
+        )]
+        public static Diagnostic CompareValueInvalid(Condition condition, Location attributeLocation, string? additionExplanation = null) 
+            => CreateDiagnostic(attributeLocation, new object?[] { condition.ComparedValue, condition.Operator, additionExplanation });
+
+        [Diagnostic(11, DiagnosticSeverity.Error,
+            "Unable to locate the member for comparsion",
+            "Unable to locate member '{0}' for comparsion. The source of the compared target must locate within the same type of '{1}'."
+        )]
+        public static Diagnostic CompareSourceNotFound(string memberName, NamedTypeMetaInfo sourceType, Location attributeLocation)
+            => CreateDiagnostic(attributeLocation, new object[] { memberName, sourceType.Symbol });
+
+        [Diagnostic(12, DiagnosticSeverity.Error,
+            "Invalid operator for comparsion",
+            "Operand '{0}' is not valid operator for comparsion"
+        )]
+        public static Diagnostic InvalidOperator(Operator operand, Location attributeLocation) => CreateDiagnostic(attributeLocation, new object[] { operand });
+
+        [Diagnostic(13, DiagnosticSeverity.Error,
+            "Target member has invalid return type for comparsion",
+            "Target member '{0}' contains a invalid return type '{1}' which is not allowed."
+        )]
+        public static Diagnostic CompareSourceReturnInvalidType(MemberMetaInfo targetMember, string typeName, Location attributeLocation)
+            => CreateDiagnostic(attributeLocation, new Location[] { targetMember.Location }, new object[] { targetMember.Symbol, typeName });
+
+        [Diagnostic(14, DiagnosticSeverity.Error,
+            "Target member's return type doesn't implement IComparable for comparation",
+            "Target member '{0}' has a return type '{1}' that doesn't implement IComparable which is required for 'Operator.{2}'."
+        )]
+        public static Diagnostic ReturnTypeNotComparable(MemberMetaInfo targetMember, Operator @operator, Location attributeLocation) 
+            => CreateDiagnostic(attributeLocation, new Location[] { targetMember.Location }, new object?[] { targetMember.Symbol, targetMember.ReturnType, @operator });
+
+        [Diagnostic(15, DiagnosticSeverity.Error,
+            "Target member's return type doesn't implement an acceptable IComparable<T>",
+            "Target member '{0}' has a return type '{1}' that doesn't implement a IComparable<T> where T is '{2}' or is built-in numeric / char convertible from '{2}'."
+        )]
+        public static Diagnostic ReturnTypeInvalidComparable(MemberMetaInfo targetMember, Type type, Location attributeLocation)
+            => CreateDiagnostic(attributeLocation, new Location[] { targetMember.Location }, new object?[] { targetMember.Symbol, targetMember.ReturnType, type.Name });
     }
 }

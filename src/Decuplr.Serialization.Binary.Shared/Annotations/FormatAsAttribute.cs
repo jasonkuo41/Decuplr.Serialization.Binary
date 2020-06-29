@@ -21,7 +21,7 @@ namespace Decuplr.Serialization.Binary.Annotations {
             ValueSource = valueSource;
         }
 
-        public FormatAsAttribute(Type type, string valueSource, Operand operand, object value) {
+        public FormatAsAttribute(Type type, string valueSource, Operator operand, object value) {
 
         }
 

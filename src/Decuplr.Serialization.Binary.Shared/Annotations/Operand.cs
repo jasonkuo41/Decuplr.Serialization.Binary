@@ -4,13 +4,13 @@ using System.Net;
 using System.Text;
 
 namespace Decuplr.Serialization.Binary.Annotations {
-    public enum Operand {
+    public enum Operator {
         Equal,
         NotEqual,
         GreaterThan,
         GreaterThanOrEqual,
         LessThan,
-        LessThenOrEqual,
+        LessThanOrEqual,
         IsTypeOf,
         IsNotTypeOf,
     }

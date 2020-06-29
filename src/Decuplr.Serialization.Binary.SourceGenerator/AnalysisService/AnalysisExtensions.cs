@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -20,6 +21,10 @@ namespace Decuplr.Serialization.Binary.AnalysisService {
                 Lists = attributeList.Select(x => (IReadOnlyList<AttributeData>)x.ToList()).ToList(),
                 Locations = attributeList.SelectMany(x => x).ToDictionary(x => x.Data, x => x.Location)
             };
+        }
+
+        public static bool Implements(this ITypeSymbol symbol, Type type) {
+
         }
     }
 

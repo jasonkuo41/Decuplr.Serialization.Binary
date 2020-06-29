@@ -11,7 +11,7 @@ namespace Decuplr.Serialization.Binary.AnalysisService {
 
         private readonly IReadOnlyDictionary<AttributeData, Location> AttributeLocationLookup;
 
-        public TypeMetaInfo Full { get; }
+        public NamedTypeMetaInfo Full { get; }
 
         public Location Location { get; }
 
@@ -19,7 +19,7 @@ namespace Decuplr.Serialization.Binary.AnalysisService {
 
         public IReadOnlyList<MemberMetaInfo> Members { get; }
 
-        public TypePartialMetaInfo(TypeMetaInfo source, SyntaxModelPair syntaxPair, IReadOnlyList<SymbolKind> kinds, CancellationToken ct) {
+        public TypePartialMetaInfo(NamedTypeMetaInfo source, SyntaxModelPair syntaxPair, IReadOnlyList<SymbolKind> kinds, CancellationToken ct) {
             var attributeListing = syntaxPair.Syntax.GetAttributes(source.Symbol);
             Full = source;
             Location = syntaxPair.Syntax.GetLocation();
