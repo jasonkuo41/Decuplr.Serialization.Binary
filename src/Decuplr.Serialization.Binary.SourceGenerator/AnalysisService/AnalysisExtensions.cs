@@ -23,9 +23,6 @@ namespace Decuplr.Serialization.Binary.AnalysisService {
             };
         }
 
-        public static bool Implements(this ITypeSymbol symbol, Type type) {
-
-        }
     }
 
 }

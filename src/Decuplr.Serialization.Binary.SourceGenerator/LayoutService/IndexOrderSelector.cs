@@ -8,10 +8,8 @@ using Microsoft.CodeAnalysis;
 namespace Decuplr.Serialization.Binary.LayoutService {
     internal class IndexOrderSelector : IOrderSelector {
 
-        private bool HasUnsupportedReturnType(ITypeSymbol? symbol) {
-            if (symbol is null)
-                return true;
-            switch (symbol.TypeKind) {
+        private bool HasUnsupportedReturnType(ReturnTypeMetaInfo? returnType) {
+            switch (returnType?.Symbol.TypeKind ?? TypeKind.Error) {
                 case TypeKind.Class:
                 case TypeKind.Struct:
                 case TypeKind.Array:
@@ -90,11 +88,12 @@ namespace Decuplr.Serialization.Binary.LayoutService {
         public IEnumerable<MemberMetaInfo> GetOrder(IEnumerable<MemberMetaInfo> memberInfo, BinaryLayout layout, IDiagnosticReporter diagnostic) {
             var implicitLayout = GetImplicitLayout();
             var isExplicit = layout != BinaryLayout.Auto;
-            switch (implicitLayout) {
-                case BinaryLayout.Explicit: return GetExplicitOrder(memberInfo, diagnostic, isExplicit);
-                case BinaryLayout.Sequential: return GetSequentialOrder(memberInfo, diagnostic, isExplicit);
-                default: throw new ArgumentException("Invalid Binary Layout", nameof(layout));
-            }
+            return implicitLayout switch
+            {
+                BinaryLayout.Explicit => GetExplicitOrder(memberInfo, diagnostic, isExplicit),
+                BinaryLayout.Sequential => GetSequentialOrder(memberInfo, diagnostic, isExplicit),
+                _ => throw new ArgumentException("Invalid Binary Layout", nameof(layout)),
+            };
 
             BinaryLayout GetImplicitLayout() {
                 if (layout != BinaryLayout.Auto)

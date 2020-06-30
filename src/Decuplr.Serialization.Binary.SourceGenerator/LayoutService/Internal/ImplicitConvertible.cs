@@ -7,7 +7,6 @@ using Microsoft.CodeAnalysis;
 namespace Decuplr.Serialization.Binary.LayoutService.Internal {
     static class ImplicitConvertible {
 
-
         // These don't support implicit conversion : bool, Type, string
         private static readonly Dictionary<SpecialType, HashSet<Type>> ConvertibleTable = new Dictionary<SpecialType, HashSet<Type>> {
             [SpecialType.System_Boolean]

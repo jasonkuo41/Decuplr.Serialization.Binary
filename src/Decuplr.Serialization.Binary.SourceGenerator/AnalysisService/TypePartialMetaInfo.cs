@@ -19,7 +19,7 @@ namespace Decuplr.Serialization.Binary.AnalysisService {
 
         public IReadOnlyList<MemberMetaInfo> Members { get; }
 
-        public TypePartialMetaInfo(NamedTypeMetaInfo source, SyntaxModelPair syntaxPair, IReadOnlyList<SymbolKind> kinds, CancellationToken ct) {
+        public TypePartialMetaInfo(NamedTypeMetaInfo source, SourceCodeAnalysis analysis, SyntaxModelPair syntaxPair, IReadOnlyList<SymbolKind> kinds, CancellationToken ct) {
             var attributeListing = syntaxPair.Syntax.GetAttributes(source.Symbol);
             Full = source;
             Location = syntaxPair.Syntax.GetLocation();
@@ -40,7 +40,7 @@ namespace Decuplr.Serialization.Binary.AnalysisService {
                     if (symbol is IMethodSymbol method && method.PartialImplementationPart != null && method.PartialDefinitionPart is null && member.Modifiers.Any(SyntaxKind.PartialKeyword)) {
                         continue;
                     }
-                    members.Add(new MemberMetaInfo(this, symbol, member));
+                    members.Add(new MemberMetaInfo(this, analysis, symbol, member));
                 }
                 return members;
             }

@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
 using Decuplr.Serialization.Analyzer.BinaryFormat;
 using Decuplr.Serialization.Binary.Analyzers;
 using Decuplr.Serialization.Binary.Annotations;
 using Decuplr.Serialization.Binary.Annotations.Namespaces;
-using Decuplr.Serialization.Binary.SourceGenerator.Schemas;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.ParserProviders {
@@ -140,7 +138,7 @@ namespace Decuplr.Serialization.Binary.ParserProviders {
 
             ITypeSymbol GetTypeParameter(ITypeSymbol symbol) {
                 while (symbol.BaseType != null) {
-                    if (symbol.BaseType.IsGenericType 
+                    if (symbol.BaseType.IsGenericType
                         && symbol.BaseType.ConstructUnboundGenericType().Equals(type.Analyzer.GetSymbol(typeof(TypeParser<>))!.ConstructUnboundGenericType(), SymbolEqualityComparer.Default))
                         return symbol.BaseType.TypeParameters[0];
                     symbol = symbol.BaseType;
@@ -158,7 +156,7 @@ namespace Decuplr.Serialization.Binary.ParserProviders {
             var explicitStateType = parserInfo.TargetTypes.Count != 0;
             if (!TryGetInputTypes(out var inputTypes))
                 return false;
-            
+
             bool TryGetInputTypes(out IReadOnlyList<ITypeSymbol> symbols) {
                 var constructorEnumerable = type.TypeSymbol.Constructors
                     .Where(x => x.Parameters.Length == 1)
@@ -219,7 +217,7 @@ namespace Decuplr.Serialization.Binary.ParserProviders {
             }
 
             var finalTypes = new Dictionary<ITypeSymbol, (ITypeSymbol SourceSymbol, Func<string, string> Conversion)>();
-            foreach(var inputType in inputTypes) {
+            foreach (var inputType in inputTypes) {
                 if (!outputTypes.ContainsKey(inputType) && explicitStateType) {
                     context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelperLegacy.ExplicitTypeMushHaveConstructor, parserInfo.Attribute.Location, inputType.Name));
                     return false;
@@ -229,7 +227,7 @@ namespace Decuplr.Serialization.Binary.ParserProviders {
                 finalTypes.Add(key, value);
             }
             // Check if some outputTypes are actually missing out
-            foreach(var outputType in outputTypes) {
+            foreach (var outputType in outputTypes) {
                 // Just a warning
                 if (!finalTypes.ContainsKey(outputType.Key))
                     context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelperLegacy.DeconstructIsIgnoredDueToNoConstructor, outputType.Value.Item1, outputType.Key));
@@ -254,15 +252,15 @@ namespace Decuplr.Serialization.Binary.ParserProviders {
                 TargetNamespaces = parserInfo.Namespaces
             };
             bool result = SchemaParserConverter.TryConvert(type, context.Compilation, schemaPrecusor, out IList<Diagnostic>? diagnostics, out var helperParser);
-            foreach(Diagnostic? diagnostic in diagnostics) {
+            foreach (Diagnostic? diagnostic in diagnostics) {
                 context.ReportDiagnostic(diagnostic);
             }
             if (!result)
                 return false;
-            var parserlist = new List<GeneratedParser>{ helperParser };
+            var parserlist = new List<GeneratedParser> { helperParser };
 
             // Then we wrap the parser around so we can actually provider parser for our type
-            foreach(var finalType in finalTypes) {
+            foreach (var finalType in finalTypes) {
                 var (className, sourceCode) = ParserProviderWrapper(type.TypeSymbol, finalType.Value.SourceSymbol, finalType.Value.Conversion);
 
                 IParserKindProvider kindProvider;

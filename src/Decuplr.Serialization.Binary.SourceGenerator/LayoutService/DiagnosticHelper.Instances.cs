@@ -133,5 +133,12 @@ namespace Decuplr.Serialization.Binary.LayoutService {
         )]
         public static Diagnostic ReturnTypeInvalidComparable(MemberMetaInfo targetMember, Type type, Location attributeLocation)
             => CreateDiagnostic(attributeLocation, new Location[] { targetMember.Location }, new object?[] { targetMember.Symbol, targetMember.ReturnType, type.Name });
+
+        [Diagnostic(16, DiagnosticSeverity.Error,
+            "Target member is not a valid kind for comparison",
+            "Target member '{0}' is a '{1}' which is not a valid kind for comparsion."
+        )]
+        public static Diagnostic CompareSourceInvalidKind(MemberMetaInfo targetMember, Location attributeLocation)
+            => CreateDiagnostic(attributeLocation, new Location[] { targetMember.Location }, new object[] { targetMember.Symbol, targetMember.Symbol.Kind });
     }
 }

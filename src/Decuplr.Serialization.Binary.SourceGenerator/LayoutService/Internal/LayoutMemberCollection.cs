@@ -144,11 +144,29 @@ namespace Decuplr.Serialization.Binary.LayoutService.Internal {
 
         }
 
+        // TODO : maybe segregate this into a different method
         private void ValidateConditionRules(Type attributeType, IConditionProvider conditionRules, NamedTypeMetaInfo full, IEnumerable<MemberMetaInfo> electedMembers, IDiagnosticReporter reporter) {
             var members = full.Members.ToDictionary(member => member.Symbol.Name);
             foreach (var (member, attributes) in electedMembers.Select(member => (member, member.GetAttributes(attributeType)))) {
                 foreach (var attribute in attributes) {
                     var conditions = conditionRules.ProvideCondition(attribute);
+
+                    // If condition target source cannot be found, we halt
+                    if (!members.TryGetValue(conditions.SourceName, out var targetMember)) {
+                        reporter.ReportDiagnostic(DiagnosticHelper.CompareSourceNotFound(conditions.SourceName, full, member.GetLocation(attribute)));
+                        continue;
+                    }
+                    // If condition target is not a valid target for returning types
+                    if (targetMember.ReturnType is null) {
+                        reporter.ReportDiagnostic(DiagnosticHelper.CompareSourceInvalidKind(targetMember, member.GetLocation(attribute)));
+                        break;
+                    }
+                    // Or if the target returns void which is not comparable
+                    if (targetMember.ReturnType.IsVoid) {
+                        reporter.ReportDiagnostic(DiagnosticHelper.CompareSourceReturnInvalidType(targetMember, "void", member.GetLocation(attribute)));
+                        continue;
+                    }
+
                     switch (conditions.Operator) {
                         // Since all objects contain Equals(object), this is the least we call back into
                         // TODO : Note we might still want to warn user about that a returning type doesn't contain a correct signature
@@ -164,40 +182,37 @@ namespace Decuplr.Serialization.Binary.LayoutService.Internal {
                         case Operator.LessThanOrEqual: {
                             // Valid compare types
                             // Value Types : bool, char, byte, sbyte, ushort, short, int, uint, ulong, long, float, double 
-                            // Ref Types : Types (but why), string (but why), null (but why)
+                            // Ref Types : Types (but why), string (but why)
+
+                            // We currently consider 'null' to be not comparable, so there's this
                             if (conditions.ComparedValue is null) {
                                 reporter.ReportDiagnostic(DiagnosticHelper.CompareValueInvalid(conditions, member.GetLocation(attribute)));
                                 break;
                             }
-                            // test if we are able to find the target member
-                            if (!members.TryGetValue(conditions.SourceName, out var targetMember)) {
-                                reporter.ReportDiagnostic(DiagnosticHelper.CompareSourceNotFound(conditions.SourceName, full, member.GetLocation(attribute)));
-                                break;
-                            }
-                            if (targetMember.ReturnType is null) {
-                                reporter.ReportDiagnostic(DiagnosticHelper.CompareSourceReturnInvalidType(targetMember, "void", member.GetLocation(attribute)));
-                                break;
-                            }
+
                             // Valid implicit conversion for IComparable is matched with C# specification : https://docs.microsoft.com/dotnet/csharp/language-reference/builtin-types/numeric-conversions
                             //
                             // [Possible Improvement]
                             // We also don't support even if IComparation<T>'s T is implicit convertible from the compared type
-                            //
+                            // We only support when it's primitive is implicitly convertible (supported by C# specification) to another primitive type
+                            // So types that only return IComparable<long> would work well with int numbers
                             
                             var returnType = targetMember.ReturnType;
                             var comparedType = conditions.ComparedValue.GetType();
-                            // returnType
+
                             if (!returnType.Implements(typeof(IComparable)) || !returnType.Implements(typeof(IComparable<>))) {
                                 reporter.ReportDiagnostic(DiagnosticHelper.ReturnTypeNotComparable(targetMember, conditions.Operator, member.GetLocation(attribute)));
                                 break;
                             }
                             if (!returnType.Implements(typeof(IComparable<>).MakeGenericType(comparedType)) ||
-                                !returnType.GetInterfaces(typeof(IComparable<>)).Any(x => x.IsImplicitConvertibleFrom(comparedType)))
+                                !returnType.GetInterfaces(typeof(IComparable<>)).Any(x => x.IsImplicitConvertibleFrom(comparedType))) {
                                 reporter.ReportDiagnostic(DiagnosticHelper.ReturnTypeInvalidComparable(targetMember, comparedType, member.GetLocation(attribute)));
+                                break;
+                            }
                             break;
                         }
 
-                        // Since all objects can be evaluated
+                        // Since all objects can be evaluated with is operator
                         case Operator.IsTypeOf:
                         case Operator.IsNotTypeOf: {
                             if (!(conditions.ComparedValue is null) && conditions.ComparedValue.GetType() != typeof(Type))
@@ -206,7 +221,7 @@ namespace Decuplr.Serialization.Binary.LayoutService.Internal {
                         }
 
                         default:
-                            reporter.ReportDiagnostic(DiagnosticHelper.InvalidOperator(conditions.Operator, member.GetLocation(attribute));
+                            reporter.ReportDiagnostic(DiagnosticHelper.InvalidOperator(conditions.Operator, member.GetLocation(attribute)));
                             break;
                     }
                 }

@@ -20,11 +20,24 @@ namespace Decuplr.Serialization.Binary.AnalysisService {
 
         public ISymbol Symbol { get; }
 
-        public ITypeSymbol? ReturnType { get; }
+        public ReturnTypeMetaInfo? ReturnType { get; }
 
         public Location Location { get; }
 
         public IReadOnlyList<IReadOnlyList<AttributeData>> Attributes { get; }
+
+        public MemberMetaInfo(TypePartialMetaInfo typemeta, SourceCodeAnalysis analysis, ISymbol memberSymbol, MemberDeclarationSyntax syntax) {
+            var listing = syntax.GetAttributes(memberSymbol);
+            Location = syntax.GetLocation();
+            ContainingType = typemeta;
+            Symbol = memberSymbol;
+            ReturnType = GetMetaInfo((memberSymbol as IFieldSymbol)?.Type ?? (memberSymbol as IMethodSymbol)?.ReturnType ?? (memberSymbol as IPropertySymbol)?.Type ?? (memberSymbol as IEventSymbol)?.Type);
+            Attributes = listing.Lists;
+            _attributeLocationLookup = listing.Locations;
+            _analysis = analysis;
+
+            ReturnTypeMetaInfo? GetMetaInfo(ITypeSymbol? symbol) => symbol is null ? null : new ReturnTypeMetaInfo(analysis, symbol);
+        }
 
         public bool ContainsAttribute<TAttribute>() where TAttribute : Attribute => ContainsAttribute(typeof(TAttribute));
 
@@ -74,17 +87,6 @@ namespace Decuplr.Serialization.Binary.AnalysisService {
             if (symbol is null)
                 return Enumerable.Empty<Location>();
             return Attributes.SelectMany(x => x).Where(x => x.AttributeClass?.Equals(symbol, SymbolEqualityComparer.Default) ?? false).Select(x => GetLocation(x));
-        }
-
-        public MemberMetaInfo(TypePartialMetaInfo typemeta, SourceCodeAnalysis analysis, ISymbol memberSymbol, MemberDeclarationSyntax syntax) {
-            var listing = syntax.GetAttributes(memberSymbol);
-            Location = syntax.GetLocation();
-            ContainingType = typemeta;
-            Symbol = memberSymbol;
-            ReturnType = (memberSymbol as IFieldSymbol)?.Type ?? (memberSymbol as IMethodSymbol)?.ReturnType ?? (memberSymbol as IPropertySymbol)?.Type ?? (memberSymbol as IEventSymbol)?.Type;
-            Attributes = listing.Lists;
-            _attributeLocationLookup = listing.Locations;
-            _analysis = analysis;
         }
 
     }
