@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.LayoutService {
 
-    internal class TypeValidator {
+    internal class TypeValidator : ITypeValidator {
 
         private readonly NamedTypeMetaInfo _type;
         private readonly SchemaPrecusor _precusor;
