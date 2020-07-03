@@ -24,6 +24,24 @@ namespace Decuplr.Serialization.Binary.Arguments {
         public static implicit operator BufferArgs(string str) => new BufferArgs { Name = str };
     }
 
+    internal struct ConstructStructArgs {
+        public string Name { get; set; }
+        public override string ToString() => Name;
+        public static implicit operator ConstructStructArgs(string str) => new ConstructStructArgs { Name = str };
+    }
+
+    internal struct TypeSourceArgs {
+        public string Name { get; set; }
+        public override string ToString() => Name;
+        public static implicit operator TypeSourceArgs(string str) => new TypeSourceArgs { Name = str };
+    }
+
+    internal struct InArgs<T> {
+        public string Name { get; set; }
+        public override string ToString() => Name;
+        public static implicit operator InArgs<T>(string str) => new InArgs<T> { Name = str };
+    }
+
     internal struct OutArgs<T> {
         public string Name { get; set; }
         public override string ToString() => Name;
@@ -43,6 +61,5 @@ namespace Decuplr.Serialization.Binary.Arguments {
         public override string ToString() => Name;
         public static implicit operator ParserConstructArgs(string str) => new ParserConstructArgs { Name = str };
     }
-
 
 }

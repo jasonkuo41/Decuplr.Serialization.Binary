@@ -1,57 +1,56 @@
-﻿namespace Decuplr.Serialization.Binary.CodeGenerator.Arguments {
-    internal class TryDeserializeSpanArgs {
-        public TryDeserializeSpanArgs(string typeSource, string readOnlySpan, string outReadBytes, string outResult) {
-            TypeSource = typeSource;
-            ReadOnlySpan = readOnlySpan;
-            OutReadBytes = outReadBytes;
-            OutResult = outResult;
-        }
+﻿using System;
+using Decuplr.Serialization.Binary.Arguments;
 
-        public string TypeSource { get; }
+namespace Decuplr.Serialization.Binary.CodeGenerator.Arguments {
+    internal struct TryDeserializeSpanArgs<TSource> {
 
-        public string ReadOnlySpan { get; }
+        public TSource Source { get; set; }
 
-        public string OutReadBytes { get; }
+        public BufferArgs ReadOnlySpan { get; set; }
 
-        public string OutResult { get; }
+        public OutArgs<int> OutReadBytes { get; set; }
+
+        public OutArgs<object> OutResult { get; set; }
     }
 
-    internal class TryDeserializeSequenceArgs {
-        public TryDeserializeSequenceArgs(string typeSource, string refSequenceCursor, string outResult) {
-            TypeSource = typeSource;
-            RefSequenceCursor = refSequenceCursor;
-            OutResult = outResult;
-        }
+    internal struct TryDeserializeSequenceArgs<TSource> {
 
-        public string TypeSource { get; }
+        public TSource Source { get; set; }
 
-        public string RefSequenceCursor { get; }
+        public BufferArgs RefSequenceCursor { get; set; }
 
-        public string OutResult { get; }
+        public OutArgs<object> OutResult { get; set; }
     }
 
-    internal class DeserializeSpanArgs {
-        public DeserializeSpanArgs(string typeSource, string readOnlySpan, string outResult) {
-            TypeSource = typeSource;
-            ReadOnlySpan = readOnlySpan;
-            OutResult = outResult;
-        }
+    internal struct DeserializeSpanArgs<TSource> {
+        
+        public TSource Source { get; set; }
 
-        public string TypeSource { get; }
+        public BufferArgs ReadOnlySpan { get; set; }
 
-        public string ReadOnlySpan { get; }
-
-        public string OutResult { get; }
+        public OutArgs<object> OutResult { get; set; }
     }
 
-    internal class DeserializeSequenceArgs {
-        public DeserializeSequenceArgs(string typeSource, string refSequenceCursor) {
-            TypeSource = typeSource;
-            RefSequenceCursor = refSequenceCursor;
-        }
+    internal struct DeserializeSequenceArgs<TSource> {
+        
+        public TSource Source { get; set; }
 
-        public string TypeSource { get; }
+        public BufferArgs RefSequenceCursor { get; set; }
+    }
 
-        public string RefSequenceCursor { get; }
+    internal struct SerializeArgs<TSource> {
+
+        public TSource Source { get; set; }
+
+        public BufferArgs ReadOnlySpan { get; set; }
+    }
+
+    internal struct TrySerializeArgs<TSource> {
+
+        public TSource Source { get; set; }
+
+        public BufferArgs ReadOnlySpan { get; set; }
+
+        public OutArgs<int> OutWrittenBytes { get; set; }
     }
 }

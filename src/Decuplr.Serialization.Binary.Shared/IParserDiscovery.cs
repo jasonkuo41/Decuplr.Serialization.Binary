@@ -10,7 +10,7 @@ namespace Decuplr.Serialization.Binary {
         /// <summary>
         /// The current binary layout (endianess) of the discovery
         /// </summary>
-        BinaryLayout BinaryLayout { get; }
+        ByteOrder ByteOrder { get; }
 
         /// <summary>
         /// The current text encoding of the discovery

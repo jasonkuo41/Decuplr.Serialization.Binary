@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using Decuplr.Serialization.Analyzer.BinaryFormat;
 using Decuplr.Serialization.Binary.AnalysisService;
+using Decuplr.Serialization.Binary.Arguments;
 using Decuplr.Serialization.Binary.CodeGenerator.Arguments;
 using Decuplr.Serialization.Binary.LayoutService;
 using Microsoft.CodeAnalysis;
@@ -38,17 +40,48 @@ namespace Decuplr.Serialization.Binary.CodeGenerator {
         }
     }
 
+    internal interface IFunctionProvider<TArgs> {
+        string GetFunctionBody(IFuncSource<TArgs> nextFunc, TArgs args);
+    }
 
-    internal interface IConditionResolver {
+    internal interface IResolverBase<TArgs> :
+        IFunctionProvider<TryDeserializeSpanArgs<TArgs>>,
+        IFunctionProvider<TryDeserializeSequenceArgs<TArgs>>,
+        IFunctionProvider<DeserializeSpanArgs<TArgs>>,
+        IFunctionProvider<DeserializeSequenceArgs<TArgs>>,
+        IFunctionProvider<SerializeArgs<TArgs>>,
+        IFunctionProvider<TrySerializeArgs<TArgs>> {
+
+        string ResolverName { get; }
+    }
+
+    internal interface IConditionResolver : IResolverBase<TypeSourceArgs> { }
+
+    internal interface IConditionResolverProvider {
         void ValidConditions(ITypeValidator validator);
+        IConditionResolver GetResolver(MemberMetaInfo member);
+    }
 
-        string GetTryDeserializeSpan(IFuncSource<TryDeserializeSpanArgs> nextFunc, MemberMetaInfo member, TryDeserializeSpanArgs args);
-        string GetTryDeserializeSequence(IFuncSource<TryDeserializeSequenceArgs> nextFunc, MemberMetaInfo member, TryDeserializeSequenceArgs args);
-        string GetDeserializeSpan(IFuncSource<TrySer>)
+    internal interface IParserResolverProvider {
+        void ValidConditions(ITypeValidator validator);
+        IParserResolver GetResolver(MemberMetaInfo member, IDependencyProvider provider);
+    }
+
+    internal interface IParserResolver : IResolverBase<TypeSourceArgs> {
+        bool ShouldResolve { get; }
+    }
+
+    internal interface IDependencyProvider {
+        string GetComponentName(IComponentProvider provider);
+    }
+
+    internal interface IComponentProvider {
+        string FullTypeName { get; }
+        string GetComponent(ParserDiscoveryArgs args);
+        string TryGetComponent(ParserDiscoveryArgs args, OutArgs<object> result);
     }
 
     internal interface IFuncSource<TArgs> {
-        string GetFunction(TArgs args);
+        string GetNextFunction(TArgs args);
     }
-
 }
