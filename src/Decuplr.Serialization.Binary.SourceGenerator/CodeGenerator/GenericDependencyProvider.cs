@@ -1,8 +1,16 @@
-﻿using Decuplr.Serialization.Binary.Arguments;
+﻿using System.Collections.Generic;
+using Decuplr.Serialization.Binary.Arguments;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.CodeGenerator {
-    internal class ComponentProvider {
+    internal interface IComponentProvider {
+        string FullTypeName { get; }
+        string GetComponent(ParserDiscoveryArgs args);
+        string TryGetComponent(ParserDiscoveryArgs args, OutArgs<object> result);
+    }
+
+    internal class GenericDependencyProvider : IDependencyProviderSource {
+        
         private class DefaultProvider : IComponentProvider {
             public string FullTypeName { get; }
 
@@ -35,11 +43,21 @@ namespace Decuplr.Serialization.Binary.CodeGenerator {
             public static StringTypeProvider Shared { get; } = new StringTypeProvider();
         }
 
-        public static IComponentProvider GetDefault(ITypeSymbol symbol) => symbol switch
+        private readonly Dictionary<string, IComponentProvider> _components = new Dictionary<string, IComponentProvider>();
+
+        public IReadOnlyDictionary<string, IComponentProvider> Components => _components;
+
+        private static IComponentProvider GetDefault(ITypeSymbol symbol) => symbol switch
         {
             _ when symbol.SpecialType == SpecialType.System_String => StringTypeProvider.Shared,
             _ when symbol.IsPrimitiveType() => PrimitiveTypeProvider.Shared,
             _ => new DefaultProvider(symbol.ToString())
         };
+
+        public string GetComponentName(ITypeSymbol symbol) {
+            var componentName = $"component_{_components.Count}";
+            _components.Add(componentName, GetDefault(symbol));
+            return componentName;
+        }
     }
 }

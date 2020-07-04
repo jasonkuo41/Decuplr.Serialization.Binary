@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Security.Cryptography.X509Certificates;
+﻿using System.Collections.Generic;
 using System.Threading;
-using Decuplr.Serialization.Analyzer.BinaryFormat;
 using Decuplr.Serialization.Binary.AnalysisService;
 using Decuplr.Serialization.Binary.Arguments;
 using Decuplr.Serialization.Binary.CodeGenerator.Arguments;
@@ -40,8 +37,13 @@ namespace Decuplr.Serialization.Binary.CodeGenerator {
         }
     }
 
+    internal interface IFormattingFeature {
+        IFormattingFeature AddConditionResolver<TResolver>() where TResolver : IConditionResolverProvider, new();
+        IFormattingFeature AddFormatResolver<TResolver>() where TResolver : IFormatResolverProvider, new();
+    }
+
     internal interface IFunctionProvider<TArgs> {
-        string GetFunctionBody(IFuncSource<TArgs> nextFunc, TArgs args);
+        string GetFunctionBody(IFunctionSource<TArgs> nextFunc, TArgs args);
     }
 
     internal interface IResolverBase<TArgs> :
@@ -62,26 +64,24 @@ namespace Decuplr.Serialization.Binary.CodeGenerator {
         IConditionResolver GetResolver(MemberMetaInfo member);
     }
 
-    internal interface IParserResolverProvider {
-        void ValidConditions(ITypeValidator validator);
-        IParserResolver GetResolver(MemberMetaInfo member, IDependencyProvider provider);
-    }
-
-    internal interface IParserResolver : IResolverBase<TypeSourceArgs> {
+    internal interface IFormatResolver : IResolverBase<TypeSourceArgs> {
         bool ShouldResolve { get; }
     }
 
+    internal interface IFormatResolverProvider {
+        void ValidConditions(ITypeValidator validator);
+        IFormatResolver GetResolver(MemberMetaInfo member, IDependencyProvider provider);
+    }
+
     internal interface IDependencyProvider {
-        string GetComponentName(IComponentProvider provider);
+        string GetComponentName(ITypeSymbol symbol);
     }
 
-    internal interface IComponentProvider {
-        string FullTypeName { get; }
-        string GetComponent(ParserDiscoveryArgs args);
-        string TryGetComponent(ParserDiscoveryArgs args, OutArgs<object> result);
+    internal interface IDependencyProviderSource : IDependencyProvider {
+        IReadOnlyDictionary<string, IComponentProvider> Components { get; }
     }
 
-    internal interface IFuncSource<TArgs> {
+    internal interface IFunctionSource<TArgs> {
         string GetNextFunction(TArgs args);
     }
 }
