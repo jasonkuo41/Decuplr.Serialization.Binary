@@ -44,7 +44,7 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
             precusor.RequestLayout = binaryLayout;
 
             IReadOnlyList<AnalyzedMember> orderedMembers;
-            if (precusor.RequestLayout == BinaryLayout.Explicit) {
+            if (precusor.RequestLayout == LayoutOrder.Explicit) {
                 // with explicit we use index attribute as our order guidance
                 var indexs = indexAttributes.Select(x => (Index: (int)x.Attribute.Data.ConstructorArguments[0].Value!, x.Member)).ToList();
                 {
@@ -68,14 +68,14 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
             return true;
         }
 
-        private static bool TryEnsureLayoutOrder(AnalyzedType type, ref BinaryLayout statedLayout, IReadOnlyList<AnalyzedAttribute> indexAttributes, IList<Diagnostic> diagnostics) {
+        private static bool TryEnsureLayoutOrder(AnalyzedType type, ref LayoutOrder statedLayout, IReadOnlyList<AnalyzedAttribute> indexAttributes, IList<Diagnostic> diagnostics) {
 
             // If it's auto or sequential, we will now try to locate if there's Index set of our member.
             // 
             var originalLayout = statedLayout;
-            statedLayout = (statedLayout == BinaryLayout.Auto && indexAttributes.Count == 0) ? BinaryLayout.Sequential : BinaryLayout.Explicit;
+            statedLayout = (statedLayout == LayoutOrder.Auto && indexAttributes.Count == 0) ? LayoutOrder.Sequential : LayoutOrder.Explicit;
 
-            if (statedLayout == BinaryLayout.Sequential) {
+            if (statedLayout == LayoutOrder.Sequential) {
                 // If we detect more then one "index", since they ask for sequential, dump error
                 if (indexAttributes.Count != 0) {
                     diagnostics.Add(Diagnostic.Create(DiagnosticHelper.SequentialShouldNotIndex, indexAttributes[0].Location, indexAttributes.Select(x => x.Location)));
@@ -83,7 +83,7 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
                 }
                 // If there's mutliple declaration, dump error
                 if (type.Declarations.Count > 1) {
-                    if (originalLayout == BinaryLayout.Auto)
+                    if (originalLayout == LayoutOrder.Auto)
                         diagnostics.Add(Diagnostic.Create(DiagnosticHelper.AutoAsSequentialTooMuchDeclare, type.Declarations[0].DeclaredLocation, type.Declarations.Select(x => x.DeclaredLocation), type.TypeSymbol));
                     else
                         diagnostics.Add(Diagnostic.Create(DiagnosticHelper.SequentialTooMuchDeclare, type.Declarations[0].DeclaredLocation, type.Declarations.Select(x => x.DeclaredLocation), type.TypeSymbol));

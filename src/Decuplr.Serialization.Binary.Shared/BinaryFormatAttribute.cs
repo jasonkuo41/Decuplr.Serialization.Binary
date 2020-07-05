@@ -6,19 +6,19 @@ namespace Decuplr.Serialization.Binary {
     public sealed class BinaryFormatAttribute : Attribute {
 
         /// <summary>
-        /// Declare this class or struct to be able to serialize to binary format, with layout as <see cref="BinaryLayout.Auto"/>
+        /// Declare this class or struct to be able to serialize to binary format, with layout as <see cref="LayoutOrder.Auto"/>
         /// </summary>
-        public BinaryFormatAttribute() : this (BinaryLayout.Auto) { }
+        public BinaryFormatAttribute() : this (LayoutOrder.Auto) { }
 
         /// <summary>
         /// Declare this class or struct to be able to serialize to binary format
         /// </summary>
         /// <param name="layout">The target layout</param>
-        public BinaryFormatAttribute(BinaryLayout layout) {
+        public BinaryFormatAttribute(LayoutOrder layout) {
             Layout = layout;
         }
 
-        public BinaryLayout Layout { get; }
+        public LayoutOrder Layout { get; }
 
         /// <summary>
         /// Declaring the format is final, and cannot be modified by all means.

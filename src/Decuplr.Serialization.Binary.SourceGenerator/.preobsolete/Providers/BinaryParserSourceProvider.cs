@@ -245,7 +245,7 @@ namespace Decuplr.Serialization.Binary.ParserProviders {
             var attribute = parserInfo.Attribute;
             var schemaPrecusor = new SchemaPrecusor {
                 IsSealed = attribute.Data.GetNamedArgumentValue<bool>(nameof(BinaryParserAttribute.Sealed)) ?? false,
-                RequestLayout = attribute.Data.GetNamedArgumentValue<BinaryLayout>(nameof(BinaryParserAttribute.Layout)) ?? BinaryLayout.Auto,
+                RequestLayout = attribute.Data.GetNamedArgumentValue<LayoutOrder>(nameof(BinaryParserAttribute.Layout)) ?? LayoutOrder.Auto,
                 // We don't provide, "please don't deserialize option", you throw or deny deserialization at that level
                 NeverDeserialize = false,
                 // BinaryParser's namespace is provided by `ParserNamespace`

@@ -51,7 +51,7 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
             UsedNamespaces = GetUsingNamespace(member, diagnostics);
         }
 
-        public static IEnumerable<MemberFormatInfo> CreateFormatInfo(IReadOnlyList<AnalyzedMember> members, BinaryLayout layout, IList<Diagnostic> diagnostics) {
+        public static IEnumerable<MemberFormatInfo> CreateFormatInfo(IReadOnlyList<AnalyzedMember> members, LayoutOrder layout, IList<Diagnostic> diagnostics) {
             // we capture all associated propertysymbol so we can make sure the "constant"cy of a member is
             var asProp = members.Select(member => member.MemberSymbol is IFieldSymbol symbol ? symbol.AssociatedSymbol as IPropertySymbol : null)
                                 .Where(x => x != null)
@@ -70,28 +70,28 @@ namespace Decuplr.Serialization.Analyzer.BinaryFormat {
         }
 
         // This functions decide what members we want to capture, and also tell user their stupid ideas to make some unsupported member serializable
-        private static bool ShouldCreateFormatInfo(AnalyzedMember member, BinaryLayout layout, IList<Diagnostic> diagnostics) {
+        private static bool ShouldCreateFormatInfo(AnalyzedMember member, LayoutOrder layout, IList<Diagnostic> diagnostics) {
             var symbol = member.MemberSymbol;
             if (symbol.IsImplicitlyDeclared)
                 return false;
             if (!(symbol is IPropertySymbol || symbol is IFieldSymbol)) {
-                if (layout == BinaryLayout.Explicit)
+                if (layout == LayoutOrder.Explicit)
                     diagnostics.Add(Diagnostic.Create(DiagnosticHelper.NotPropertyOrFieldNeverFormats, member.Declarations[0].DeclaredLocation, symbol.Locations, symbol.Name));
                 return false;
             }
             if (symbol.IsStatic) {
                 // Note we only mark the first appear location of declared type, we should mark the location where the [Index] is, maybe later
-                if (layout == BinaryLayout.Explicit)
+                if (layout == LayoutOrder.Explicit)
                     diagnostics.Add(Diagnostic.Create(DiagnosticHelper.StaticNeverFormats, member.Declarations[0].DeclaredLocation, symbol.Locations, symbol.Name));
                 return false;
             }
             if (symbol is IFieldSymbol fieldSymbol && fieldSymbol.IsConst) {
-                if (layout == BinaryLayout.Explicit)
+                if (layout == LayoutOrder.Explicit)
                     diagnostics.Add(Diagnostic.Create(DiagnosticHelper.ConstNeverFormats, member.FirstLocation, symbol.Locations, symbol.Name));
                 return false;
             }
             if (symbol.ContainingType.TypeKind == TypeKind.Delegate) {
-                if (layout == BinaryLayout.Explicit) {
+                if (layout == LayoutOrder.Explicit) {
                     diagnostics.Add(Diagnostic.Create(DiagnosticHelper.DelegatesNeverFormats, member.Declarations[0].DeclaredLocation, symbol.Locations, symbol.Name));
                     return false;
                 }

@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using Decuplr.Serialization.Binary.AnalysisService;
+using Decuplr.Serialization.AnalysisService;
+using Decuplr.Serialization.Binary;
+using Decuplr.Serialization.LayoutService;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.LayoutService {
@@ -24,16 +26,16 @@ namespace Decuplr.Serialization.Binary.LayoutService {
         public void ValidateMembers(ILayoutMemberValidation filter) {
             filter.WhereAttribute<IndexAttribute>()
                   .InvalidOn(member => member.ContainsAttribute<IgnoreAttribute>())
-                  .ReportDiagnostic(member => DiagnosticHelper.ConflictingAttributes(member, member.GetAttribute<IgnoreAttribute>()!, member.GetAttribute<IndexAttribute>()!))
+                  .ReportDiagnostic(member => OrderDiagnostic.ConflictingAttributes(member, member.GetAttribute<IgnoreAttribute>()!, member.GetAttribute<IndexAttribute>()!))
 
                   .InvalidOn(member => member.IsStatic)
-                  .ReportDiagnostic(member => DiagnosticHelper.InvalidKeyword("static", member))
+                  .ReportDiagnostic(member => OrderDiagnostic.InvalidKeyword("static", member))
 
                   .InvalidOn(member => member.IsConst)
-                  .ReportDiagnostic(member => DiagnosticHelper.InvalidKeyword("const", member))
+                  .ReportDiagnostic(member => OrderDiagnostic.InvalidKeyword("const", member))
 
                   .InvalidOn(member => HasUnsupportedReturnType(member.ReturnType))
-                  .ReportDiagnostic(member => DiagnosticHelper.UnsupportedType(member));
+                  .ReportDiagnostic(member => OrderDiagnostic.UnsupportedType(member));
         }
 
         private IEnumerable<MemberMetaInfo> GetSequentialOrder(IEnumerable<MemberMetaInfo> memberInfo, IDiagnosticReporter diagnostic, bool isExplicit) {
@@ -41,14 +43,14 @@ namespace Decuplr.Serialization.Binary.LayoutService {
             if (indexes.Any()) {
                 Debug.Assert(isExplicit);
                 foreach (var indexmember in indexes)
-                    diagnostic.ReportDiagnostic(DiagnosticHelper.ExplicitSequentialShouldNotIndex(indexmember, indexmember.GetLocation<IndexAttribute>()!));
+                    diagnostic.ReportDiagnostic(OrderDiagnostic.ExplicitSequentialShouldNotIndex(indexmember, indexmember.GetLocation<IndexAttribute>()!));
                 return Enumerable.Empty<MemberMetaInfo>();
             }
 
             var partials = memberInfo.Where(x => x.ContainingFullType.IsPartial);
             if (partials.Any()) {
                 var type = partials.First().ContainingFullType;
-                diagnostic.ReportDiagnostic(DiagnosticHelper.SequentialCannotBePartial(type, isExplicit));
+                diagnostic.ReportDiagnostic(OrderDiagnostic.SequentialCannotBePartial(type, isExplicit));
                 return Enumerable.Empty<MemberMetaInfo>();
             }
 
@@ -60,15 +62,15 @@ namespace Decuplr.Serialization.Binary.LayoutService {
                                           .Where(x => x.ReturnType != null);
 
             foreach (var member in electedMember.Where(x => HasUnsupportedReturnType(x.ReturnType!)))
-                diagnostic.ReportDiagnostic(DiagnosticHelper.UnsupportedTypeHint(member));
+                diagnostic.ReportDiagnostic(OrderDiagnostic.UnsupportedTypeHint(member));
 
             return electedMember;
         }
 
-        private IEnumerable<MemberMetaInfo> GetExplicitOrder(IEnumerable<MemberMetaInfo> memberInfo, IDiagnosticReporter diagnostic, bool isExplicit) {
+        private IEnumerable<MemberMetaInfo> GetExplicitOrder(IEnumerable<MemberMetaInfo> memberInfo, IDiagnosticReporter diagnostic) {
 
             foreach (var ignoredMember in memberInfo.Where(x => x.ContainsAttribute<IgnoreAttribute>()))
-                diagnostic.ReportDiagnostic(DiagnosticHelper.ExplicitDontNeedIgnore(ignoredMember));
+                diagnostic.ReportDiagnostic(OrderDiagnostic.ExplicitDontNeedIgnore(ignoredMember));
 
             var indexLookup = new Dictionary<int, MemberMetaInfo>();
             foreach(var member in memberInfo) {
@@ -77,7 +79,7 @@ namespace Decuplr.Serialization.Binary.LayoutService {
                 var index = (int)member.GetAttribute<IndexAttribute>()!.ConstructorArguments[0].Value!;
                 // Check if we have duplicate index
                 if (indexLookup.TryGetValue(index, out var duplicateMember)) {
-                    diagnostic.ReportDiagnostic(DiagnosticHelper.DuplicateIndexs(index, duplicateMember, member));
+                    diagnostic.ReportDiagnostic(OrderDiagnostic.DuplicateIndexs(index, duplicateMember, member));
                     continue;
                 }
                 indexLookup.Add(index, member);
@@ -85,20 +87,20 @@ namespace Decuplr.Serialization.Binary.LayoutService {
             return indexLookup.OrderBy(x => x.Key).Select(x => x.Value);
         }
 
-        public IEnumerable<MemberMetaInfo> GetOrder(IEnumerable<MemberMetaInfo> memberInfo, BinaryLayout layout, IDiagnosticReporter diagnostic) {
+        public IEnumerable<MemberMetaInfo> GetOrder(IEnumerable<MemberMetaInfo> memberInfo, LayoutOrder layout, IDiagnosticReporter diagnostic) {
             var implicitLayout = GetImplicitLayout();
-            var isExplicit = layout != BinaryLayout.Auto;
+            var isExplicit = layout != LayoutOrder.Auto;
             return implicitLayout switch
             {
-                BinaryLayout.Explicit => GetExplicitOrder(memberInfo, diagnostic, isExplicit),
-                BinaryLayout.Sequential => GetSequentialOrder(memberInfo, diagnostic, isExplicit),
+                LayoutOrder.Explicit => GetExplicitOrder(memberInfo, diagnostic),
+                LayoutOrder.Sequential => GetSequentialOrder(memberInfo, diagnostic, isExplicit),
                 _ => throw new ArgumentException("Invalid Binary Layout", nameof(layout)),
             };
 
-            BinaryLayout GetImplicitLayout() {
-                if (layout != BinaryLayout.Auto)
+            LayoutOrder GetImplicitLayout() {
+                if (layout != LayoutOrder.Auto)
                     return layout;
-                return memberInfo.Any(x => x.ContainsAttribute<IndexAttribute>()) ? BinaryLayout.Explicit : BinaryLayout.Sequential;
+                return memberInfo.Any(x => x.ContainsAttribute<IndexAttribute>()) ? LayoutOrder.Explicit : LayoutOrder.Sequential;
             }
         }
     }

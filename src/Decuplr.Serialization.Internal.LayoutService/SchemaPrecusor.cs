@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Decuplr.Serialization.Analyzer.BinaryFormat {
+namespace Decuplr.Serialization.LayoutService {
     public struct SchemaPrecusor {
         public bool NeverDeserialize { get; set; }
 

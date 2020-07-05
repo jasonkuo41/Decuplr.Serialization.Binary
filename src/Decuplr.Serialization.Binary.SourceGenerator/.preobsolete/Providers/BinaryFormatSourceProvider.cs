@@ -30,7 +30,7 @@ namespace Decuplr.Serialization.Binary.ParserProviders {
             var schemaPrecusor = new SchemaPrecusor {
                 IsSealed = attribute.Data.GetNamedArgumentValue<bool>(nameof(BinaryFormatAttribute.Sealed)) ?? false,
                 NeverDeserialize = attribute.Data.GetNamedArgumentValue<bool>(nameof(BinaryFormatAttribute.NeverDeserialize)) ?? false,
-                RequestLayout = attribute.Data.GetNamedArgumentValue<BinaryLayout>(nameof(BinaryFormatAttribute.Layout)) ?? BinaryLayout.Auto,
+                RequestLayout = attribute.Data.GetNamedArgumentValue<LayoutOrder>(nameof(BinaryFormatAttribute.Layout)) ?? LayoutOrder.Auto,
                 // Because we aren't supporting it rn
                 TargetNamespaces = new string[] { "Default" }
             };

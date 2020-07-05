@@ -26,7 +26,7 @@ namespace Decuplr.Serialization.Binary {
                 var precusor = new SchemaPrecusor {
                     NeverDeserialize = false,
                     IsSealed = true,
-                    RequestLayout = BinaryLayout.Auto,
+                    RequestLayout = LayoutOrder.Auto,
                     TargetNamespaces = new string[] { "Default" }
                 };
                 TypeFormatLayout.TryGetLayout(type, ref precusor, out var diagnostics, out _);

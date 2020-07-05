@@ -41,15 +41,25 @@
     <Compile Include=".preobsolete\Templates\ParserSource\ParserFunctionTemplate.cs" />
     <Compile Include=".preobsolete\Templates\ParserSource\PrimitiveByteDependency.cs" />
     <Compile Include=".preobsolete\Templates\ParserSource\TypeParserWrappedDependency.cs" />
+    <Compile Include=".preobsolete\Utility\DiagnosticHelper.cs" />
+    <Compile Include=".preobsolete\Utility\TypeFormatLayoutExtensions.cs" />
+    <Compile Include=".preobsolete\Utility\xxHash64.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.6.0-3.20207.2" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.0.0-beta2.final" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.6.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.0.0" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Decuplr.Serialization.Binary.Shared\Decuplr.Serialization.Binary.Shared.csproj" />
+    <ProjectReference Include="..\Decuplr.Serialization.Internal.AnalysisService\Decuplr.Serialization.Internal.AnalysisService.csproj" />
+    <ProjectReference Include="..\Decuplr.Serialization.Internal.CodeGeneration\Decuplr.Serialization.Internal.CodeGeneration.csproj" />
+    <ProjectReference Include="..\Decuplr.Serialization.Internal.LayoutService\Decuplr.Serialization.Internal.LayoutService.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="AnalysisService\" />
   </ItemGroup>
 
 </Project>
