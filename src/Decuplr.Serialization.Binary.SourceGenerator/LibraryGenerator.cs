@@ -38,7 +38,6 @@ namespace Decuplr.Serialization.Binary {
 #endif
                 if (!(context.SyntaxReceiver is CandidateSyntaxReceiver receiver))
                     return;
-
                 // We also need to dump struct output (markdown file) for output
                 IParserGenerateSource[]? generationSources = new IParserGenerateSource[] {
                     // Responsible for [BinaryFormat] tags

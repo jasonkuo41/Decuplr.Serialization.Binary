@@ -27,7 +27,7 @@ namespace Decuplr.Serialization.LayoutService {
         /// <summary>
         /// Validate if every attribute is correct and can generate correct layout
         /// </summary>
-        public bool ValidateLayout<TSelector>(Func<MemberMetaInfo, bool> memberPredicate, out TypeLayout? layout, out IEnumerable<Diagnostic> diagnostics) where TSelector : IOrderSelector, new() {
+        public bool ValidateLayout(Func<MemberMetaInfo, bool> memberPredicate, IOrderSelector orderSelector, out TypeLayout? layout, out IEnumerable<Diagnostic> diagnostics) {
             var reporter = new DiagnosticReporter();
             var layoutMembers = ValidateLayoutInternal(reporter);
 
@@ -41,14 +41,12 @@ namespace Decuplr.Serialization.LayoutService {
             return true;
 
             IReadOnlyList<MemberMetaInfo>? ValidateLayoutInternal(DiagnosticReporter reporter) {
-                var selector = new TSelector();
-
                 var layoutFilter = new LayoutMemberCollection();
-                selector.ValidateMembers(layoutFilter);
+                orderSelector.ValidateMembers(layoutFilter);
                 layoutFilter.ValidateLayout(_type, _type.Members, reporter);
 
                 // If we fail the elect member should we just skip this step and return early?
-                var layoutMembers = selector.GetOrder(_type.Members.Where(memberPredicate), _precusor.RequestLayout, reporter).ToList();
+                var layoutMembers = orderSelector.GetOrder(_type.Members.Where(memberPredicate), _precusor.RequestLayout, reporter).ToList();
                 if (reporter.IsUnrecoverable)
                     return null;
 
@@ -59,7 +57,7 @@ namespace Decuplr.Serialization.LayoutService {
                 }
 
                 _layoutMembers.ValidateLayout(_type, layoutMembers, reporter);
-                _anyMembers.ValidateLayout(_type, layoutMembers, reporter);
+                _anyMembers.ValidateLayout(_type, _type.Members, reporter);
 
                 if (reporter.IsUnrecoverable)
                     return null;

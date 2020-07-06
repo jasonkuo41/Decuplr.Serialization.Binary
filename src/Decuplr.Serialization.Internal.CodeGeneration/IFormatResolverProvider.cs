@@ -1,9 +1,7 @@
 ﻿using Decuplr.Serialization.AnalysisService;
-using Decuplr.Serialization.LayoutService;
 
 namespace Decuplr.Serialization.CodeGeneration {
-    public interface IFormatResolverProvider {
-        void ValidConditions(ITypeValidator validator);
+    public interface IFormatResolverProvider : IConditionValidatable {
         IFormatResolver GetResolver(MemberMetaInfo member, IDependencyProvider provider);
     }
 }
