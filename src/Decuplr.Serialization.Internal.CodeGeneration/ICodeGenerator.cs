@@ -5,6 +5,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Decuplr.Serialization.CodeGeneration {
     public interface ICodeGenerator {
-        bool TryValidateSource(IEnumerable<TypeDeclarationSyntax> declarationSyntaxes, Compilation compilation, CancellationToken ct, out ISourceGeneratedResult result);
+        ISourceGeneratedResult Validate(IEnumerable<TypeDeclarationSyntax> declarationSyntaxes, Compilation compilation, CancellationToken ct);
     }
 }

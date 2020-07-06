@@ -58,8 +58,4 @@
     <ProjectReference Include="..\Decuplr.Serialization.Internal.LayoutService\Decuplr.Serialization.Internal.LayoutService.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="AnalysisService\" />
-  </ItemGroup>
-
 </Project>
