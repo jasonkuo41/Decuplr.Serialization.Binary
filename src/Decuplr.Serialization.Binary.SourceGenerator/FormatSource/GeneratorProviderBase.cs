@@ -7,10 +7,10 @@ using Decuplr.Serialization.CodeGeneration;
 using Decuplr.Serialization.LayoutService;
 
 namespace Decuplr.Serialization.Binary.FormatSource {
-    internal abstract class GeneratorProviderBase : IGeneratorProvider {
+    internal abstract class GeneratorProviderBase : IGenerationSource {
         public virtual IOrderSelector OrderSelector { get; } = new IndexOrderSelector();
 
-        public virtual void ConfigureFeatures(IFormattingFeature feature) {
+        public virtual void ConfigureFeatures(IGenerationFeatures feature) {
             feature.AddConditionResolver<BinaryLengthResolver>();
         }
 

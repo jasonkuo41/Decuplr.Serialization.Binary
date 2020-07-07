@@ -2,9 +2,9 @@
 using Decuplr.Serialization.LayoutService;
 
 namespace Decuplr.Serialization.CodeGeneration {
-    public interface IGeneratorProvider {
+    public interface IGenerationSource {
         IOrderSelector OrderSelector { get; }
-        void ConfigureFeatures(IFormattingFeature provider);
+        void ConfigureFeatures(IGenerationFeatures provider);
         bool TryGetSchemaInfo(NamedTypeMetaInfo metaInfo, out SchemaPrecusor schema);
     }
 }

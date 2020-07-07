@@ -1,6 +1,6 @@
 ﻿namespace Decuplr.Serialization.CodeGeneration {
-    public interface IFormattingFeature {
-        IFormattingFeature AddConditionResolver<TResolver>() where TResolver : IConditionResolverProvider, new();
-        IFormattingFeature AddFormatResolver<TResolver>() where TResolver : IFormatResolverProvider, new();
+    public interface IGenerationFeatures {
+        IGenerationFeatures AddConditionResolver<TResolver>() where TResolver : class, IConditionResolverProvider;
+        IGenerationFeatures AddFormatResolver<TResolver>() where TResolver : class, IFormatResolverProvider;
     }
 }

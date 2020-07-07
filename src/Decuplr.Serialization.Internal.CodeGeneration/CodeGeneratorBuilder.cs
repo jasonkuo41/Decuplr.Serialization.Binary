@@ -1,20 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Linq;
+using Decuplr.Serialization.CodeGeneration.Internal;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Decuplr.Serialization.CodeGeneration {
     public class CodeGeneratorBuilder {
 
-        private readonly List<IGeneratorProvider> _providers = new List<IGeneratorProvider>();
+        private readonly ServiceCollection _services;
 
-        public CodeGeneratorBuilder AddProvider<TProvider>() where TProvider : IGeneratorProvider, new() {
-            _providers.Add(new TProvider());
+        public CodeGeneratorBuilder AddProvider<TProvider>() where TProvider : class, IGenerationSource {
+            _services.AddSingleton<IGenerationSource, TProvider>();
             return this;
         }
 
         public ICodeGenerator CreateGenerator() {
-            if (_providers.Count == 0)
+            if (!_services.Any(x => x.ServiceType == typeof(IGenerationSource)))
                 throw new InvalidOperationException("Provider must be provided to generate a binary generator");
-            return new CodeGenerator(_providers);
+            return new CodeGenerator(_services);
         }
     }
 }
