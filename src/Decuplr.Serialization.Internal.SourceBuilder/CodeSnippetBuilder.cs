@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Text;
 
-namespace Decuplr.Serialization.Binary {
-    class CodeSnippetBuilder : CodeNodeBuilder {
+namespace Decuplr.Serialization.SourceBuilder {
+    public class CodeSnippetBuilder : CodeNodeBuilder {
 
         private readonly string ThisNamespace;
         private readonly List<string> Namespaces = new List<string>();

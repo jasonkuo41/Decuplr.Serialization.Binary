@@ -4,15 +4,15 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using System.Linq;
 
-namespace Decuplr.Serialization.Binary {
-    class CodeNodeBuilder {
+namespace Decuplr.Serialization.SourceBuilder {
+    public class CodeNodeBuilder {
 
         private class NodeInfo {
             public string Name { get; set; }
             public Action<CodeNodeBuilder> NodeAction { get; set; }
         }
 
-        private List<object> Layout = new List<object>();
+        private readonly List<object> Layout = new List<object>();
 
         public void AddNode(Accessibility accessibility, string nodename, Action<CodeNodeBuilder> builder) {
             AddNode($"{accessibility.ToString().ToLower()} {nodename}", builder);
@@ -28,7 +28,7 @@ namespace Decuplr.Serialization.Binary {
 
         public void AddAttribute(string attribute) {
             attribute = attribute.Trim();
-            if (attribute.StartsWith("[") && attribute.EndsWith("]"))
+            if (attribute.ClampsWith("[","]"))
                 AddPlain(attribute);
             else if (string.IsNullOrWhiteSpace(attribute))
                 return;

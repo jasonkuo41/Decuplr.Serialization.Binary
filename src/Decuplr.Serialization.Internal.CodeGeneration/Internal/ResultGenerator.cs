@@ -13,7 +13,6 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
 
         }
 
-
         protected override IEnumerable<string> GenerateFilesInternal() {
 
         }

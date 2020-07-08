@@ -1,11 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
-using Decuplr.Serialization.Analyzer.BinaryFormat;
-using Decuplr.Serialization.Binary.AnalysisService;
-using Decuplr.Serialization.Binary.Analyzers;
 using Decuplr.Serialization.Binary.ParserProviders;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -33,9 +29,7 @@ namespace Decuplr.Serialization.Binary {
         }
 
         public void Execute(SourceGeneratorContext context) {
-#if DEBUG
             try {
-#endif
                 if (!(context.SyntaxReceiver is CandidateSyntaxReceiver receiver))
                     return;
                 // We also need to dump struct output (markdown file) for output
@@ -62,12 +56,10 @@ namespace Decuplr.Serialization.Binary {
                     context.AddSource(additionalFiles, Encoding.UTF8, true);
                 if (generatedResults.Count != 0)
                     context.AddSource(BinaryPackerEntryPointGenerator.CreateSourceText(context.Compilation, generatedResults), Encoding.UTF8, true);
-#if DEBUG
             }
             catch (Exception e) {
-                File.WriteAllText($"error.txt", $"{e} {e.Message} {e.StackTrace}");
+                context.WriteException(e);
             }
-#endif
         }
 
     }

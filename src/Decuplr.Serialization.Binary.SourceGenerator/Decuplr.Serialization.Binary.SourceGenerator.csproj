@@ -16,8 +16,10 @@
     <Compile Include=".obsolete\EmbeddedCode.cs" />
     <Compile Include=".obsolete\GeneratedFormatFunction.cs" />
     <Compile Include=".obsolete\GeneratedParser.cs" />
-    <Compile Include=".obsolete\GeneratedSourceCode.cs" />
+    <Compile Include=".obsolete\GeneratedTypeBuilder.cs" />
+    <Compile Include=".obsolete\IGeneratedType.cs" />
     <Compile Include=".preobsolete\Arguments\ParserArguments.cs" />
+    <Compile Include=".preobsolete\BinaryPackerEntryPointGenerator.cs" />
     <Compile Include=".preobsolete\CodeAnalysisExtensions.cs" />
     <Compile Include=".preobsolete\CommonAttributes.cs" />
     <Compile Include=".preobsolete\MrBoilerPlate.cs" />
@@ -56,6 +58,7 @@
     <ProjectReference Include="..\Decuplr.Serialization.Internal.AnalysisService\Decuplr.Serialization.Internal.AnalysisService.csproj" />
     <ProjectReference Include="..\Decuplr.Serialization.Internal.CodeGeneration\Decuplr.Serialization.Internal.CodeGeneration.csproj" />
     <ProjectReference Include="..\Decuplr.Serialization.Internal.LayoutService\Decuplr.Serialization.Internal.LayoutService.csproj" />
+    <ProjectReference Include="..\Decuplr.Serialization.Internal.SourceBuilder\Decuplr.Serialization.Internal.SourceBuilder.csproj" />
   </ItemGroup>
 
 </Project>

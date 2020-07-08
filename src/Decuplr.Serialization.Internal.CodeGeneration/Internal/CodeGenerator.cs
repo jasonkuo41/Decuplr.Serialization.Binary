@@ -66,7 +66,7 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
         public ISourceGeneratedResults Validate(IEnumerable<TypeDeclarationSyntax> declarationSyntaxes, Compilation compilation, CancellationToken ct) {
             var analysis = new SourceCodeAnalysis(declarationSyntaxes, compilation, ct, SymbolKind.Method, SymbolKind.Field, SymbolKind.Property, SymbolKind.Event);
 
-            return analysis.ContainingTypes.Select(GenerateResults).ToGeneratedResults();
+            return analysis.ContainingTypes.Select(type => GenerateResults(type)).ToGeneratedResults();
         }
 
     }
