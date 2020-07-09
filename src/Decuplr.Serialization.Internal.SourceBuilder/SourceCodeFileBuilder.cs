@@ -41,7 +41,7 @@ namespace Decuplr.Serialization.SourceBuilder {
 
             builder.AppendLine();
             builder.AppendLine($"namespace {_targetNamespace} {{");
-            ToString(builder.NextIndentation());
+            WriteContent(builder.NextIndentation());
             builder.AppendLine("}");
 
             return builder.ToString();

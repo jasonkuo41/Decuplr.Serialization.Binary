@@ -53,7 +53,7 @@ namespace Decuplr.Serialization.SourceBuilder {
 
         public void AddLine() => AddPlain(string.Empty);
 
-        private protected void ToString(IndentedStringBuilder builder) {
+        private protected void WriteContent(IndentedStringBuilder builder) {
             foreach(var layout in _layout) {
                 if (layout is string str)
                     builder.AppendLine(str);
@@ -63,12 +63,16 @@ namespace Decuplr.Serialization.SourceBuilder {
 
                     builder.AppendLine(nodeInfo.Name);
                     builder.AppendLine("{");
-                    subnode.ToString(builder.NextIndentation());
+                    subnode.WriteContent(builder.NextIndentation());
                     builder.AppendLine("}");
                 }
             }
         }
 
-        public override string ToString() => ToString(new IndentedStringBuilder()).ToString();
+        public override string ToString() {
+            var builder = new IndentedStringBuilder();
+            WriteContent(builder);
+            return builder.ToString();
+        }
     }
 }
