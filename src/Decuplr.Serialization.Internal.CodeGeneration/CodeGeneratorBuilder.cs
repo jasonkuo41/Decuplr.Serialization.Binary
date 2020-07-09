@@ -4,19 +4,35 @@ using Decuplr.Serialization.CodeGeneration.Internal;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Decuplr.Serialization.CodeGeneration {
-    public class CodeGeneratorBuilder {
+    public class CodeGeneratorBuilder : ICodeGenerationSourceBuilder, ICodeGenDepenedencyBuilder  {
 
-        private readonly ServiceCollection _services;
+        private readonly ServiceCollection _services = new ServiceCollection();
 
-        public CodeGeneratorBuilder AddProvider<TProvider>() where TProvider : class, IGenerationSource {
+        public ICodeGenerationSourceBuilder AddProvider<TProvider>() where TProvider : class, IGenerationSource {
             _services.AddSingleton<IGenerationSource, TProvider>();
             return this;
         }
 
-        public ICodeGenerator CreateGenerator() {
+        public ICodeGenDepenedencyBuilder UseDependencyProvider<TProvider>() where TProvider : class, IDependencyProvider {
+            _services.AddSingleton<IDependencyProvider, TProvider>();
+            return this;
+        }
+
+        ICodeGenerator ICodeGenDepenedencyBuilder.CreateGenerator() {
             if (!_services.Any(x => x.ServiceType == typeof(IGenerationSource)))
                 throw new InvalidOperationException("Provider must be provided to generate a binary generator");
             return new CodeGenerator(_services);
         }
     }
+
+    public interface ICodeGenerationSourceBuilder {
+        ICodeGenDepenedencyBuilder UseDependencyProvider<TProvider>() where TProvider : class, IDependencyProvider;
+        ICodeGenerationSourceBuilder AddProvider<TProvider>() where TProvider : class, IGenerationSource;
+    }
+
+    public interface ICodeGenDepenedencyBuilder {
+        ICodeGenDepenedencyBuilder UseDependencyProvider<TProvider>() where TProvider : class, IDependencyProvider;
+        ICodeGenerator CreateGenerator();
+    }
+
 }

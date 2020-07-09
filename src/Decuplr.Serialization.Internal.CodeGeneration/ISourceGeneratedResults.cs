@@ -9,6 +9,6 @@ namespace Decuplr.Serialization.CodeGeneration {
 
         IEnumerable<Diagnostic> Diagnostics { get; }
 
-        IEnumerable<string> GenerateFiles();
+        IEnumerable<GeneratedSourceCode> GenerateFiles();
     }
 }

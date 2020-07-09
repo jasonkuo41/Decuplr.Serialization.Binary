@@ -12,9 +12,9 @@ namespace Decuplr.Serialization.Binary.FormatSource {
 
         public virtual void ConfigureFeatures(IGenerationFeatures feature) {
             feature.AddConditionResolver<BinaryLengthResolver>();
+
         }
 
-        public abstract SchemaPrecusor GetSchemaInfo(NamedTypeMetaInfo metaInfo);
-        public abstract bool ShouldApplyProvider(NamedTypeMetaInfo metaInfo);
+        public abstract bool TryGetSchemaInfo(NamedTypeMetaInfo metaInfo, out SchemaPrecusor schema);
     }
 }

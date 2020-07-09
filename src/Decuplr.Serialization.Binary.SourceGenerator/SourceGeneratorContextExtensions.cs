@@ -3,15 +3,16 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using Decuplr.Serialization.CodeGeneration;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Text;
 
 namespace Decuplr.Serialization.Binary {
-    static class DebugFileOutput {
+    static class SourceGeneratorContextExtensions {
 
         [Conditional("DEBUG")]
-        public static void WriteFiles(IEnumerable<GeneratedSourceCode> sourceCodes, string path) {
+        private static void WriteFiles(IEnumerable<GeneratedSourceCode> sourceCodes, string path) {
             var directory = Path.Combine(Directory.GetCurrentDirectory(), path);
             Directory.CreateDirectory(directory);
             foreach (var sourceCode in sourceCodes) {
@@ -62,5 +63,11 @@ StackTrace :
                 currentException = currentException.InnerException;
             }
         }
+
+        public static void ReportDiagnostic(this SourceGeneratorContext context, IEnumerable<Diagnostic> diagnostics) {
+            foreach (var diagnostic in diagnostics)
+                context.ReportDiagnostic(diagnostic);
+        }
+
     }
 }

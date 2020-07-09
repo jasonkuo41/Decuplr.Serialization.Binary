@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
+using Decuplr.Serialization.Binary.FormatSource;
 using Decuplr.Serialization.Binary.ParserProviders;
+using Decuplr.Serialization.CodeGeneration;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -12,50 +15,44 @@ namespace Decuplr.Serialization.Binary {
     public class LibraryGenerator : ISourceGenerator {
         private class CandidateSyntaxReceiver : ISyntaxReceiver {
 
-            public List<TypeDeclarationSyntax> CandidateTypes { get; } = new List<TypeDeclarationSyntax>();
+            public List<TypeDeclarationSyntax> DeclaredTypes { get; } = new List<TypeDeclarationSyntax>();
 
             public void OnVisitSyntaxNode(SyntaxNode syntaxNode) {
                 // We capture every class we are interested in
                 // We only capture classes that comes with attribute, but we may also be interested in those with specific syntax ending
                 if (syntaxNode is TypeDeclarationSyntax classSyntax && classSyntax.AttributeLists.Any()) {
-                    CandidateTypes.Add(classSyntax);
+                    DeclaredTypes.Add(classSyntax);
                 }
                 // TODO : Add interfaces, note we may only allow interfaces with public setters
             }
         }
 
-        public void Initialize(InitializationContext context) {
-            context.RegisterForSyntaxNotifications(() => new CandidateSyntaxReceiver());
+        private void GenerateResult(SourceGeneratorContext context, ICodeGenerator generator, IEnumerable<TypeDeclarationSyntax> declaringTypes) {
+            var result = generator.Validate(declaringTypes, context.Compilation, context.CancellationToken); 
+            context.ReportDiagnostic(result.Diagnostics);
+            if (result.IsFaulted)
+                return;
+
+            context.AddSource(result.GenerateFiles());
         }
+
+        public void Initialize(InitializationContext context) => context.RegisterForSyntaxNotifications(() => new CandidateSyntaxReceiver());
 
         public void Execute(SourceGeneratorContext context) {
             try {
                 if (!(context.SyntaxReceiver is CandidateSyntaxReceiver receiver))
                     return;
-                // We also need to dump struct output (markdown file) for output
-                IParserGenerateSource[]? generationSources = new IParserGenerateSource[] {
-                    // Responsible for [BinaryFormat] tags
-                    new BinaryFormatSourceProvider(),
-                    // Responsible for [BinaryParser] tags
-                    new BinaryParserSourceProvider()
-                };
 
-                IEnumerable<AnalyzedType>? types = SourceCodeAnalyzer.AnalyzeTypeSyntax(receiver.CandidateTypes, context.Compilation, context.CancellationToken);
+                var builder = new CodeGeneratorBuilder();
 
-                List<GeneratedParser>? generatedResults = new List<GeneratedParser>();
+                builder.AddProvider<BinaryFormatProvider>();
+                builder.AddProvider<BinaryParserProvider>();
 
-                // We loop through all the internal generators
-                foreach (IParserGenerateSource? source in generationSources) {
-                    // If anything fails, we would halt compilation immediately so we don't output junk
-                    if (!source.TryGenerateParser(types, context, out IEnumerable<GeneratedParser>? parsers))
-                        return;
-                    generatedResults.AddRange(parsers);
-                }
+                var generator = builder.UseDependencyProvider<InlineDependencyProvider>()
+                                       .UseDependencyProvider<DefaultDependencyProvider>()
+                                       .CreateGenerator();
 
-                foreach (GeneratedSourceCode additionalFiles in generatedResults.SelectMany(x => x.AdditionalSourceFiles))
-                    context.AddSource(additionalFiles, Encoding.UTF8, true);
-                if (generatedResults.Count != 0)
-                    context.AddSource(BinaryPackerEntryPointGenerator.CreateSourceText(context.Compilation, generatedResults), Encoding.UTF8, true);
+                GenerateResult(context, generator, receiver.DeclaredTypes);
             }
             catch (Exception e) {
                 context.WriteException(e);

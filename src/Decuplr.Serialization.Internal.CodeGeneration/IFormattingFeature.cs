@@ -2,5 +2,9 @@
     public interface IGenerationFeatures {
         IGenerationFeatures AddConditionResolver<TResolver>() where TResolver : class, IConditionResolverProvider;
         IGenerationFeatures AddFormatResolver<TResolver>() where TResolver : class, IFormatResolverProvider;
+
+        IGenerationFeatures AddDeserializeSolution<TSolution>() where TSolution : class, IDeserializationSolution;
+        IGenerationFeatures AddSerializeSolution<TSolution>() where TSolution : class, ISerializationSolution;
+        IGenerationFeatures AddLengthProvider<TProvider>() where TProvider : class, ILengthSolution;
     }
 }

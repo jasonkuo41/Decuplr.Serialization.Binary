@@ -8,18 +8,23 @@ namespace Decuplr.Serialization.SourceBuilder {
     public class CodeNodeBuilder {
 
         private class NodeInfo {
-            public string Name { get; set; }
-            public Action<CodeNodeBuilder> NodeAction { get; set; }
+            public NodeInfo(string name, Action<CodeNodeBuilder> nodeAction) {
+                Name = name;
+                NodeAction = nodeAction;
+            }
+
+            public string Name { get; }
+            public Action<CodeNodeBuilder> NodeAction { get; }
         }
 
-        private readonly List<object> Layout = new List<object>();
+        private readonly List<object> _layout = new List<object>();
 
         public void AddNode(Accessibility accessibility, string nodename, Action<CodeNodeBuilder> builder) {
             AddNode($"{accessibility.ToString().ToLower()} {nodename}", builder);
         }
 
         public void AddNode(string nodename, Action<CodeNodeBuilder> builder) {
-            Layout.Add(new NodeInfo { Name = nodename, NodeAction = builder });
+            _layout.Add(new NodeInfo(nodename, builder));
         }
 
         public void AddNode(Action<CodeNodeBuilder> builder) {
@@ -27,30 +32,29 @@ namespace Decuplr.Serialization.SourceBuilder {
         }
 
         public void AddAttribute(string attribute) {
-            attribute = attribute.Trim();
-            if (attribute.ClampsWith("[","]"))
-                AddPlain(attribute);
-            else if (string.IsNullOrWhiteSpace(attribute))
+            if (string.IsNullOrWhiteSpace(attribute))
                 return;
+            if (attribute.AnyClampsWith("[","]"))
+                AddPlain(attribute);
             else
                 AddPlain($"[{attribute}]");
         }
 
         public void AddStatement(string statement) {
-            statement = statement.Trim();
-            if (statement.EndsWith(";"))
-                AddPlain(statement);
-            else if (string.IsNullOrWhiteSpace(statement))
+            if (string.IsNullOrWhiteSpace(statement))
                 return;
+            if (statement.AnyEndsWith(";"))
+                AddPlain(statement);
             else
                 AddPlain($"{statement};");
         }
 
-        public void AddPlain(string plain) => Layout.Add(plain);
+        public void AddPlain(string plain) => _layout.Add(plain);
+
         public void AddLine() => AddPlain(string.Empty);
 
-        protected StringBuilder ToString(StringBuilder builder) {
-            foreach(var layout in Layout) {
+        private protected IndentedStringBuilder ToString(IndentedStringBuilder builder) {
+            foreach(var layout in _layout) {
                 if (layout is string str)
                     builder.AppendLine(str);
                 if (layout is NodeInfo nodeInfo) {
@@ -59,13 +63,13 @@ namespace Decuplr.Serialization.SourceBuilder {
 
                     builder.Append(nodeInfo.Name);
                     builder.AppendLine("{");
-                    builder = subnode.ToString(builder);
+                    builder = subnode.ToString(builder.NextIndentation());
                     builder.AppendLine("}");
                 }
             }
             return builder;
         }
 
-        public override string ToString() => ToString(new StringBuilder()).ToString();
+        public override string ToString() => ToString(new IndentedStringBuilder()).ToString();
     }
 }

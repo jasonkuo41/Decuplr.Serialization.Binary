@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace Decuplr.Serialization.Binary {
+namespace Decuplr.Serialization.CodeGeneration {
 
-    internal struct GeneratedSourceCode {
+    public struct GeneratedSourceCode {
 
         public GeneratedSourceCode(string desiredFileName, string sourceText) {
             DesiredFileName = desiredFileName;
