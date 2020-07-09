@@ -34,14 +34,14 @@ namespace Decuplr.Serialization.SourceBuilder {
         public override string ToString() {
             var builder = new IndentedStringBuilder();
             foreach (var namespaces in _namespaces)
-                builder.AppendLine($"using {namespaces};");
+                builder.AppendLine(namespaces);
             builder.AppendLine();
             foreach (var attribute in _assemblyAttributes)
                 builder.AppendLine(attribute);
 
             builder.AppendLine();
             builder.AppendLine($"namespace {_targetNamespace} {{");
-            builder = ToString(builder);
+            ToString(builder.NextIndentation());
             builder.AppendLine("}");
 
             return builder.ToString();

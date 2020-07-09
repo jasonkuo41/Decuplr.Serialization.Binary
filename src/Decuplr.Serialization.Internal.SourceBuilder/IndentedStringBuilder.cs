@@ -29,6 +29,7 @@ namespace Decuplr.Serialization.SourceBuilder {
         }
 
         public IndentedStringBuilder AppendLine(string str) {
+            _builder.AppendLine();
             for(var i = 0; i < _tabCount; ++i) {
                 _builder.Append('\t');
             }
