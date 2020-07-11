@@ -11,7 +11,7 @@ namespace Decuplr.Serialization.SourceBuilder {
             node.AddNode(symbol.DeclaredAccessibility, $"{(symbol.IsStatic ? "static" : null)} partial {symbol.TypeKind.ToString().ToLower()} {symbol.ToDisplayString(NullableFlowState.None, SymbolDisplayFormat.MinimallyQualifiedFormat)}", nodeAction);
         }
 
-        public static void AddPartialClass(this SourceCodeFileBuilder builder, INamedTypeSymbol symbol, Action<CodeNodeBuilder> nodeBuilder) {
+        public static void AddPartialClass(this CodeSourceFileBuilder builder, INamedTypeSymbol symbol, Action<CodeNodeBuilder> nodeBuilder) {
             Action<CodeNodeBuilder>? previousNode = null;
             var nestedTypes = symbol.GetContainingTypes().ToList();
 

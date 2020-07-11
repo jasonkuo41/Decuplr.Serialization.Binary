@@ -1,14 +1,15 @@
 ﻿using System.Collections.Generic;
 using System.Text;
+using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.SourceBuilder {
-    public class SourceCodeFileBuilder : CodeNodeBuilder {
+    public class CodeSourceFileBuilder : CodeNodeBuilder {
 
         private readonly string _targetNamespace;
         private readonly List<string> _namespaces = new List<string>();
         private readonly List<string> _assemblyAttributes = new List<string>();
 
-        public SourceCodeFileBuilder(string targetNamespace) {
+        public CodeSourceFileBuilder(string targetNamespace) {
             _targetNamespace = targetNamespace;
         }
 
