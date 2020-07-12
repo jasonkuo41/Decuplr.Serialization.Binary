@@ -6,15 +6,23 @@ using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Decuplr.Serialization.CodeGeneration.Internal {
-    internal sealed class ResultGenerator : GeneratedResult {
-        
-        public ResultGenerator(IServiceScope scope, IEnumerable<Diagnostic> diagnostics, IGenerationSource provider, TypeLayout layout)
-            : base (scope, diagnostics) {
+    internal sealed class ResultGenerator : IDisposable {
+
+        private readonly IServiceScope _scope;
+        private readonly TypeLayout _layout;
+        private readonly IGenerationSource _provider;
+
+        public ResultGenerator(TypeLayout layout, IServiceScope scope, IGenerationSource provider) {
+            _layout = layout;
+            _scope = scope;
+            _provider = provider;
+        }
+
+        public IEnumerable<GeneratedSourceCode> GenerateFiles() {
+            var provider = _scope.ServiceProvider;
 
         }
 
-        protected override IEnumerable<string> GenerateFilesInternal() {
-
-        }
+        public void Dispose() => _scope.Dispose();
     }
 }

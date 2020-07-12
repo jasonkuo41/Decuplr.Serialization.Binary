@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Decuplr.Serialization.LayoutService;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -28,10 +29,12 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
             return this;
         }
 
-        public static IServiceProvider GetServices(IGenerationSource provider, IServiceCollection serviceDescriptors) {
-            var featureProvider = new GeneratorFeaturesProvider(new ServiceCollection { serviceDescriptors });
-            provider.ConfigureFeatures(featureProvider);
+        public static IServiceProvider GetServices(IGenerationSource source, IServiceCollection collection, IServiceProvider provider) {
+            var featureProvider = new GeneratorFeaturesProvider(new ServiceCollection { collection.Select(descriptor => ReplaceDescriptorSource(descriptor)) });
+            source.ConfigureFeatures(featureProvider);
             return featureProvider.GetServiceProvider();
+
+            ServiceDescriptor ReplaceDescriptorSource(ServiceDescriptor descriptor) => new ServiceDescriptor(descriptor.ServiceType, _ => provider.GetService(descriptor.ServiceType), descriptor.Lifetime);
         }
     }
 

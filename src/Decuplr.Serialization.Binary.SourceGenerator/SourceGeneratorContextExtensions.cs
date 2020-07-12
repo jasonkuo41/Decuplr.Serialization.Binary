@@ -16,7 +16,7 @@ namespace Decuplr.Serialization.Binary {
             var directory = Path.Combine(Directory.GetCurrentDirectory(), path);
             Directory.CreateDirectory(directory);
             foreach (var sourceCode in sourceCodes) {
-                File.WriteAllText(Path.Combine(directory, sourceCode.DesiredFileName), sourceCode.SourceText);
+                File.WriteAllText(Path.Combine(directory, sourceCode.FileName), sourceCode.SourceText);
             }
         }
 
@@ -47,7 +47,7 @@ StackTrace :
         public static void AddSource(this SourceGeneratorContext generatorContext, IEnumerable<GeneratedSourceCode> sourceCodes, string? debugOutputPath = null) {
             debugOutputPath ??= ".generated";
             foreach(var sourceCode in sourceCodes)
-                generatorContext.AddSource(sourceCode.DesiredFileName, SourceText.From(sourceCode.SourceText, Encoding.UTF8));
+                generatorContext.AddSource(sourceCode.FileName, SourceText.From(sourceCode.SourceText, Encoding.UTF8));
             WriteFiles(sourceCodes, debugOutputPath);
         }
 
