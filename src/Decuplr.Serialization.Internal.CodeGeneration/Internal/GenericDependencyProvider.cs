@@ -50,7 +50,7 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
             _ => new DefaultProvider(symbol.ToString())
         };
 
-        public string GetComponentName(ITypeSymbol symbol) {
+        public string AddComponent(ITypeSymbol symbol) {
             var componentName = $"component_{_components.Count}";
             _components.Add(componentName, GetDefault(symbol));
             return componentName;

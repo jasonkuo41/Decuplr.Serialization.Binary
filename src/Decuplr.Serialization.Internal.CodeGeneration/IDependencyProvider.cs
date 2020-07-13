@@ -1,7 +1,10 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using System.Collections.Generic;
+using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.CodeGeneration {
-    public interface IDependencyProvider {
-        string GetComponentName(ITypeSymbol symbol);
+    public interface IComponentCollection {
+        IReadOnlyList<ITypeSymbol> Components { get; }
+
+        string AddComponent(ITypeSymbol symbol);
     }
 }

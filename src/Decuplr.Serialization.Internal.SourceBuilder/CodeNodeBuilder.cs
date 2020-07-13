@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using System.Linq;
+using System.IO;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.ComponentModel;
+using System.Reflection;
 
 namespace Decuplr.Serialization.SourceBuilder {
     public class CodeNodeBuilder {
@@ -19,39 +23,76 @@ namespace Decuplr.Serialization.SourceBuilder {
 
         private readonly List<object> _layout = new List<object>();
 
-        public void AddNode(Accessibility accessibility, string nodename, Action<CodeNodeBuilder> builder) {
+        public CodeNodeBuilder AddNode(Accessibility accessibility, string nodename, Action<CodeNodeBuilder> builder) {
             AddNode($"{accessibility.ToString().ToLower()} {nodename}", builder);
+            return this;
         }
 
-        public void AddNode(string nodename, Action<CodeNodeBuilder> builder) {
+        public CodeNodeBuilder AddNode(string nodename, Action<CodeNodeBuilder> builder) {
             _layout.Add(new NodeInfo(nodename, builder));
+            return this;
         }
 
-        public void AddNode(Action<CodeNodeBuilder> builder) {
+        public CodeNodeBuilder AddNode(Action<CodeNodeBuilder> builder) {
             AddNode("", builder);
+            return this;
         }
 
-        public void AddAttribute(string attribute) {
+        public CodeNodeBuilder If(string condition, Action<CodeNodeBuilder> builder) {
+            AddNode($"if ({condition})", builder);
+            return this;
+        }
+
+        public CodeNodeBuilder Return(string statement) {
+            State($"return {statement}");
+            return this;
+        }
+
+        public CodeNodeBuilder Return() {
+            State($"return");
+            return this;
+        }
+
+        public CodeNodeBuilder Attribute(string attribute) {
             if (string.IsNullOrWhiteSpace(attribute))
-                return;
+                return this;
             if (attribute.AnyClampsWith("[","]"))
-                AddPlain(attribute);
+                Add(attribute);
             else
-                AddPlain($"[{attribute}]");
+                Add($"[{attribute}]");
+            return this;
         }
 
-        public void AddStatement(string statement) {
+        public CodeNodeBuilder State(string statement) {
             if (string.IsNullOrWhiteSpace(statement))
-                return;
+                return this;
             if (statement.AnyEndsWith(";"))
-                AddPlain(statement);
+                Add(statement);
             else
-                AddPlain($"{statement};");
+                Add($"{statement};");
+            return this;
         }
 
-        public void AddPlain(string plain) => _layout.Add(plain);
+        public CodeNodeBuilder Comment(string comment) {
+            if (comment.AnyStartsWith("//"))
+                Add(comment);
+            else
+                Add($"// {comment}");
+            return this;
+        }
 
-        public void AddLine() => AddPlain(string.Empty);
+        public CodeNodeBuilder Add(string plain) {
+            using var lineReader = new StringReader(plain);
+            string line;
+            while ((line = lineReader.ReadLine()) != null)
+                _layout.Add(line);
+            return this;
+        }
+
+        public CodeNodeBuilder NewLine() {
+            Add(string.Empty);
+            return this;
+        }
 
         private protected void WriteContent(IndentedStringBuilder builder) {
             foreach(var layout in _layout) {
@@ -74,5 +115,10 @@ namespace Decuplr.Serialization.SourceBuilder {
             WriteContent(builder);
             return builder.ToString();
         }
+    }
+
+    public static class CodeNodeExtensions {
+        public static CodeNodeBuilder DenoteHideEditor(this CodeNodeBuilder builder) => builder.Attribute("[EditorBrowsable(EditorBrowsableState.Never)]");
+        public static CodeNodeBuilder DenoteGenerated(this CodeNodeBuilder builder, Assembly assebmly) => builder.Attribute($"[GeneratedCode({assebmly.GetName().Name}, {assebmly.GetName().Version})]")
     }
 }

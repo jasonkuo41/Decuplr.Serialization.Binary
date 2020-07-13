@@ -7,7 +7,8 @@ namespace Decuplr.Serialization.CodeGeneration {
         IFunctionProvider<DeserializeSpanArgs<TArgs>>,
         IFunctionProvider<DeserializeSequenceArgs<TArgs>>,
         IFunctionProvider<SerializeArgs<TArgs>>,
-        IFunctionProvider<TrySerializeArgs<TArgs>> {
+        IFunctionProvider<TrySerializeArgs<TArgs>>,
+        IFunctionProvider<GetLengthArgs<TArgs>> {
 
         string ResolverName { get; }
     }

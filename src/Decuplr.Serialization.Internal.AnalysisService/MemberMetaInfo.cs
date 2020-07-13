@@ -12,6 +12,8 @@ namespace Decuplr.Serialization.AnalysisService {
 
         public bool IsStatic => Symbol.IsStatic;
 
+        public string Name => Symbol.Name;
+
         public bool IsConst => Symbol is IFieldSymbol fieldSymbol && fieldSymbol.IsConst;
 
         public NamedTypeMetaInfo ContainingFullType => ContainingType.Full;

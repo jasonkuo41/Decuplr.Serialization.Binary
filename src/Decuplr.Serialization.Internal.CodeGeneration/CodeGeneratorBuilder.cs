@@ -13,8 +13,8 @@ namespace Decuplr.Serialization.CodeGeneration {
             return this;
         }
 
-        public ICodeGenDepenedencyBuilder UseDependencyProvider<TProvider>() where TProvider : class, IDependencyProvider {
-            _services.AddSingleton<IDependencyProvider, TProvider>();
+        public ICodeGenDepenedencyBuilder UseDependencyProvider<TProvider>() where TProvider : class, IComponentCollection {
+            _services.AddSingleton<IComponentCollection, TProvider>();
             return this;
         }
 
@@ -26,12 +26,12 @@ namespace Decuplr.Serialization.CodeGeneration {
     }
 
     public interface ICodeGenerationSourceBuilder {
-        ICodeGenDepenedencyBuilder UseDependencyProvider<TProvider>() where TProvider : class, IDependencyProvider;
+        ICodeGenDepenedencyBuilder UseDependencyProvider<TProvider>() where TProvider : class, IComponentCollection;
         ICodeGenerationSourceBuilder AddProvider<TProvider>() where TProvider : class, IGenerationSource;
     }
 
     public interface ICodeGenDepenedencyBuilder {
-        ICodeGenDepenedencyBuilder UseDependencyProvider<TProvider>() where TProvider : class, IDependencyProvider;
+        ICodeGenDepenedencyBuilder UseDependencyProvider<TProvider>() where TProvider : class, IComponentCollection;
         ICodeGenerator CreateGenerator();
     }
 

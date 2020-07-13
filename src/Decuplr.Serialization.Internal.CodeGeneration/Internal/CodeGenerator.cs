@@ -57,19 +57,17 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
             return false;
         }
 
-        private bool TryValidateType(NamedTypeMetaInfo type, IGenerationSource source, SchemaPrecusor schema, ServiceScopeCollection scopes, Dictionary<TypeLayout, IServiceScope> layouts, List<Diagnostic> diagnostics) {
+        private bool TryValidateType(NamedTypeMetaInfo type, IGenerationSource source, SchemaPrecusor schema, List<Diagnostic> diagnostics, out TypeLayout? layout, out IServiceScope scope) {
             var isSuccess = false;
-            var scope = _generationServices.GetOrAdd(source, key => GeneratorFeaturesProvider.GetServices(key, _serviceCollection, _serviceProvider)).CreateScope();
-            scopes.Add(scope);
+            scope = _generationServices.GetOrAdd(source, key => GeneratorFeaturesProvider.GetServices(key, _serviceCollection, _serviceProvider)).CreateScope();
 
             // Allow the provider (BinaryFormat) to configure certain features (IgnoreIf, BitUnion)
             if (TypeValidation.CreateFrom(type, schema, source.OrderSelector)
                                .AddValidationSource(scope.ServiceProvider.GetServices<IValidationSource>())
                                .Where(member => ValidSerializeKind.Contains(member.Symbol.Kind))
-                               .ValidateLayout(out var layout, out var localDiagnostics)) {
+                               .ValidateLayout(out layout, out var localDiagnostics)) {
                 // If diagnostic contains any error we would cry :(
                 Debug.Assert(!localDiagnostics.Any(x => x.Severity == DiagnosticSeverity.Error));
-                layouts.Add(layout!, scope);
             }
 
             diagnostics.AddRange(localDiagnostics);
@@ -80,21 +78,26 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
             var analysis = new SourceCodeAnalysis(declarationSyntaxes, compilation, ct, SymbolKind.Method, SymbolKind.Field, SymbolKind.Property, SymbolKind.Event);
             var diagnostics = new List<Diagnostic>();
             var scopes = new ServiceScopeCollection(analysis.ContainingTypes.Count);
-            var layouts = new Dictionary<TypeLayout, IServiceScope>();
-            var sources = new Dictionary<TypeLayout, IGenerationSource>();
+            var layouts = new Dictionary<TypeLayout, (IServiceScope Scope, IGenerationSource Source)>();
 
             try {
                 bool isFaulted = false;
                 foreach (var type in analysis.ContainingTypes) {
                     if (!TryElectProvider(type, out var source, out var schema))
                         continue;
-                    isFaulted |= !TryValidateType(type, source!, schema, scopes, layouts, diagnostics);
+
+                    ref var scope = ref scopes.CreateScopeBlock();
+                    isFaulted |= !TryValidateType(type, source!, schema, diagnostics, out var layout, out scope);
+                    
+                    if (isFaulted)
+                        continue;
+                    layouts.Add(layout!, (scope!, source!));
                 }
 
                 if (isFaulted)
                     return new FaultedSourceGeneratedResults(diagnostics, scopes);
 
-                return layouts.Select(layout => new ResultGenerator(layout.Key, layout.Value, sources[layout.Key])).ToGeneratedResults(diagnostics);
+                return layouts.Select(layout => new ResultGenerator(layout.Key, layout.Value.Scope, layout.Value.Source)).ToGeneratedResults(diagnostics);
             }
             catch {
                 scopes.Dispose();
