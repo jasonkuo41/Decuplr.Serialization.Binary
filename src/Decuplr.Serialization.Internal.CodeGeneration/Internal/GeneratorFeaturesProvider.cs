@@ -22,9 +22,9 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
             return this;
         }
 
-        public IGenerationFeatures AddFormatResolver<TResolver>() where TResolver : class, IFormatResolverProvider {
+        public IGenerationFeatures AddFormatResolver<TResolver>() where TResolver : class, IMemberDataFormatterProvider {
             _services.AddScoped<TResolver>();
-            _services.AddScoped<IFormatResolverProvider, TResolver>(service => service.GetRequiredService<TResolver>());
+            _services.AddScoped<IMemberDataFormatterProvider, TResolver>(service => service.GetRequiredService<TResolver>());
             _services.AddScoped<IValidationSource, TResolver>(service => service.GetRequiredService<TResolver>());
             return this;
         }
