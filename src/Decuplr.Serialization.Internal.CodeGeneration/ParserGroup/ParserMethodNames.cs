@@ -1,5 +1,5 @@
-﻿namespace Decuplr.Serialization.CodeGeneration.Internal.ParserGroup {
-    struct ParserMethodNames {
+﻿namespace Decuplr.Serialization.CodeGeneration.ParserGroup {
+    public struct ParserMethodNames {
         public string TryDeserializeSpan { get; set; }
         public string TryDeserializeSequence { get; set; }
         public string DeserializeSpan { get; set; }
