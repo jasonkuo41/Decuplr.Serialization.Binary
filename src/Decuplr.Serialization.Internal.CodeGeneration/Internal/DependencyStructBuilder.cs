@@ -41,7 +41,6 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
 
     class DependencyStructBuilder {
 
-        // Favor component collection to dependencyProvider
         private class ComponentCollection : IComponentCollection {
 
             private readonly List<ITypeSymbol> _symbols = new List<ITypeSymbol>();
@@ -50,7 +49,6 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
 
             public string AddComponent(ITypeSymbol symbol) {
                 _symbols.Add(symbol);
-                return Field.Component(_symbols.Count - 1);
             }
         }
 
@@ -71,21 +69,21 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
         private readonly string _structName;
         private readonly IReadOnlyList<IConditionalFormatter> _conditions;
         private readonly IMemberDataFormatter _format;
-        private readonly ComponentCollection _componentCollection;
+        private readonly ComponentCollection _componentCollection = new ComponentCollection();
         private readonly ThrowCollection _throwCollection = new ThrowCollection("ThrowHelper");
 
         // Maybe we can change use to DI to resolve all this
-        public DependencyStructBuilder(MemberMetaInfo layoutMember, IEnumerable<IConditionResolverProvider> conditions, IEnumerable<IMemberDataFormatterProvider> formatResolvers) {
+        public DependencyStructBuilder(MemberMetaInfo layoutMember, IEnumerable<IConditionResolverProvider> conditions, IEnumerable<IMemberDataFormatterProvider> formatters) {
             _member = layoutMember;
             _conditions = conditions.Select(x => x.GetResolver(layoutMember, _throwCollection)).ToList();
             _structName = $"{_member.ContainingFullType.UniqueName}_{_member.Name}_Depedency";
-            _format = GetFormatResolver(out _componentCollection);
+            _format = GetFormatResolver();
 
-            IMemberDataFormatter GetFormatResolver(out ComponentCollection provider) {
-                foreach (var formatResolver in formatResolvers) {
-                    provider = new ComponentCollection();
-                    if (formatResolver.TryGetResolver(layoutMember, provider, _throwCollection, out var format))
-                        return format;
+            IMemberDataFormatter GetFormatResolver() {
+                foreach (var formatter in formatters) {
+                    if (!formatter.ShouldFormat(layoutMember))
+                        continue;
+                    return formatter.GetFormatter(layoutMember, _componentCollection, _throwCollection);
                 }
                 throw new ArgumentException($"The target member {layoutMember.Name} cannot be resolved by any of the provided {nameof(IMemberDataFormatterProvider)}");
             }

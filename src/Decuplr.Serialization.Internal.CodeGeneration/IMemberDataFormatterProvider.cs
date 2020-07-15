@@ -3,6 +3,7 @@ using Decuplr.Serialization.LayoutService;
 
 namespace Decuplr.Serialization.CodeGeneration {
     public interface IMemberDataFormatterProvider : IValidationSource {
-        bool TryGetResolver(MemberMetaInfo member, IComponentCollection provider, IThrowCollection throwCollection, out IMemberDataFormatter resolver);
+        bool ShouldFormat(MemberMetaInfo member);
+        IMemberDataFormatter GetFormatter(MemberMetaInfo member, IComponentCollection provider, IThrowCollection throwCollection);
     }
 }
