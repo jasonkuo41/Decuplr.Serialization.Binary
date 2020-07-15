@@ -1,14 +1,8 @@
-﻿using System.Collections.Generic;
-using Decuplr.Serialization.CodeGeneration.Arguments;
-using Decuplr.Serialization.CodeGeneration.ParserGroup;
+﻿using Decuplr.Serialization.CodeGeneration.Arguments;
 using Decuplr.Serialization.SourceBuilder;
-using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Serialization.CodeGeneration.Internal.ParserGroup {
-    interface ITypeParserGroup {
-        IReadOnlyList<string> PrependArguments { get; }
-        ITypeSymbol TargetSymbol { get; }
-        ParserMethodNames MethodNames { get; }
+namespace Decuplr.Serialization.CodeGeneration.ParserGroup {
+    public interface IParsingMethodBody {
         void TryDeserializeSpan(CodeNodeBuilder node, BufferArgs readOnlySpan, OutArgs<int> outReadBytes, OutArgs<object> outResult);
         void TryDeserializeSequence(CodeNodeBuilder node, BufferArgs refSequenceCursor, OutArgs<object> outResult);
         void DeserializeSpan(CodeNodeBuilder node, BufferArgs readOnlySpan, OutArgs<int> outReadBytes);

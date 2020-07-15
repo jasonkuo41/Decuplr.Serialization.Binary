@@ -1,14 +1,14 @@
 ﻿using Decuplr.Serialization.CodeGeneration.Arguments;
 
 namespace Decuplr.Serialization.CodeGeneration {
-    public interface IFormmaterBase<TArgs> :
-        IFunctionProvider<TryDeserializeSpanArgs<TArgs>>,
-        IFunctionProvider<TryDeserializeSequenceArgs<TArgs>>,
-        IFunctionProvider<DeserializeSpanArgs<TArgs>>,
-        IFunctionProvider<DeserializeSequenceArgs<TArgs>>,
-        IFunctionProvider<SerializeArgs<TArgs>>,
-        IFunctionProvider<TrySerializeArgs<TArgs>>,
-        IFunctionProvider<GetLengthArgs<TArgs>> {
+    public interface IFormatterParsingMethod<TArgs> :
+        IChainedMethodBodyProvider<TryDeserializeSpanArgs<TArgs>>,
+        IChainedMethodBodyProvider<TryDeserializeSequenceArgs<TArgs>>,
+        IChainedMethodBodyProvider<DeserializeSpanArgs<TArgs>>,
+        IChainedMethodBodyProvider<DeserializeSequenceArgs<TArgs>>,
+        IChainedMethodBodyProvider<SerializeArgs<TArgs>>,
+        IChainedMethodBodyProvider<TrySerializeArgs<TArgs>>,
+        IChainedMethodBodyProvider<GetLengthArgs<TArgs>> {
 
         string FormatterName { get; }
     }

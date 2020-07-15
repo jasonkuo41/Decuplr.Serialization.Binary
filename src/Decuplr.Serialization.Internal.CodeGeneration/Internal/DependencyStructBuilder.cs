@@ -32,7 +32,7 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
         IDependencySource ProvideSource(IComponentCollection collection);
     }
 
-    interface IComponentTypeInfo {
+    interface IComponentTypeInfo : IParsingMethodBody {
         string FullName { get; }
 
         string ProvideInitialize(string parserName);
@@ -46,10 +46,22 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
 
             private readonly List<ITypeSymbol> _symbols = new List<ITypeSymbol>();
 
+            private static ParserMethodNames GetMethodNames(int index) 
+                => new ParserMethodNames {
+                    TryDeserializeSequence = $"TryDeserialize_Component_{index}",
+                    TryDeserializeSpan = $"TryDeserialize_Component_{index}",
+                    DeserializeSequence = $"Deserialize_Component_{index}",
+                    DeserializeSpan = $"Deserialize_Component_{index}",
+                    TrySerialize = $"TrySerialize_Component_{index}",
+                    Serialize = $"Serialize_Component_{index}",
+                    GetLength = $"GetLength_Component_{index}",
+                };
+
             public IReadOnlyList<ITypeSymbol> Components => _symbols;
 
             public ParserMethodGroup AddComponent(ITypeSymbol symbol) {
                 _symbols.Add(symbol);
+                return new ParserMethodGroup(GetMethodNames(_symbols.Count - 1));
             }
         }
 
@@ -165,10 +177,10 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
 
                 // Data Condition Methods
                 for (int i = 0; i < _conditions.Count; i++)
-                    builder.AddFormatterParserGroup(_conditions[i], _member, i).NewLine();
+                    builder.AddFormatterParsingMethods(_conditions[i], _member, i, shouldMoveNext: true).NewLine();
 
                 // Data Format Method
-                builder.AddFormatterParserGroup(_format, _member, _conditions.Count).NewLine();
+                builder.AddFormatterParsingMethods(_format, _member, _conditions.Count, shouldMoveNext: false).NewLine();
 
                 // Data Resolve Method
                 "Resolve Data pls";
