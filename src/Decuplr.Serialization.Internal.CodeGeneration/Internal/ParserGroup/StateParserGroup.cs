@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using Decuplr.Serialization.AnalysisService;
 using Decuplr.Serialization.CodeGeneration.Arguments;
+using Decuplr.Serialization.CodeGeneration.ParserGroup;
 using Decuplr.Serialization.SourceBuilder;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.CodeGeneration.Internal.ParserGroup {
     internal abstract class StateParserGroup : ITypeParserGroup {
-        protected static class Method {
+        private static class Method {
             public static string TryDeserializeState(int index) => $"TryDeserializeState_{index}";
             public static string DeserializeState(int index) => $"DeserializeState_{index}";
             public static string TrySerializeState(int index) => $"TrySerializeState_{index}";
@@ -17,21 +18,26 @@ namespace Decuplr.Serialization.CodeGeneration.Internal.ParserGroup {
 
         private const string parent = "parent";
 
-        protected int Index { get; }
-
         public ParserMethodNames MethodNames { get; }
 
         public IReadOnlyList<string> PrependArguments { get; }
 
         public ITypeSymbol TargetSymbol { get; }
 
-        public StateParserGroup(MemberMetaInfo member, int index) {
+        public StateParserGroup(MemberMetaInfo member, int index) 
+            : this(member, GetDefaultNames(index)) {
+        }
+
+        public StateParserGroup(MemberMetaInfo member, ParserMethodNames methodNames) {
             if (member.ReturnType is null)
                 throw new ArgumentException("Member without return type cannot be configured for parser groups");
-            Index = index;
             TargetSymbol = member.ReturnType.Symbol;
             PrependArguments = new[] { $"in {member.ContainingFullType.Symbol} {parent}" };
-            MethodNames = new ParserMethodNames {
+            MethodNames = methodNames;
+        }
+
+        protected static ParserMethodNames GetDefaultNames(int index)
+            => new ParserMethodNames {
                 TryDeserializeSequence = Method.TryDeserializeState(index),
                 TryDeserializeSpan = Method.TryDeserializeState(index),
                 DeserializeSequence = Method.TryDeserializeState(index),
@@ -39,7 +45,6 @@ namespace Decuplr.Serialization.CodeGeneration.Internal.ParserGroup {
                 TrySerialize = Method.TrySerializeState(index),
                 Serialize = Method.SerializeState(index),
             };
-        }
 
         protected abstract void TryDeserializeSpan(CodeNodeBuilder node, TryDeserializeSpanArgs<TypeSourceArgs> args);
         protected abstract void TryDeserializeSequence(CodeNodeBuilder node, TryDeserializeSequenceArgs<TypeSourceArgs> args);

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Decuplr.Serialization.CodeGeneration.Arguments;
+using Decuplr.Serialization.CodeGeneration.ParserGroup;
 using Decuplr.Serialization.SourceBuilder;
 using Microsoft.CodeAnalysis;
 

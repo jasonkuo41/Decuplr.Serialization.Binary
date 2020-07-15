@@ -7,6 +7,7 @@ using Decuplr.Serialization.AnalysisService;
 using Decuplr.Serialization.Binary;
 using Decuplr.Serialization.CodeGeneration.Arguments;
 using Decuplr.Serialization.CodeGeneration.Internal.ParserGroup;
+using Decuplr.Serialization.CodeGeneration.ParserGroup;
 using Decuplr.Serialization.LayoutService;
 using Decuplr.Serialization.SourceBuilder;
 using Microsoft.CodeAnalysis;
@@ -48,7 +49,7 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
 
             public IReadOnlyList<ITypeSymbol> Components => _symbols;
 
-            public string AddComponent(ITypeSymbol symbol) {
+            public ParserMethodGroup AddComponent(ITypeSymbol symbol) {
                 _symbols.Add(symbol);
                 return Field.Component(_symbols.Count - 1);
             }

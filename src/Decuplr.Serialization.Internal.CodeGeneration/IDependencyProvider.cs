@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
+using Decuplr.Serialization.CodeGeneration.ParserGroup;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.CodeGeneration {
     public interface IComponentCollection {
         IReadOnlyList<ITypeSymbol> Components { get; }
 
-        string AddComponent(ITypeSymbol symbol);
+        ParserMethodGroup AddComponent(ITypeSymbol symbol);
     }
 }
