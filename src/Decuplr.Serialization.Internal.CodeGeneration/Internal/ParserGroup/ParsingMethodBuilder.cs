@@ -9,18 +9,25 @@ using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.CodeGeneration.Internal.ParserGroup {
     internal abstract class ParsingMethodBuilder : IParsingMethodBody {
-        
+
+        private readonly Accessibility _accessibility;
+
         public ParserMethodNames MethodNames { get; }
 
-        public abstract IReadOnlyList<string> PrependArguments { get; }
+        public virtual IReadOnlyList<string> PrependArguments { get; } = Array.Empty<string>();
 
         public ITypeSymbol TargetSymbol { get; }
 
-        public ParsingMethodBuilder(MemberMetaInfo member, ParserMethodNames methodNames) {
+        public ParsingMethodBuilder(MemberMetaInfo member, ParserMethodNames methodNames) 
+            : this (member, methodNames, Accessibility.Private) {
+        }
+
+        public ParsingMethodBuilder(MemberMetaInfo member, ParserMethodNames methodNames, Accessibility accessibility) {
             if (member.ReturnType is null)
                 throw new ArgumentException("Member without return type cannot be configured for parser groups");
             TargetSymbol = member.ReturnType.Symbol;
             MethodNames = methodNames;
+            _accessibility = accessibility;
         }
 
         public abstract void TryDeserializeSequence(CodeNodeBuilder node, BufferArgs refSequenceCursor, OutArgs<object> outResult);
@@ -43,6 +50,8 @@ namespace Decuplr.Serialization.CodeGeneration.Internal.ParserGroup {
             const string writtenBytes = "writtenBytes";
             const string target = "target";
 
+            var accessMod = _accessibility.ToString().ToLower();
+
             var strBuilder = new StringBuilder();
             foreach (var arg in PrependArguments) {
                 strBuilder.Append(arg);
@@ -51,32 +60,32 @@ namespace Decuplr.Serialization.CodeGeneration.Internal.ParserGroup {
             var prependString = strBuilder.ToString();
 
             // TryDeserialize (ReadOnlySpan<byte>)
-            builder.AddNode($"private {nameof(DeserializeResult)} {MethodNames.TryDeserializeSpan}({prependString}{ReadOnlySpanByte} {span}, out int {readBytes}, out {TargetSymbol} {target})",
+            builder.AddNode($"{accessMod} {nameof(DeserializeResult)} {MethodNames.TryDeserializeSpan}({prependString}{ReadOnlySpanByte} {span}, out int {readBytes}, out {TargetSymbol} {target})",
                 node => TryDeserializeSpan(node, span, readBytes, target));
 
             // TryDeserialize (Sequence)
-            builder.AddNode($"private {nameof(DeserializeResult)} {MethodNames.TryDeserializeSequence}({prependString}{SequenceCursor} {cursor}, out {TargetSymbol} {target})",
+            builder.AddNode($"{accessMod} {nameof(DeserializeResult)} {MethodNames.TryDeserializeSequence}({prependString}{SequenceCursor} {cursor}, out {TargetSymbol} {target})",
                 node => TryDeserializeSequence(node, cursor, target));
 
             // Deserialize (ReadOnlySpan<byte>)
-            builder.AddNode($"private {TargetSymbol} {MethodNames.DeserializeSpan}({prependString}{ReadOnlySpanByte} {span}, out int {readBytes})",
+            builder.AddNode($"{accessMod} {TargetSymbol} {MethodNames.DeserializeSpan}({prependString}{ReadOnlySpanByte} {span}, out int {readBytes})",
                 node => DeserializeSpan(node, span, readBytes));
 
             // Deserialize (Sequence)
-            builder.AddNode($"private int {MethodNames.DeserializeSequence}({prependString}{SequenceCursor} {cursor})",
+            builder.AddNode($"{accessMod} int {MethodNames.DeserializeSequence}({prependString}{SequenceCursor} {cursor})",
                 node => DeserializeSequence(node, cursor));
 
 
             // TrySerialize (ReadOnlySpan<byte>)
-            builder.AddNode($"private bool {MethodNames.TrySerialize}({prependString}in {TargetSymbol} {target}, {SpanByte} {span}, out int {writtenBytes})",
+            builder.AddNode($"{accessMod} bool {MethodNames.TrySerialize}({prependString}in {TargetSymbol} {target}, {SpanByte} {span}, out int {writtenBytes})",
                 node => TrySerialize(node, target, span, writtenBytes));
 
             // Serialize (ReadOnlySpan<byte>)
-            builder.AddNode($"private int {MethodNames.Serialize}({prependString}in {TargetSymbol} {target}, {SpanByte} {span})",
+            builder.AddNode($"{accessMod} int {MethodNames.Serialize}({prependString}in {TargetSymbol} {target}, {SpanByte} {span})",
                 node => Serialize(node, target, span));
 
             // GetLength
-            builder.AddNode($"private int {MethodNames.GetLength}({prependString}in {TargetSymbol} {target})",
+            builder.AddNode($"{accessMod} int {MethodNames.GetLength}({prependString}in {TargetSymbol} {target})",
                 node => GetLength(node, target));
 
             return builder;

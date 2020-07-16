@@ -57,9 +57,9 @@ namespace Decuplr.Serialization.SourceBuilder {
             if (string.IsNullOrWhiteSpace(attribute))
                 return this;
             if (attribute.AnyClampsWith("[","]"))
-                Add(attribute);
+                AddPlain(attribute);
             else
-                Add($"[{attribute}]");
+                AddPlain($"[{attribute}]");
             return this;
         }
 
@@ -67,21 +67,21 @@ namespace Decuplr.Serialization.SourceBuilder {
             if (string.IsNullOrWhiteSpace(statement))
                 return this;
             if (statement.AnyEndsWith(";"))
-                Add(statement);
+                AddPlain(statement);
             else
-                Add($"{statement};");
+                AddPlain($"{statement};");
             return this;
         }
 
         public CodeNodeBuilder Comment(string comment) {
             if (comment.AnyStartsWith("//"))
-                Add(comment);
+                AddPlain(comment);
             else
-                Add($"// {comment}");
+                AddPlain($"// {comment}");
             return this;
         }
 
-        public CodeNodeBuilder Add(string plain) {
+        public CodeNodeBuilder AddPlain(string plain) {
             using var lineReader = new StringReader(plain);
             string line;
             while ((line = lineReader.ReadLine()) != null)
@@ -90,7 +90,7 @@ namespace Decuplr.Serialization.SourceBuilder {
         }
 
         public CodeNodeBuilder NewLine() {
-            Add(string.Empty);
+            AddPlain(string.Empty);
             return this;
         }
 

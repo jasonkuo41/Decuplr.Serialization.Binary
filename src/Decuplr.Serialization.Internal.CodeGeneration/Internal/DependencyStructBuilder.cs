@@ -1,52 +1,105 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using Decuplr.Serialization.AnalysisService;
-using Decuplr.Serialization.Binary;
 using Decuplr.Serialization.CodeGeneration.Arguments;
 using Decuplr.Serialization.CodeGeneration.Internal.ParserGroup;
 using Decuplr.Serialization.CodeGeneration.ParserGroup;
-using Decuplr.Serialization.LayoutService;
 using Decuplr.Serialization.SourceBuilder;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.CodeGeneration.Internal {
-
-    interface IDependencySource {
-        /// <summary>
-        /// In Decuplr.Serialization.Binary it should be IParserDiscovery
-        /// </summary>
-        Type DiscoveryType { get; }
-
-        IReadOnlyList<IComponentTypeInfo> ComponentTypes { get; }
-    }
-
-    interface IDependencySourceProvider {
+    internal interface IDependencySourceProvider {
         /// <summary>
         /// The name of the source that we can refer as
         /// </summary>
         string Name { get; }
 
-        IDependencySource ProvideSource(IComponentCollection collection);
+        /// <summary>
+        /// In Decuplr.Serialization.Binary it should be IParserDiscovery
+        /// </summary>
+        Type DiscoveryType { get; }
+
+        IComponentData ProvideComponent(ITypeSymbol component);
     }
 
-    interface IComponentTypeInfo : IParsingMethodBody {
+    internal interface IComponentData : IParsingMethodBody {
+        /// <summary>
+        /// The full name of the component, for example "TypeParser`T" or "ByteOrder"
+        /// </summary>
         string FullName { get; }
 
-        string ProvideInitialize(string parserName);
+        void ProvideInitialize(CodeNodeBuilder builder, string discoveryName);
 
-        string ProvideTryInitialize(string parserName, OutArgs<bool> isSuccess);
+        void ProvideTryInitialize(CodeNodeBuilder builder, string discoveryName, OutArgs<bool> isSuccess);
     }
 
-    class DependencyStructBuilder {
+    /// <summary>
+    /// A prototype of the dependency struct
+    /// </summary>
+    internal class DependencyStructPrecusor {
+
+        private readonly CodeNodeBuilder _nodeBuilder;
+
+        public MemberMetaInfo Target { get; }
+
+        "Reflect";
+
+        public string Name { get; }
+
+        public string SourceCode => _nodeBuilder.ToString();
+
+        public DependencyStructPrecusor(MemberMetaInfo metaInfo, string name, CodeNodeBuilder nodeBuilder) {
+            Target = metaInfo;
+            Name = name;
+            _nodeBuilder = nodeBuilder;
+        }
+
+        public void EmbedSourceCode(CodeNodeBuilder builder) => builder.AddPlain(SourceCode);
+    }
+
+    internal class DependencyStructBuilder {
+
+        private class PublicParsingMethodBuilder : ParsingMethodBuilder {
+
+            private const string parent = "parent";
+            private readonly DependencyStructBuilder _builder;
+
+            public override IReadOnlyList<string> PrependArguments { get; }
+
+            public PublicParsingMethodBuilder(DependencyStructBuilder builder)
+                : base(builder._member, ParserMethodNames.DefaultNames) {
+                _builder = builder;
+                PrependArguments = new[] { $"in {_builder._member.ContainingFullType.Symbol} {parent}" };
+            }
+
+            public override void DeserializeSequence(CodeNodeBuilder node, BufferArgs refSequenceCursor) 
+                => node.AddPlain($"{Method.TryDeserializeState(0)}({parent}, ref {refSequenceCursor})");
+
+            public override void DeserializeSpan(CodeNodeBuilder node, BufferArgs readOnlySpan, OutArgs<int> outReadBytes)
+                => node.Return($"{Method.TryDeserializeState(0)}({parent}, {readOnlySpan}, out {outReadBytes})");
+
+            public override void GetLength(CodeNodeBuilder node, InArgs<object> target)
+                => node.Return($"{Method.GetLengthState(0)}({parent}, {target} )");
+
+            public override void Serialize(CodeNodeBuilder node, InArgs<object> target, BufferArgs readOnlySpan)
+                => node.Return($"{Method.SerializeState(0)}({parent}, {target}, {readOnlySpan})");
+
+            public override void TryDeserializeSequence(CodeNodeBuilder node, BufferArgs refSequenceCursor, OutArgs<object> outResult)
+                => node.Return($"{Method.TryDeserializeState(0)}({parent}, ref {refSequenceCursor}, out {outResult})");
+
+            public override void TryDeserializeSpan(CodeNodeBuilder node, BufferArgs readOnlySpan, OutArgs<int> outReadBytes, OutArgs<object> outResult)
+                => node.Return($"{Method.TryDeserializeState(0)}({parent}, {readOnlySpan}, out {outReadBytes}, out {outResult})");
+
+            public override void TrySerialize(CodeNodeBuilder node, InArgs<object> target, BufferArgs readOnlySpan, OutArgs<int> outWrittenBytes)
+                => node.Return($"{Method.TrySerializeState(0)} ({parent}, {target}, {readOnlySpan}, out {outWrittenBytes})");
+        }
 
         private class ComponentCollection : IComponentCollection {
 
             private readonly List<ITypeSymbol> _symbols = new List<ITypeSymbol>();
 
-            private static ParserMethodNames GetMethodNames(int index) 
+            public ParserMethodNames GetMethodNames(int index)
                 => new ParserMethodNames {
                     TryDeserializeSequence = $"TryDeserialize_Component_{index}",
                     TryDeserializeSpan = $"TryDeserialize_Component_{index}",
@@ -68,6 +121,11 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
         private static class Method {
             public static string InitializeComponent(int count) => $"{nameof(InitializeComponent)}_{count}";
             public static string TryInitializeComponent(int count) => $"{nameof(TryInitializeComponent)}_{count}";
+            public static string TryDeserializeState(int index) => $"TryDeserializeState_{index}";
+            public static string DeserializeState(int index) => $"DeserializeState_{index}";
+            public static string TrySerializeState(int index) => $"TrySerializeState_{index}";
+            public static string SerializeState(int index) => $"SerializeState_{index}";
+            public static string GetLengthState(int index) => $"GetLengthState_{index}";
         }
 
         private static class Field {
@@ -102,46 +160,56 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
             }
         }
 
-        private CodeNodeBuilder AddComponents(CodeNodeBuilder builder, IDependencySource provider) {
-            for (var i = 0; i < provider.ComponentTypes.Count; ++i) {
-                builder.State($"private {provider.ComponentTypes[i].FullName} {Field.Component(i)}");
+        private static ParserMethodNames GetDefaultNames(int index)
+            => new ParserMethodNames {
+                TryDeserializeSequence = Method.TryDeserializeState(index),
+                TryDeserializeSpan = Method.TryDeserializeState(index),
+                DeserializeSequence = Method.TryDeserializeState(index),
+                DeserializeSpan = Method.TryDeserializeState(index),
+                TrySerialize = Method.TrySerializeState(index),
+                Serialize = Method.SerializeState(index),
+            };
+
+        private CodeNodeBuilder AddComponents(CodeNodeBuilder builder, IReadOnlyList<IComponentData> components) {
+            for (var i = 0; i < components.Count; ++i) {
+                builder.State($"private {components[i].FullName} {Field.Component(i)}");
             }
             return builder;
         }
 
-        private CodeNodeBuilder AddComponentInitializers(CodeNodeBuilder builder, IDependencySource provider) {
-            for (var i = 0; i < provider.ComponentTypes.Count; ++i) {
+        private CodeNodeBuilder AddComponentInitializers(CodeNodeBuilder builder, Type discoveryType, IReadOnlyList<IComponentData> components) {
+            for (var i = 0; i < components.Count; ++i) {
                 const string parserName = "parser";
                 const string isSuccess = "isSuccess";
 
-                builder.AddNode($"private {Method.InitializeComponent(i)}({provider.DiscoveryType} {parserName})", node => {
-                    node.Add(provider.ComponentTypes[i].ProvideInitialize(parserName));
+                builder.AddNode($"private {Method.InitializeComponent(i)}({discoveryType} {parserName})", node => {
+                    components[i].ProvideInitialize(node, parserName);
                 });
 
-                builder.AddNode($"private {Method.TryInitializeComponent(i)}({provider.DiscoveryType} {parserName}, out bool {isSuccess})", node => {
-                    node.Add(provider.ComponentTypes[i].ProvideTryInitialize(parserName, isSuccess));
+                builder.AddNode($"private {Method.TryInitializeComponent(i)}({discoveryType} {parserName}, out bool {isSuccess})", node => {
+                    components[i].ProvideTryInitialize(node, parserName, isSuccess);
                 });
             }
             return builder;
         }
 
-        private CodeNodeBuilder AddConstructor(CodeNodeBuilder builder, IDependencySource provider) {
+        private CodeNodeBuilder AddConstructor(CodeNodeBuilder builder, Type discoveryType, IReadOnlyList<IComponentData> components) {
             // Create Constructor
             const string parser = "parser";
-            return builder.AddNode($"public {_structName}({provider.DiscoveryType} {parser}) : this()", node => {
-                for (var i = 0; i < provider.ComponentTypes.Count; ++i)
+            return builder.AddNode($"public {_structName}({discoveryType} {parser}) : this()", node => {
+                for (var i = 0; i < components.Count; ++i)
                     node.State($"{Field.Component(i)} = {Method.InitializeComponent(i)} ( {parser} )");
             });
         }
 
-        private CodeNodeBuilder AddTryConstructor(CodeNodeBuilder builder, IDependencySource provider) {
+        private CodeNodeBuilder AddTryConstructor(CodeNodeBuilder builder, Type discoveryType, IReadOnlyList<IComponentData> components) {
             // Arguments
             const string parser = "parser";
             const string isSuccess = "isSuccess";
 
             // Create Constructor with try pattern
-            builder.AddNode($"public {_structName}({provider.DiscoveryType} parser, out bool {isSuccess}) : this()", node => {
-                for (var i = 0; i < provider.ComponentTypes.Count; ++i) {
+            builder.AddNode($"public {_structName}({discoveryType} parser, out bool {isSuccess}) : this()", node => {
+                for (var i = 0; i < components.Count; ++i) {
                     // Initialize every component
                     node.State($"{Field.Component(i)} = {Method.InitializeComponent(i)} ( {parser}, out {isSuccess} )");
 
@@ -159,8 +227,9 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
             return builder;
         }
 
-        private void CreateStruct(IDependencySourceProvider provider) {
-            var source = provider.ProvideSource(_componentCollection);
+        public DependencyStructPrecusor CreateStruct(IDependencySourceProvider provider) {
+            var components = _componentCollection.Components.Select(x => provider.ProvideComponent(x)).ToList();
+
             var builder = new CodeNodeBuilder();
 
             builder.DenoteHideEditor().DenoteGenerated(typeof(DependencyStructBuilder).Assembly);
@@ -168,26 +237,36 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
 
                 // Fields & Field Initialization
                 builder.Comment($"Depedency provided by {provider.Name}");
-                AddComponents(builder, source).NewLine();
-                AddComponentInitializers(builder, source).NewLine();
+                AddComponents(builder, components).NewLine();
+                AddComponentInitializers(builder, provider.DiscoveryType, components).NewLine();
 
                 // Construtor
-                AddConstructor(builder, source).NewLine();
-                AddTryConstructor(builder, source).NewLine();
+                AddConstructor(builder, provider.DiscoveryType, components).NewLine();
+                AddTryConstructor(builder, provider.DiscoveryType, components).NewLine();
+
+                // Entry Point
+                builder.Comment("Dependency Member Entry Point");
+                builder.AddParsingMethods(new PublicParsingMethodBuilder(this));
 
                 // Data Condition Methods
                 for (int i = 0; i < _conditions.Count; i++)
-                    builder.AddFormatterParsingMethods(_conditions[i], _member, i, shouldMoveNext: true).NewLine();
+                    builder.AddFormatterMethods(_conditions[i], _member, i, GetDefaultNames).NewLine();
 
                 // Data Format Method
-                builder.AddFormatterParsingMethods(_format, _member, _conditions.Count, shouldMoveNext: false).NewLine();
+                builder.AddFormatterFinalMethods(_format, _member, _conditions.Count, GetDefaultNames).NewLine();
 
                 // Data Resolve Method
-                "Resolve Data pls";
+                builder.Comment("Data Resolver").NewLine();
+                for (var i = 0; i < components.Count; i++) {
+                    builder.AddParsingBody(components[i], _member, _componentCollection.GetMethodNames(i)).NewLine();
+                }
 
                 // Nested Throw Helpers
+                builder.Comment("Throw Helpers (Avoid inlining throw action)");
                 _throwCollection.AddThrowClass(builder);
             });
+
+            return new DependencyStructPrecusor(_member, _structName, builder);
         }
     }
 }

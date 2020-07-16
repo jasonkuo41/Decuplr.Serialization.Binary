@@ -23,7 +23,7 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
             builder.AddNode($"{accessStr} static class {_className} ", node => {
                 for (var i = 0; i < exceptions.Count; i++) {
                     node.Attribute("MethodImpl(MethodImplOptions.NoInlining)");
-                    node.State($"public {ThrowExceptionName(i)}() => throw {exceptions[i]}");
+                    node.State($"public static {ThrowExceptionName(i)}() => throw {exceptions[i]}");
                 }
             });
         }
