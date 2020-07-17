@@ -9,65 +9,16 @@ using Decuplr.Serialization.SourceBuilder;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.CodeGeneration.Internal {
-    internal interface IDependencySourceProvider {
-        /// <summary>
-        /// The name of the source that we can refer as
-        /// </summary>
-        string Name { get; }
-
-        /// <summary>
-        /// In Decuplr.Serialization.Binary it should be IParserDiscovery
-        /// </summary>
-        Type DiscoveryType { get; }
-
-        IComponentData ProvideComponent(ITypeSymbol component);
-    }
-
-    internal interface IComponentData : IParsingMethodBody {
-        /// <summary>
-        /// The full name of the component, for example "TypeParser`T" or "ByteOrder"
-        /// </summary>
-        string FullName { get; }
-
-        void ProvideInitialize(CodeNodeBuilder builder, string discoveryName);
-
-        void ProvideTryInitialize(CodeNodeBuilder builder, string discoveryName, OutArgs<bool> isSuccess);
-    }
-
-    /// <summary>
-    /// A prototype of the dependency struct
-    /// </summary>
-    internal class DependencyStructPrecusor {
-
-        private readonly CodeNodeBuilder _nodeBuilder;
-
-        public MemberMetaInfo Target { get; }
-
-        "Reflect";
-
-        public string Name { get; }
-
-        public string SourceCode => _nodeBuilder.ToString();
-
-        public DependencyStructPrecusor(MemberMetaInfo metaInfo, string name, CodeNodeBuilder nodeBuilder) {
-            Target = metaInfo;
-            Name = name;
-            _nodeBuilder = nodeBuilder;
-        }
-
-        public void EmbedSourceCode(CodeNodeBuilder builder) => builder.AddPlain(SourceCode);
-    }
-
-    internal class DependencyStructBuilder {
+    internal class MemberComposerBuilder {
 
         private class PublicParsingMethodBuilder : ParsingMethodBuilder {
 
             private const string parent = "parent";
-            private readonly DependencyStructBuilder _builder;
+            private readonly MemberComposerBuilder _builder;
 
             public override IReadOnlyList<string> PrependArguments { get; }
 
-            public PublicParsingMethodBuilder(DependencyStructBuilder builder)
+            public PublicParsingMethodBuilder(MemberComposerBuilder builder)
                 : base(builder._member, ParserMethodNames.DefaultNames) {
                 _builder = builder;
                 PrependArguments = new[] { $"in {_builder._member.ContainingFullType.Symbol} {parent}" };
@@ -144,7 +95,9 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
         private readonly ThrowCollection _throwCollection = new ThrowCollection("ThrowHelper");
 
         // Maybe we can change use to DI to resolve all this
-        public DependencyStructBuilder(MemberMetaInfo layoutMember, IEnumerable<IConditionResolverProvider> conditions, IEnumerable<IMemberDataFormatterProvider> formatters) {
+        public MemberComposerBuilder(MemberMetaInfo layoutMember, IEnumerable<IConditionResolverProvider> conditions, IEnumerable<IMemberDataFormatterProvider> formatters) {
+            if (_member.ReturnType is null)
+                throw new ArgumentException("Invalid layout member (No Return Type)");
             _member = layoutMember;
             _conditions = conditions.Select(x => x.GetResolver(layoutMember, _throwCollection)).ToList();
             _structName = $"{_member.ContainingFullType.UniqueName}_{_member.Name}_Depedency";
@@ -227,13 +180,20 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
             return builder;
         }
 
-        public DependencyStructPrecusor CreateStruct(IDependencySourceProvider provider) {
+        private string GetGenericArgs() {
+            if (_member.ReturnType!.Symbol is ITypeParameterSymbol symbol) {
+                return $"<{symbol}>";
+            }
+            return string.Empty;
+        }
+
+        public MemberComposerPrecusor CreateStruct(IDependencySourceProvider provider) {
             var components = _componentCollection.Components.Select(x => provider.ProvideComponent(x)).ToList();
 
             var builder = new CodeNodeBuilder();
 
-            builder.DenoteHideEditor().DenoteGenerated(typeof(DependencyStructBuilder).Assembly);
-            builder.AddNode($"internal readonly struct {_structName}", node => {
+            builder.DenoteHideEditor().DenoteGenerated(typeof(MemberComposerBuilder).Assembly);
+            builder.AddNode($"internal readonly struct {_structName} {GetGenericArgs()}", node => {
 
                 // Fields & Field Initialization
                 builder.Comment($"Depedency provided by {provider.Name}");
@@ -266,7 +226,7 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
                 _throwCollection.AddThrowClass(builder);
             });
 
-            return new DependencyStructPrecusor(_member, _structName, builder);
+            return new MemberComposerPrecusor(_member, _structName, builder);
         }
     }
 }

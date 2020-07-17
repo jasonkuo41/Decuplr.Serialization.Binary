@@ -11,25 +11,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Decuplr.Serialization.CodeGeneration.Internal {
 
-    internal class FaultedSourceGeneratedResults : ISourceGeneratedResults {
-
-        private readonly ServiceScopeCollection _scopes;
-
-        public bool IsFaulted => true;
-
-        public IEnumerable<Diagnostic> Diagnostics { get; }
-
-        public FaultedSourceGeneratedResults(IEnumerable<Diagnostic> diagnostics, ServiceScopeCollection scopes) {
-            Diagnostics = diagnostics;
-            _scopes = scopes;
-        }
-
-        public IEnumerable<GeneratedSourceCode> GenerateFiles() => throw new InvalidOperationException("Faulted results are uncapable of generating file results");
-
-        public void Dispose() => _scopes.Dispose();
-
-    }
-
     internal class CodeGenerator : ICodeGenerator {
 
         private static readonly SymbolKind[] ValidSerializeKind = new[] { SymbolKind.Field, SymbolKind.Property };
@@ -40,9 +21,13 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
         private readonly IServiceProvider _serviceProvider;
 
         internal CodeGenerator(IServiceCollection services) {
-            _serviceCollection = services;
-            _serviceProvider = services.BuildServiceProvider();
+            _serviceCollection = ConfigureSerivces(services);
+            _serviceProvider = _serviceCollection.BuildServiceProvider();
             _generationSource = _serviceProvider.GetServices<IGenerationSource>().ToList();
+
+            static IServiceCollection ConfigureSerivces(IServiceCollection services) {
+
+            }
         }
 
         private bool TryElectProvider(NamedTypeMetaInfo type, out IGenerationSource? electedProvider, out SchemaPrecusor schema) {
