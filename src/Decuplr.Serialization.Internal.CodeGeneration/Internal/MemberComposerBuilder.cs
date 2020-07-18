@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Decuplr.Serialization.AnalysisService;
 using Decuplr.Serialization.CodeGeneration.Arguments;
-using Decuplr.Serialization.CodeGeneration.Internal.ParserGroup;
-using Decuplr.Serialization.CodeGeneration.ParserGroup;
+using Decuplr.Serialization.CodeGeneration.TypeComposers.Internal;
+using Decuplr.Serialization.CodeGeneration.TypeComposers;
 using Decuplr.Serialization.SourceBuilder;
 using Microsoft.CodeAnalysis;
 
@@ -19,7 +19,7 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
             public override IReadOnlyList<string> PrependArguments { get; }
 
             public PublicParsingMethodBuilder(MemberComposerBuilder builder)
-                : base(builder._member, ParserMethodNames.DefaultNames) {
+                : base(builder._member, ComposerMethodNames.DefaultNames) {
                 _builder = builder;
                 PrependArguments = new[] { $"in {_builder._member.ContainingFullType.Symbol} {parent}" };
             }
@@ -50,8 +50,8 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
 
             private readonly List<ITypeSymbol> _symbols = new List<ITypeSymbol>();
 
-            public ParserMethodNames GetMethodNames(int index)
-                => new ParserMethodNames {
+            public ComposerMethodNames GetMethodNames(int index)
+                => new ComposerMethodNames {
                     TryDeserializeSequence = $"TryDeserialize_Component_{index}",
                     TryDeserializeSpan = $"TryDeserialize_Component_{index}",
                     DeserializeSequence = $"Deserialize_Component_{index}",
@@ -63,9 +63,9 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
 
             public IReadOnlyList<ITypeSymbol> Components => _symbols;
 
-            public ParserMethodGroup AddComponent(ITypeSymbol symbol) {
+            public ComposerMethods AddComponent(ITypeSymbol symbol) {
                 _symbols.Add(symbol);
-                return new ParserMethodGroup(GetMethodNames(_symbols.Count - 1));
+                return new ComposerMethods(GetMethodNames(_symbols.Count - 1));
             }
         }
 
@@ -113,8 +113,8 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
             }
         }
 
-        private static ParserMethodNames GetDefaultNames(int index)
-            => new ParserMethodNames {
+        private static ComposerMethodNames GetDefaultNames(int index)
+            => new ComposerMethodNames {
                 TryDeserializeSequence = Method.TryDeserializeState(index),
                 TryDeserializeSpan = Method.TryDeserializeState(index),
                 DeserializeSequence = Method.TryDeserializeState(index),

@@ -45,8 +45,8 @@ namespace Decuplr.Serialization.Binary {
 
                 var builder = new CodeGeneratorBuilder();
 
-                builder.AddProvider<BinaryFormatProvider>();
-                builder.AddProvider<BinaryParserProvider>();
+                builder.AddStartup<BinaryFormatProvider>();
+                builder.AddStartup<BinaryParserProvider>();
 
                 var generator = builder.UseDependencyProvider<InlineDependencyProvider>()
                                        .UseDependencyProvider<DefaultDependencyProvider>()

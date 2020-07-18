@@ -1,9 +1,9 @@
 ﻿using Decuplr.Serialization.CodeGeneration.Arguments;
-using Decuplr.Serialization.CodeGeneration.ParserGroup;
+using Decuplr.Serialization.CodeGeneration.TypeComposers;
 using Decuplr.Serialization.SourceBuilder;
 
 namespace Decuplr.Serialization.CodeGeneration {
-    public interface IComponentData : IParsingMethodBody {
+    public interface IComponentData : IComposerMethodBodyBuilder {
         /// <summary>
         /// The full name of the component, for example "TypeParser`T" or "ByteOrder"
         /// </summary>

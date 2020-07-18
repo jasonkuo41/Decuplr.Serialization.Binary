@@ -1,8 +1,8 @@
 ﻿using Decuplr.Serialization.CodeGeneration.Arguments;
 using Decuplr.Serialization.SourceBuilder;
 
-namespace Decuplr.Serialization.CodeGeneration.ParserGroup {
-    public interface IParsingMethodBody {
+namespace Decuplr.Serialization.CodeGeneration.TypeComposers {
+    public interface IComposerMethodBodyBuilder {
         void TryDeserializeSpan(CodeNodeBuilder node, BufferArgs readOnlySpan, OutArgs<int> outReadBytes, OutArgs<object> outResult);
         void TryDeserializeSequence(CodeNodeBuilder node, BufferArgs refSequenceCursor, OutArgs<object> outResult);
         void DeserializeSpan(CodeNodeBuilder node, BufferArgs readOnlySpan, OutArgs<int> outReadBytes);

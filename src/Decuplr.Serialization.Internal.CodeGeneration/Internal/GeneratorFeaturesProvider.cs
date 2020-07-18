@@ -29,7 +29,7 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
             return this;
         }
 
-        public static IServiceProvider GetServices(IGenerationSource source, IServiceCollection collection, IServiceProvider provider) {
+        public static IServiceProvider GetServices(IGenerationStartup source, IServiceCollection collection, IServiceProvider provider) {
             var featureProvider = new GeneratorFeaturesProvider(new ServiceCollection { collection.Select(descriptor => ReplaceDescriptorSource(descriptor)) });
             source.ConfigureFeatures(featureProvider);
             return featureProvider.GetServiceProvider();

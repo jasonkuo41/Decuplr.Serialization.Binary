@@ -2,17 +2,17 @@
 using System.Collections.Generic;
 using Decuplr.Serialization.AnalysisService;
 using Decuplr.Serialization.CodeGeneration.Arguments;
-using Decuplr.Serialization.CodeGeneration.ParserGroup;
+using Decuplr.Serialization.CodeGeneration.TypeComposers;
 using Decuplr.Serialization.SourceBuilder;
 
-namespace Decuplr.Serialization.CodeGeneration.Internal.ParserGroup {
+namespace Decuplr.Serialization.CodeGeneration.TypeComposers.Internal {
     internal class ParsingBodyWrapBuilder : ParsingMethodBuilder {
 
-        private readonly IParsingMethodBody _body;
+        private readonly IComposerMethodBodyBuilder _body;
 
         public override IReadOnlyList<string> PrependArguments => Array.Empty<string>(); 
         
-        public ParsingBodyWrapBuilder(MemberMetaInfo member, ParserMethodNames methodNames, IParsingMethodBody bodyBuilder) 
+        public ParsingBodyWrapBuilder(MemberMetaInfo member, ComposerMethodNames methodNames, IComposerMethodBodyBuilder bodyBuilder) 
             : base(member, methodNames) {
             _body = bodyBuilder;
         }

@@ -10,9 +10,9 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
 
         private readonly IServiceScope _scope;
         private readonly TypeLayout _layout;
-        private readonly IGenerationSource _provider;
+        private readonly IGenerationStartup _provider;
 
-        public ResultGenerator(TypeLayout layout, IServiceScope scope, IGenerationSource provider) {
+        public ResultGenerator(TypeLayout layout, IServiceScope scope, IGenerationStartup provider) {
             _layout = layout;
             _scope = scope;
             _provider = provider;

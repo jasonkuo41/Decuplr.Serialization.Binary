@@ -2,21 +2,19 @@
 using System.Collections.Generic;
 using Decuplr.Serialization.AnalysisService;
 using Decuplr.Serialization.CodeGeneration.Arguments;
-using Decuplr.Serialization.CodeGeneration.ParserGroup;
 using Decuplr.Serialization.SourceBuilder;
-using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Serialization.CodeGeneration.Internal.ParserGroup {
+namespace Decuplr.Serialization.CodeGeneration.TypeComposers.Internal {
     internal class FormatterParsingMethodBuilder : ParsingMethodBuilder {
-        
+
         private const string parent = "parent";
 
         private readonly IFormatterParsingMethod<TypeSourceArgs> _resolver;
-        private readonly ParserMethodNames? _nextMethodNames;
+        private readonly ComposerMethodNames? _nextMethodNames;
 
         public override IReadOnlyList<string> PrependArguments { get; }
 
-        public FormatterParsingMethodBuilder(IFormatterParsingMethod<TypeSourceArgs> resolver, int index, MemberMetaInfo member, Func<int, ParserMethodNames> defaultNames, bool shouldMoveNext)
+        public FormatterParsingMethodBuilder(IFormatterParsingMethod<TypeSourceArgs> resolver, int index, MemberMetaInfo member, Func<int, ComposerMethodNames> defaultNames, bool shouldMoveNext)
             : base(member, defaultNames(index)) {
             _resolver = resolver;
             _nextMethodNames = shouldMoveNext ? defaultNames(index + 1) : default;

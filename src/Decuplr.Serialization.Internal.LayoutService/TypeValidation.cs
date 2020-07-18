@@ -35,7 +35,7 @@ namespace Decuplr.Serialization.LayoutService {
         }
 
         private readonly NamedTypeMetaInfo _type;
-        private readonly SchemaPrecusor _precusor;
+        private readonly SchemaConfig _precusor;
         private readonly IOrderSelector _orderSelector;
         private readonly List<IValidationSource> _sources = new List<IValidationSource>();
         private readonly DefaultValidator _validation;
@@ -44,7 +44,7 @@ namespace Decuplr.Serialization.LayoutService {
 
         public ITypeValidator Validator => _validation;
 
-        private TypeValidation(NamedTypeMetaInfo type, SchemaPrecusor precusor, IOrderSelector orderSelector) {
+        private TypeValidation(NamedTypeMetaInfo type, SchemaConfig precusor, IOrderSelector orderSelector) {
             _type = type;
             _precusor = precusor;
             _orderSelector = orderSelector;
@@ -52,7 +52,7 @@ namespace Decuplr.Serialization.LayoutService {
             _validation = new DefaultValidator(this);
         }
 
-        public static TypeValidation CreateFrom(NamedTypeMetaInfo type, SchemaPrecusor precusor, IOrderSelector orderSelector)
+        public static TypeValidation CreateFrom(NamedTypeMetaInfo type, SchemaConfig precusor, IOrderSelector orderSelector)
             => new TypeValidation(type, precusor, orderSelector);
 
         public TypeValidation Where(Func<MemberMetaInfo, bool> serializeMemberSelector) {

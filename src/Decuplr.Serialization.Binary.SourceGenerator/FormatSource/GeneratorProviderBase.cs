@@ -7,7 +7,7 @@ using Decuplr.Serialization.CodeGeneration;
 using Decuplr.Serialization.LayoutService;
 
 namespace Decuplr.Serialization.Binary.FormatSource {
-    internal abstract class GeneratorProviderBase : IGenerationSource {
+    internal abstract class GeneratorProviderBase : IGenerationStartup {
         public virtual IOrderSelector OrderSelector { get; } = new IndexOrderSelector();
 
         public virtual void ConfigureFeatures(IGenerationFeatures feature) {
@@ -15,6 +15,6 @@ namespace Decuplr.Serialization.Binary.FormatSource {
 
         }
 
-        public abstract bool TryGetSchemaInfo(NamedTypeMetaInfo metaInfo, out SchemaPrecusor schema);
+        public abstract bool TryGetSchemaInfo(NamedTypeMetaInfo metaInfo, out SchemaConfig schema);
     }
 }

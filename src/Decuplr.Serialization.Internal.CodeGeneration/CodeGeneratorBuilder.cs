@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Decuplr.Serialization.CodeGeneration.Internal;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,9 +8,10 @@ namespace Decuplr.Serialization.CodeGeneration {
     public class CodeGeneratorBuilder : ICodeGenerationSourceBuilder, ICodeGenDepenedencyBuilder  {
 
         private readonly ServiceCollection _services = new ServiceCollection();
+        private readonly HashSet<Type> _startups = new HashSet<Type>();
 
-        public ICodeGenerationSourceBuilder AddProvider<TProvider>() where TProvider : class, IGenerationSource {
-            _services.AddSingleton<IGenerationSource, TProvider>();
+        public ICodeGenerationSourceBuilder AddStartup<TProvider>() where TProvider : class, IGenerationStartup {
+            _startups.Add(typeof(IGenerationStartup));
             return this;
         }
 
@@ -19,15 +21,15 @@ namespace Decuplr.Serialization.CodeGeneration {
         }
 
         ICodeGenerator ICodeGenDepenedencyBuilder.CreateGenerator() {
-            if (!_services.Any(x => x.ServiceType == typeof(IGenerationSource)))
-                throw new InvalidOperationException("Provider must be provided to generate a binary generator");
-            return new CodeGenerator(_services);
+            if (_startups.Count == 0)
+                throw new ArgumentException("No entry startup is provided. Code Generation Failed");
+            return new CodeGenerator(_services, _startups);
         }
     }
 
     public interface ICodeGenerationSourceBuilder {
         ICodeGenDepenedencyBuilder UseDependencyProvider<TProvider>() where TProvider : class, IComponentCollection;
-        ICodeGenerationSourceBuilder AddProvider<TProvider>() where TProvider : class, IGenerationSource;
+        ICodeGenerationSourceBuilder AddStartup<TProvider>() where TProvider : class, IGenerationStartup;
     }
 
     public interface ICodeGenDepenedencyBuilder {

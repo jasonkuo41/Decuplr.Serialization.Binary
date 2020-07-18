@@ -1,5 +1,6 @@
-﻿namespace Decuplr.Serialization.CodeGeneration.ParserGroup {
-    public struct ParserMethodNames {
+﻿
+namespace Decuplr.Serialization.CodeGeneration.TypeComposers {
+    public struct ComposerMethodNames {
         public string TryDeserializeSpan { get; set; }
         public string TryDeserializeSequence { get; set; }
         public string DeserializeSpan { get; set; }
@@ -8,8 +9,8 @@
         public string Serialize { get; set; }
         public string GetLength { get; set; }
 
-        public static ParserMethodNames DefaultNames =>
-            new ParserMethodNames {
+        public static ComposerMethodNames DefaultNames =>
+            new ComposerMethodNames {
                 DeserializeSequence = "Deserialize",
                 DeserializeSpan = "Deserialize",
                 TryDeserializeSequence = "TryDeserialize",

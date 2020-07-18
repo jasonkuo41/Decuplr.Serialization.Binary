@@ -1,11 +1,11 @@
 ﻿using Decuplr.Serialization.CodeGeneration.Arguments;
-using Decuplr.Serialization.CodeGeneration.Internal.ParserGroup;
+using Decuplr.Serialization.CodeGeneration.TypeComposers.Internal;
 
-namespace Decuplr.Serialization.CodeGeneration.ParserGroup {
-    public struct ParserMethodGroup {
-        private readonly ParserMethodNames _names;
+namespace Decuplr.Serialization.CodeGeneration.TypeComposers {
+    public struct ComposerMethods {
+        private readonly ComposerMethodNames _names;
 
-        public ParserMethodGroup(ParserMethodNames names) {
+        public ComposerMethods(ComposerMethodNames names) {
             _names = names;
         }
 
@@ -31,10 +31,10 @@ namespace Decuplr.Serialization.CodeGeneration.ParserGroup {
             => $"{_names.GetLength}({target}}";
     }
 
-    public struct ParserMethodGroup<TArgs> where TArgs : struct {
-        private readonly ParserMethodNames _names;
+    public struct ComposerMethods<TArgs> where TArgs : struct {
+        private readonly ComposerMethodNames _names;
 
-        public ParserMethodGroup(ParserMethodNames names) {
+        public ComposerMethods(ComposerMethodNames names) {
             _names = names;
         }
 

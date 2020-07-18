@@ -3,26 +3,26 @@ using System.Collections.Generic;
 using System.Text;
 using Decuplr.Serialization.AnalysisService;
 using Decuplr.Serialization.CodeGeneration.Arguments;
-using Decuplr.Serialization.CodeGeneration.ParserGroup;
+using Decuplr.Serialization.CodeGeneration.TypeComposers;
 using Decuplr.Serialization.SourceBuilder;
 using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Serialization.CodeGeneration.Internal.ParserGroup {
-    internal abstract class ParsingMethodBuilder : IParsingMethodBody {
+namespace Decuplr.Serialization.CodeGeneration.TypeComposers.Internal {
+    internal abstract class ParsingMethodBuilder : IComposerMethodBodyBuilder {
 
         private readonly Accessibility _accessibility;
 
-        public ParserMethodNames MethodNames { get; }
+        public ComposerMethodNames MethodNames { get; }
 
         public virtual IReadOnlyList<string> PrependArguments { get; } = Array.Empty<string>();
 
         public ITypeSymbol TargetSymbol { get; }
 
-        public ParsingMethodBuilder(MemberMetaInfo member, ParserMethodNames methodNames) 
+        public ParsingMethodBuilder(MemberMetaInfo member, ComposerMethodNames methodNames) 
             : this (member, methodNames, Accessibility.Private) {
         }
 
-        public ParsingMethodBuilder(MemberMetaInfo member, ParserMethodNames methodNames, Accessibility accessibility) {
+        public ParsingMethodBuilder(MemberMetaInfo member, ComposerMethodNames methodNames, Accessibility accessibility) {
             if (member.ReturnType is null)
                 throw new ArgumentException("Member without return type cannot be configured for parser groups");
             TargetSymbol = member.ReturnType.Symbol;

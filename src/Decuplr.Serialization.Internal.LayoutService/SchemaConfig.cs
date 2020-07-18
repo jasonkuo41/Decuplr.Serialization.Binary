@@ -3,7 +3,11 @@ using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.LayoutService {
-    public struct SchemaPrecusor {
+
+    /// <summary>
+    /// Dictates the configuration of the schema
+    /// </summary>
+    public struct SchemaConfig {
 
         private IReadOnlyList<string>? _namespaces;
 

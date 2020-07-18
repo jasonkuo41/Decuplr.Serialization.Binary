@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using Decuplr.Serialization.CodeGeneration.TypeComposers;
 using Decuplr.Serialization.SourceBuilder;
 using Microsoft.CodeAnalysis;
 
