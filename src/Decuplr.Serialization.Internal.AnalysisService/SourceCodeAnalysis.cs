@@ -8,10 +8,10 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Decuplr.Serialization.AnalysisService {
 
-    public class SourceCodeAnalysis {
+    public class SourceCodeAnalysis : ITypeSymbolProvider {
 
         private readonly Compilation Compilation;
-        private readonly Dictionary<Type, INamedTypeSymbol?> CachedSymbols = new Dictionary<Type, INamedTypeSymbol?>();
+        private readonly Dictionary<Type, INamedTypeSymbol> CachedSymbols = new Dictionary<Type, INamedTypeSymbol>();
         private readonly List<NamedTypeMetaInfo> Types = new List<NamedTypeMetaInfo>();
 
         public IReadOnlyList<NamedTypeMetaInfo> ContainingTypes => Types;
@@ -36,14 +36,24 @@ namespace Decuplr.Serialization.AnalysisService {
             }
         }
 
-        public INamedTypeSymbol? GetSymbol<T>() => GetSymbol(typeof(T));
+        public INamedTypeSymbol GetSymbol<T>() => GetSymbol(typeof(T));
 
-        public INamedTypeSymbol? GetSymbol(Type type) {
-            if (CachedSymbols.TryGetValue(type, out var symbol))
-                return symbol;
+        public INamedTypeSymbol GetSymbol(Type type) {
+            if (TryGetSymbol(type, out var symbol))
+                return symbol!;
+            throw new NotSupportedException("Type is not found with the current compilation");
+        }
+
+        public bool TryGetSymbol<T>(out INamedTypeSymbol? symbol) => TryGetSymbol(typeof(T), out symbol);
+
+        public bool TryGetSymbol(Type type, out INamedTypeSymbol? symbol) {
+            if (CachedSymbols.TryGetValue(type, out symbol))
+                return true;
             symbol = Compilation.GetTypeByMetadataName(type.FullName);
+            if (symbol is null)
+                return false;
             CachedSymbols.Add(type, symbol);
-            return symbol;
+            return true;
         }
 
     }

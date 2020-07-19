@@ -20,6 +20,8 @@ namespace Decuplr.Serialization.CodeGeneration {
             return this;
         }
 
+        /* Provide Configuration or something here */
+
         ICodeGenerator ICodeGenDepenedencyBuilder.CreateGenerator() {
             if (_startups.Count == 0)
                 throw new ArgumentException("No entry startup is provided. Code Generation Failed");

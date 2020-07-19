@@ -8,9 +8,6 @@ using Decuplr.Serialization.LayoutService.Internal;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.LayoutService {
-    public interface IValidationSource {
-        void ValidConditions(ITypeValidator validator);
-    }
 
     public class TypeValidation {
 

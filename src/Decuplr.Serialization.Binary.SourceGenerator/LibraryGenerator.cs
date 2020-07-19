@@ -27,15 +27,6 @@ namespace Decuplr.Serialization.Binary {
             }
         }
 
-        private void GenerateResult(SourceGeneratorContext context, ICodeGenerator generator, IEnumerable<TypeDeclarationSyntax> declaringTypes) {
-            var result = generator.Validate(declaringTypes, context.Compilation, context.CancellationToken); 
-            context.ReportDiagnostic(result.Diagnostics);
-            if (result.IsFaulted)
-                return;
-
-            context.AddSource(result.GenerateFiles());
-        }
-
         public void Initialize(InitializationContext context) => context.RegisterForSyntaxNotifications(() => new CandidateSyntaxReceiver());
 
         public void Execute(SourceGeneratorContext context) {
@@ -52,7 +43,7 @@ namespace Decuplr.Serialization.Binary {
                                        .UseDependencyProvider<DefaultDependencyProvider>()
                                        .CreateGenerator();
 
-                GenerateResult(context, generator, receiver.DeclaredTypes);
+                generator.GenerateFiles(receiver.DeclaredTypes, context.Compilation, context.CancellationToken);
             }
             catch (Exception e) {
                 context.WriteException(e);

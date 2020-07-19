@@ -16,16 +16,16 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
         }
 
         public IGenerationFeatures AddConditionResolver<TResolver>() where TResolver : class, IConditionResolverProvider {
-            _services.AddScoped<TResolver>();
-            _services.AddScoped<IConditionResolverProvider, TResolver>(service => service.GetRequiredService<TResolver>());
-            _services.AddScoped<IValidationSource, TResolver>(service => service.GetRequiredService<TResolver>());
+            _services.AddSingleton<TResolver>();
+            _services.AddSingleton<IConditionResolverProvider, TResolver>(service => service.GetRequiredService<TResolver>());
+            _services.AddSingleton<IValidationSource, TResolver>(service => service.GetRequiredService<TResolver>());
             return this;
         }
 
         public IGenerationFeatures AddFormatResolver<TResolver>() where TResolver : class, IMemberDataFormatterProvider {
-            _services.AddScoped<TResolver>();
-            _services.AddScoped<IMemberDataFormatterProvider, TResolver>(service => service.GetRequiredService<TResolver>());
-            _services.AddScoped<IValidationSource, TResolver>(service => service.GetRequiredService<TResolver>());
+            _services.AddSingleton<TResolver>();
+            _services.AddSingleton<IMemberDataFormatterProvider, TResolver>(service => service.GetRequiredService<TResolver>());
+            _services.AddSingleton<IValidationSource, TResolver>(service => service.GetRequiredService<TResolver>());
             return this;
         }
 

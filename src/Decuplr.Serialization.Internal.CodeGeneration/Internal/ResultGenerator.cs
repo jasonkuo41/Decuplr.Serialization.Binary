@@ -6,15 +6,13 @@ using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Decuplr.Serialization.CodeGeneration.Internal {
-    internal sealed class ResultGenerator : IDisposable {
+    internal sealed class ResultGenerator {
 
-        private readonly IServiceScope _scope;
         private readonly TypeLayout _layout;
         private readonly IGenerationStartup _provider;
 
-        public ResultGenerator(TypeLayout layout, IServiceScope scope, IGenerationStartup provider) {
+        public ResultGenerator(TypeLayout layout, IGenerationStartup provider) {
             _layout = layout;
-            _scope = scope;
             _provider = provider;
         }
 
@@ -23,6 +21,5 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
 
         }
 
-        public void Dispose() => _scope.Dispose();
     }
 }
