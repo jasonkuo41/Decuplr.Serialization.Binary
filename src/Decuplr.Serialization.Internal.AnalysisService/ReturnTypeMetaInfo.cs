@@ -5,7 +5,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.AnalysisService {
-    public class ReturnTypeMetaInfo : BaseTypeMetaInfo<ITypeSymbol> {
+    public class ReturnTypeMetaInfo : BaseTypeMetaInfo {
 
         public string Name => Symbol.Name;
         public bool IsVoid => Symbol.SpecialType == SpecialType.System_Void;

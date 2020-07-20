@@ -4,13 +4,13 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.AnalysisService {
-    public abstract class BaseTypeMetaInfo<TSymbol> where TSymbol : ITypeSymbol {
+    public abstract class BaseTypeMetaInfo {
 
         private readonly SourceCodeAnalysis _analysis;
 
-        public TSymbol Symbol { get; }
+        public ITypeSymbol Symbol { get; }
 
-        public BaseTypeMetaInfo(SourceCodeAnalysis analysis, TSymbol symbol) {
+        public BaseTypeMetaInfo(SourceCodeAnalysis analysis, ITypeSymbol symbol) {
             _analysis = analysis;
             Symbol = symbol;
         }
@@ -42,5 +42,6 @@ namespace Decuplr.Serialization.AnalysisService {
         public bool InheritFrom<T>() => InheritFrom(_analysis.GetSymbol<T>()!);
 
         public override string ToString() => Symbol.ToString();
+
     }
 }

@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis.CSharp;
 
 namespace Decuplr.Serialization.AnalysisService {
 
-    public class NamedTypeMetaInfo : BaseTypeMetaInfo<INamedTypeSymbol> {
+    public class NamedTypeMetaInfo : BaseTypeMetaInfo, IEquatable<NamedTypeMetaInfo> {
 
         private readonly SourceCodeAnalysis _analysis;
 
@@ -54,6 +54,9 @@ namespace Decuplr.Serialization.AnalysisService {
         }
 
         public override string ToString() => UniqueName;
+        public bool Equals(NamedTypeMetaInfo other) => other.Symbol.Equals(Symbol, SymbolEqualityComparer.Default);
+        public override bool Equals(object obj) => obj is NamedTypeMetaInfo symbol && Equals(symbol);
+        public override int GetHashCode() => Symbol.GetHashCode();
 
     }
 }

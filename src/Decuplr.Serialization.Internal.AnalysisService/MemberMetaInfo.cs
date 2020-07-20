@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Decuplr.Serialization.AnalysisService {
-    public class MemberMetaInfo {
+    public class MemberMetaInfo : IEquatable<MemberMetaInfo> {
 
         private readonly SourceCodeAnalysis _analysis;
         private readonly IReadOnlyDictionary<AttributeData, Location> _attributeLocationLookup;
@@ -91,6 +91,9 @@ namespace Decuplr.Serialization.AnalysisService {
             return Attributes.SelectMany(x => x).Where(x => x.AttributeClass?.Equals(symbol, SymbolEqualityComparer.Default) ?? false).Select(x => GetLocation(x));
         }
 
+        public bool Equals(MemberMetaInfo other) => ContainingFullType.Equals(other.ContainingFullType) && Location.Equals(other.Location);
+        public override bool Equals(object obj) => obj is MemberMetaInfo memberInfo && Equals(memberInfo);
+        public override int GetHashCode() => HashCode.Combine(ContainingFullType, Location);
     }
 
 }
