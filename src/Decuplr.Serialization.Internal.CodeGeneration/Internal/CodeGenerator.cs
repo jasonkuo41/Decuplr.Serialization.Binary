@@ -37,18 +37,24 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
 
     }
 
-    internal class CodeGenerator : ICodeGenerator {
-
-        private struct LayoutConfigurator {
-            public TypeLayout Layout { get; set; }
-            public IGenerationStartup Startup { get; set; }
-            public SchemaConfig SchemaConfig { get; set; }
-            public void Deconstruct(out TypeLayout layout, out IGenerationStartup startup, out SchemaConfig config) {
-                layout = Layout;
-                startup = Startup;
-                config = SchemaConfig;
-            }
+    internal readonly struct LayoutConfiguration {
+        public TypeLayout Layout { get; }
+        public IGenerationStartup Startup { get; }
+        public SchemaInfo SchemaInfo { get; }
+        public LayoutConfiguration(TypeLayout layout, IGenerationStartup startup, SchemaInfo schemaInfo) {
+            Layout = layout;
+            Startup = startup;
+            SchemaInfo = schemaInfo;
         }
+
+        public void Deconstruct(out TypeLayout layout, out IGenerationStartup startup, out SchemaInfo config) {
+            layout = Layout;
+            startup = Startup;
+            config = SchemaInfo;
+        }
+    }
+
+    internal class CodeGenerator : ICodeGenerator {
 
         private static readonly SymbolKind[] ValidSerializeKind = new[] { SymbolKind.Field, SymbolKind.Property };
 
@@ -66,22 +72,22 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
                            .ToDictionary(key => key, value => GeneratorFeaturesProvider.GetServices(value, sourceCollection, services));
         }
 
-        private bool TryElectProvider(NamedTypeMetaInfo type, out IReadOnlyCollection<(IGenerationStartup Startup, SchemaConfig Config)> electedProvider) {
-            var providers = new List<(IGenerationStartup, SchemaConfig)>();
+        private bool TryElectProvider(NamedTypeMetaInfo type, out IReadOnlyCollection<(IGenerationStartup Startup, SchemaInfo Config, IOrderSelector Selector)> electedProvider) {
+            var providers = new List<(IGenerationStartup, SchemaInfo, IOrderSelector)>();
             foreach (var provider in _startups.Keys) {
-                if (!provider.TryGetSchemaInfo(type, out var schema))
+                if (!provider.TryGetSchemaInfo(type, out var schema, out var selector))
                     continue;
-                providers.Add((provider, schema));
+                providers.Add((provider, schema, selector));
             }
             electedProvider = providers;
             return electedProvider.Count != 0;
         }
 
-        private bool TryValidateType(NamedTypeMetaInfo type, IGenerationStartup source, SchemaConfig schema, IDiagnosticReporter diagnostics, out TypeLayout? layout) {
+        private bool TryValidateType(NamedTypeMetaInfo type, IGenerationStartup source, SchemaInfo schema, IDiagnosticReporter diagnostics, IOrderSelector orderSelector, out TypeLayout? layout) {
             var isSuccess = false;
 
             // Allow the provider (BinaryFormat) to configure certain features (IgnoreIf, BitUnion)
-            if (TypeValidation.CreateFrom(type, schema, source.OrderSelector)
+            if (TypeValidation.CreateFrom(type, schema, orderSelector)
                                .AddValidationSource(_startups[source].GetServices<IValidationSource>())
                                .Where(member => ValidSerializeKind.Contains(member.Symbol.Kind))
                                .ValidateLayout(out layout, out var localDiagnostics)) {
@@ -97,24 +103,20 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
         private SourceCodeAnalysis GetSourceCodeAnalysis(IEnumerable<TypeDeclarationSyntax> declarationSyntaxes, Compilation compilation, CancellationToken ct)
             => new SourceCodeAnalysis(declarationSyntaxes, compilation, ct, SymbolKind.Method, SymbolKind.Field, SymbolKind.Property, SymbolKind.Event);
 
-        private bool VerifySyntax(SourceCodeAnalysis analysis, IDiagnosticReporter diagnostics, List<LayoutConfigurator>? layoutConfigs) {
+        private bool VerifySyntax(SourceCodeAnalysis analysis, IDiagnosticReporter diagnostics, List<LayoutConfiguration>? layoutConfigs) {
 
             bool isSuccess = true;
             foreach (var type in analysis.ContainingTypes) {
                 if (!TryElectProvider(type, out var providers))
                     continue;
 
-                foreach (var (startup, schema) in providers) {
-                    isSuccess &= TryValidateType(type, startup, schema, diagnostics, out var layout);
+                foreach (var (startup, schema, orderSelector) in providers) {
+                    isSuccess &= TryValidateType(type, startup, schema, diagnostics, orderSelector, out var layout);
 
                     // Add the results to the dictionary (if available)
                     if (layoutConfigs is null || layout is null)
                         continue;
-                    layoutConfigs.Add(new LayoutConfigurator {
-                        Layout = layout,
-                        Startup = startup,
-                        SchemaConfig = schema
-                    });
+                    layoutConfigs.Add(new LayoutConfiguration(layout, startup, schema));
                 }
             }
 
@@ -126,27 +128,51 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
 
         public void GenerateFiles(IEnumerable<TypeDeclarationSyntax> declarationSyntaxes, Compilation compilation, IDiagnosticReporter diagnostics, ISourceAddition sourceTarget, CancellationToken ct) {
             var analysis = GetSourceCodeAnalysis(declarationSyntaxes, compilation, ct);
-            var layouts = new List<LayoutConfigurator>();
+            var layouts = new List<LayoutConfiguration>();
 
             if (!VerifySyntax(analysis, diagnostics, layouts))
                 return;
 
+            using var generatorScope = _startupProvider.CreateScope();
+            var dProvider = generatorScope.ServiceProvider.GetRequiredService<IDependencySourceProvider>();
             // Start code generation
             foreach (var (layout, startup, schema) in layouts) {
-                using var scope = _startups[startup].CreateScope();
+                using var startupScope = _startups[startup].CreateScope();
+                var startupService = startupScope.ServiceProvider;
 
                 // Set the context
-                var context = scope.ServiceProvider.GetRequiredService<ParsingContext>();
+                var context = startupService.GetRequiredService<ParsingContext>();
                 context.CurrentType = layout;
                 context.SourceProvider = sourceTarget;
                 context.SymbolProvider = analysis;
                 context.DiagnosticReporter = diagnostics;
 
                 // start the madness of code generation!
-
+                // Get the ISerializeSolution out of the provider
+                var solution = startupService.GetRequiredService<ISerializationSolution>();
+                dProvider.CreateTypeParser(layout.Type.Symbol, startupScope.ServiceProvider);
             }
 
         }
     }
 
+}
+
+namespace Decuplr.Serialization.CodeGeneration {
+
+    public interface IRequestedParserCollection : IEnumerable<TypeLayout> {
+        
+    }
+
+    public readonly struct GeneratedParserInfo {
+        public GeneratedParserInfo(string name, string fullName, IReadOnlyList<ITypeSymbol> consumingArguments) {
+            Name = name;
+            FullName = fullName;
+            ConsumingArguments = consumingArguments;
+        }
+
+        public string Name { get; }
+        public string FullName { get; }
+        public IReadOnlyList<ITypeSymbol> ConsumingArguments { get; }
+    }
 }

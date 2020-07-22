@@ -10,6 +10,24 @@ using Microsoft.CodeAnalysis;
 namespace Decuplr.Serialization.Binary.LayoutService {
     internal class IndexOrderSelector : IOrderSelector {
 
+        private readonly static Dictionary<LayoutOrder, IndexOrderSelector> Selectors = new Dictionary<LayoutOrder, IndexOrderSelector> {
+            [LayoutOrder.Auto] = new IndexOrderSelector(LayoutOrder.Auto),
+            [LayoutOrder.Sequential] = new IndexOrderSelector(LayoutOrder.Sequential),
+            [LayoutOrder.Explicit] = new IndexOrderSelector(LayoutOrder.Explicit),
+        };
+
+        private readonly LayoutOrder _declaredOrder;
+
+        private IndexOrderSelector(LayoutOrder order) {
+            _declaredOrder = order;
+        }
+
+        public static IOrderSelector GetSelector(LayoutOrder order) {
+            if (Selectors.TryGetValue(order, out var selector))
+                return selector;
+            throw new ArgumentException("Invalid Order Type");
+        }
+
         private bool HasUnsupportedReturnType(ReturnTypeMetaInfo? returnType) {
             switch (returnType?.Symbol.TypeKind ?? TypeKind.Error) {
                 case TypeKind.Class:
@@ -87,20 +105,24 @@ namespace Decuplr.Serialization.Binary.LayoutService {
             return indexLookup.OrderBy(x => x.Key).Select(x => x.Value);
         }
 
-        public IEnumerable<MemberMetaInfo> GetOrder(IEnumerable<MemberMetaInfo> memberInfo, LayoutOrder layout, IDiagnosticReporter diagnostic) {
-            var implicitLayout = GetImplicitLayout();
-            var isExplicit = layout != LayoutOrder.Auto;
-            return implicitLayout switch
+        public IEnumerable<MemberMetaInfo> GetOrder(IEnumerable<MemberMetaInfo> memberInfo, IDiagnosticReporter diagnostic) {
+            return GetImplicitLayout(out var isExplicit) switch
             {
                 LayoutOrder.Explicit => GetExplicitOrder(memberInfo, diagnostic),
                 LayoutOrder.Sequential => GetSequentialOrder(memberInfo, diagnostic, isExplicit),
-                _ => throw new ArgumentException("Invalid Binary Layout", nameof(layout)),
+                _ => AssertInvalid(),
             };
 
-            LayoutOrder GetImplicitLayout() {
-                if (layout != LayoutOrder.Auto)
-                    return layout;
+            LayoutOrder GetImplicitLayout(out bool isExplicit) {
+                isExplicit = _declaredOrder != LayoutOrder.Auto;
+                if (isExplicit)
+                    return _declaredOrder;
                 return memberInfo.Any(x => x.ContainsAttribute<IndexAttribute>()) ? LayoutOrder.Explicit : LayoutOrder.Sequential;
+            }
+
+            IEnumerable<MemberMetaInfo> AssertInvalid() {
+                Debug.Fail($"Invalid Layout state");
+                throw new ArgumentException("Invalid Binary Layout");
             }
         }
     }

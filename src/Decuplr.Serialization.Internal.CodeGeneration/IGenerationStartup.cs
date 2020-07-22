@@ -9,8 +9,7 @@ namespace Decuplr.Serialization.CodeGeneration {
     /// Dependency Injected services are limited at this scope
     /// </remarks>
     public interface IGenerationStartup {
-        IOrderSelector OrderSelector { get; }
         void ConfigureFeatures(IGenerationFeatures provider);
-        bool TryGetSchemaInfo(NamedTypeMetaInfo metaInfo, out SchemaConfig schema);
+        bool TryGetSchemaInfo(NamedTypeMetaInfo metaInfo, out SchemaInfo schema, out IOrderSelector orderSelector);
     }
 }
