@@ -12,29 +12,66 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Decuplr.Serialization.CodeGeneration.Internal {
 
-    internal class ParsingContext {
-
-        private static Exception NotInitialized => new InvalidOperationException("Context is not initialized and cannot be accessed");
-        private static ParsingContext GetThis(IServiceProvider service) => service.GetRequiredService<ParsingContext>();
-
+    internal class CompilationContext {
         public SourceCodeAnalysis? SymbolProvider { get; set; }
-        public SchemaLayout? CurrentType { get; set; }
         public ISourceAddition? SourceProvider { get; set; }
         public IDiagnosticReporter? DiagnosticReporter { get; set; }
 
-        public static IServiceCollection AddParsingContext(IServiceCollection collection) {
-            collection.AddScoped<ParsingContext>();
+        protected void CopyFrom(CompilationContext context) {
+            SymbolProvider = context.SymbolProvider;
+            SourceProvider = context.SourceProvider;
+            DiagnosticReporter = context.DiagnosticReporter;
+        }
+    }
 
-            collection.AddScoped(services => GetThis(services).SymbolProvider ?? throw NotInitialized);
-            collection.AddScoped<ITypeSymbolProvider>(services => GetThis(services).SymbolProvider ?? throw NotInitialized);
+    internal class ParsingContext : CompilationContext {
 
-            collection.AddScoped(services => GetThis(services).CurrentType ?? throw NotInitialized);
-            collection.AddScoped(services => GetThis(services).SourceProvider ?? throw NotInitialized);
-            collection.AddScoped(services => GetThis(services).DiagnosticReporter ?? throw NotInitialized);
+        public SchemaLayout? CurrentLayout { get; set; }
+
+        public void SetContext(SchemaLayout layout, CompilationContext context) {
+            CopyFrom(context);
+            CurrentLayout = layout;
+        }
+    }
+
+    internal static class ContextExtensions {
+
+        private static IServiceCollection AddScoped<TContext, T>(this IServiceCollection collection, Func<TContext, T?> selector) where T : class {
+            return collection.AddScoped(services => selector(services.GetRequiredService<TContext>()) ?? throw new InvalidOperationException("Context is not initialized and cannot be accessed"));
+        }
+
+        private static IServiceCollection AddBaseContext<TContext>(this IServiceCollection collection) where TContext : CompilationContext {
+
+            collection.AddScoped<TContext, SourceCodeAnalysis>(x => x.SymbolProvider);
+            collection.AddScoped<TContext, ITypeSymbolProvider>(x => x.SymbolProvider);
+
+            collection.AddScoped<TContext, ISourceAddition>(x => x.SourceProvider);
+            collection.AddScoped<TContext, IDiagnosticReporter>(x => x.DiagnosticReporter);
 
             return collection;
         }
 
+        public static IServiceCollection AddParsingContext(this IServiceCollection collection) {
+            collection.AddScoped<ParsingContext>();
+            collection.AddScoped<ParsingContext, SchemaLayout>(x => x.CurrentLayout);
+
+            return collection.AddBaseContext<ParsingContext>();
+        }
+
+        public static IServiceCollection AddCompilationContext(this IServiceCollection collection) {
+            collection.AddScoped<CompilationContext>();
+            collection.AddBaseContext<CompilationContext>();
+            return collection;
+        }
+
+        public static IServiceCollection AddFeatureProvider(this IServiceCollection collection, IGenerationStartup startup) 
+            => GeneratorFeaturesProvider.ConfigureServices(startup, collection);
+
+        public static IServiceCollection Add(this IServiceCollection collection, IEnumerable<ServiceDescriptor> descriptors) {
+            foreach (var descriptor in descriptors)
+                collection.Add(descriptor);
+            return collection;
+        }
     }
 
     internal class CodeGenerator : ICodeGenerator {
@@ -46,13 +83,39 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
         private readonly IServiceProvider _startupProvider;
 
         internal CodeGenerator(IServiceCollection services, IEnumerable<Type> startups) {
-            _startupServices = ParsingContext.AddParsingContext(services);
+            _startupServices = ConfigureStartup(services);
             _startupProvider = _startupServices.BuildServiceProvider();
-            _startups = GetStartups(services, _startupProvider, startups);
+            _startups = GetStartups(_startupServices, _startupProvider, startups);
 
-            static IReadOnlyDictionary<IGenerationStartup, IServiceProvider> GetStartups(IServiceCollection sourceCollection, IServiceProvider services, IEnumerable<Type> startups)
-                => startups.Select(type => (IGenerationStartup)ActivatorUtilities.CreateInstance(services, type))
-                           .ToDictionary(key => key, value => GeneratorFeaturesProvider.GetServices(value, sourceCollection, services));
+            static IReadOnlyDictionary<IGenerationStartup, IServiceProvider> GetStartups(IServiceCollection sourceCollection, IServiceProvider sourceServices, IEnumerable<Type> startups) {
+                return startups
+                    .Select(type => (IGenerationStartup)ActivatorUtilities.CreateInstance(sourceServices, type))
+                    .ToDictionary(startup => startup, startup => {
+                        // Configure service provider foreach startup
+                        var services = new ServiceCollection { CloneRedirect(sourceCollection, sourceServices) };
+                        services.AddFeatureProvider(startup);
+                        services.AddParsingContext();
+                        return services.BuildServiceProvider() as IServiceProvider;
+                    });
+
+                // We clone the startup service collection, and redirect some services back to the service provider, but we don't clone scoped services
+                // This is justified because the concept of these two kind of services have very different meaning of "Scope"
+                // Generator Scope is when a compilation passes through
+                // While GenerationStartup scope is when a type passes through
+                //
+                // Considerations : Should we just remove the cloning? Or should we just clone singleton services.
+                //
+                static IEnumerable<ServiceDescriptor> CloneRedirect(IServiceCollection collection, IServiceProvider sourceServices)
+                    => collection.Where(x => x.Lifetime != ServiceLifetime.Scoped)
+                                 .Select(x => new ServiceDescriptor(x.ServiceType, _ => sourceServices.GetService(x.ServiceType), x.Lifetime));
+            }
+
+            // Configure the startup services
+            static IServiceCollection ConfigureStartup(IServiceCollection collection) {
+                // We add compilation context (and not parsing context) because here scope is considering the compilation as a whole
+                collection.AddCompilationContext();
+                return collection;
+            }
         }
 
         private bool TryElectProvider(NamedTypeMetaInfo type, out IReadOnlyCollection<(IGenerationStartup Startup, SchemaInfo Config, IOrderSelector Selector)> electedProvider) {
@@ -86,7 +149,7 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
         private SourceCodeAnalysis GetSourceCodeAnalysis(IEnumerable<TypeDeclarationSyntax> declarationSyntaxes, Compilation compilation, CancellationToken ct)
             => new SourceCodeAnalysis(declarationSyntaxes, compilation, ct, SymbolKind.Method, SymbolKind.Field, SymbolKind.Property, SymbolKind.Event);
 
-        private bool VerifySyntax(SourceCodeAnalysis analysis, IDiagnosticReporter diagnostics, List<TypeSchema>? layoutConfigs) {
+        private bool VerifySyntax(SourceCodeAnalysis analysis, IDiagnosticReporter diagnostics, List<TypeLayoutInfo>? layoutConfigs) {
 
             bool isSuccess = true;
             foreach (var type in analysis.ContainingTypes) {
@@ -99,7 +162,7 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
                     // Add the results to the dictionary (if available)
                     if (layoutConfigs is null || layout is null)
                         continue;
-                    layoutConfigs.Add(new TypeSchema(layout, startup, schema));
+                    layoutConfigs.Add(new TypeLayoutInfo(layout, startup, schema));
                 }
             }
 
@@ -111,75 +174,64 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
 
         public void GenerateFiles(IEnumerable<TypeDeclarationSyntax> declarationSyntaxes, Compilation compilation, IDiagnosticReporter diagnostics, ISourceAddition sourceTarget, CancellationToken ct) {
             var analysis = GetSourceCodeAnalysis(declarationSyntaxes, compilation, ct);
-            var layouts = new List<TypeSchema>();
+            var layouts = new List<TypeLayoutInfo>();
 
             if (!VerifySyntax(analysis, diagnostics, layouts))
                 return;
 
             using var generatorScope = _startupProvider.CreateScope();
-            var dProvider = generatorScope.ServiceProvider.GetRequiredService<ITypeParserDirector>();
-            // Start code generation
-            foreach (var (layout, startup, schema) in layouts) {
-                dProvider.CreateTypeParser(layout, new ParserCreater(this, analysis, diagnostics, sourceTarget, ct));
-            }
+            var provider = generatorScope.ServiceProvider;
 
+            var compileInfo = provider.GetRequiredService<ParsingContext>();
+
+            provider.GetRequiredService<ITypeParserDirector>().ComposeParser(ct);
         }
 
-        private class ParserCreater : IParserGenerator {
-
+        private class SchemaFactory : ISchemaFactory {
             private readonly CodeGenerator _parent;
-            private readonly SourceCodeAnalysis _analysis;
-            private readonly IDiagnosticReporter _diagnostics;
-            private readonly ISourceAddition _source;
+            private readonly CompilationContext _compilationContext;
             private readonly CancellationToken _ct;
 
-            public ParserCreater(CodeGenerator generator, SourceCodeAnalysis analysis, IDiagnosticReporter diagnostics, ISourceAddition source, CancellationToken ct) {
+            internal IGenerationStartup Startup { get; }
+
+            public SchemaLayout Layout { get; }
+
+            public SchemaInfo Info { get; }
+
+            public SchemaFactory(CodeGenerator generator, CompilationContext context, TypeLayoutInfo layoutInfo, CancellationToken ct) {
+                (Layout, Startup, Info) = layoutInfo;
+                _compilationContext = context;
                 _parent = generator;
-                _analysis = analysis;
-                _diagnostics = diagnostics;
-                _source = source;
                 _ct = ct;
             }
 
-            public IEnumerable<GeneratedParserInfo> GenerateTypeParser(IComponentProvider provider, IGenerationStartup startup, SchemaLayout layout) {
-                using var startupScope = _parent._startups[startup].CreateScope();
+            public GeneratedParserInfo ComposeSchema(string parserName, INamedTypeSymbol type, IComponentProvider componentProvider) {
+
+                if (!Info.TargetTypes.Contains(type, SymbolEqualityComparer.Default))
+                    throw new ArgumentException($"'{Layout.Type.Symbol}' layout provided by '{Startup.Name}' does not contain any target type '{type}'");
+                
+                using var startupScope = _parent._startups[Startup].CreateScope();
                 var startupService = startupScope.ServiceProvider;
 
                 // Set the context
-                var context = startupService.GetRequiredService<ParsingContext>();
-                context.CurrentType = layout;
-                context.SourceProvider = _source;
-                context.SymbolProvider = _analysis;
-                context.DiagnosticReporter = _diagnostics;
+                startupService.GetRequiredService<ParsingContext>().SetContext(Layout, _compilationContext);
 
                 // start the madness of code generation!
                 var solution = startupService.GetRequiredService<ISerializationSolution>();
-                return solution.Generate(provider, layout, _ct);
+                return solution.Generate(componentProvider, Layout, type, _ct);
             }
         }
+
     }
 
-}
-
-namespace Decuplr.Serialization.CodeGeneration {
-
-    public readonly struct TypeSchema {
-        /// <summary>
-        /// The layout of the schema
-        /// </summary>
+    internal readonly struct TypeLayoutInfo {
         public SchemaLayout Layout { get; }
 
-        /// <summary>
-        /// The generation source that created this schema
-        /// </summary>
         public IGenerationStartup Startup { get; }
 
-        /// <summary>
-        /// Contains the info for this schema
-        /// </summary>
         public SchemaInfo SchemaInfo { get; }
 
-        public TypeSchema(SchemaLayout layout, IGenerationStartup startup, SchemaInfo schemaInfo) {
+        public TypeLayoutInfo(SchemaLayout layout, IGenerationStartup startup, SchemaInfo schemaInfo) {
             Layout = layout;
             Startup = startup;
             SchemaInfo = schemaInfo;
@@ -190,6 +242,24 @@ namespace Decuplr.Serialization.CodeGeneration {
             startup = Startup;
             config = SchemaInfo;
         }
+
+    }
+
+}
+
+namespace Decuplr.Serialization.CodeGeneration {
+
+    public interface ISchemaFactory {
+        SchemaLayout Layout { get; }
+        SchemaInfo Info { get; }
+
+        /// <summary>
+        /// Generate the target schema
+        /// </summary>
+        /// <param name="parserName">The name of the generated schema</param>
+        /// <param name="type">The target type, must be included in the <see cref="SchemaInfo.TargetTypes"/> </param>
+        /// <param name="componentProvider">The provider that generates the component needed for composing the type</param>
+        GeneratedParserInfo ComposeSchema(string parserName, INamedTypeSymbol type, IComponentProvider componentProvider);
     }
 
     /// <summary>
@@ -204,18 +274,14 @@ namespace Decuplr.Serialization.CodeGeneration {
         /// <summary>
         /// The schemas that this compiliation would be compiling
         /// </summary>
-        IReadOnlyList<TypeSchema> CompilingSchemas { get; }
+        IReadOnlyList<ISchemaFactory> CompilingSchemas { get; }
 
         /// <summary>
         /// Gets all related schema that references the symbol
         /// </summary>
         /// <param name="symbol">The symbol to lookup</param>
         /// <returns></returns>
-        IEnumerable<TypeSchema> GetSchemaComponents(INamedTypeSymbol symbol);
-    }
-
-    public interface IParserGenerator {
-        IEnumerable<GeneratedParserInfo> GenerateTypeParser(IComponentProvider provider, IGenerationStartup startup, SchemaLayout layout);
+        IEnumerable<ISchemaFactory> GetSchemaComponents(INamedTypeSymbol symbol);
     }
 
     public readonly struct GeneratedParserInfo {

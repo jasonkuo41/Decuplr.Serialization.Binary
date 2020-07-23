@@ -9,8 +9,6 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
 
         private readonly IServiceCollection _services;
 
-        private IServiceProvider GetServiceProvider() => _services.BuildServiceProvider();
-
         private GeneratorFeaturesProvider(IServiceCollection services) {
             _services = services;
         }
@@ -29,12 +27,10 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
             return this;
         }
 
-        public static IServiceProvider GetServices(IGenerationStartup source, IServiceCollection collection, IServiceProvider provider) {
-            var featureProvider = new GeneratorFeaturesProvider(new ServiceCollection { collection.Select(descriptor => ReplaceDescriptorSource(descriptor)) });
+        public static IServiceCollection ConfigureServices(IGenerationStartup source, IServiceCollection collection) {
+            var featureProvider = new GeneratorFeaturesProvider(collection);
             source.ConfigureFeatures(featureProvider);
-            return featureProvider.GetServiceProvider();
-
-            ServiceDescriptor ReplaceDescriptorSource(ServiceDescriptor descriptor) => new ServiceDescriptor(descriptor.ServiceType, _ => provider.GetService(descriptor.ServiceType), descriptor.Lifetime);
+            return featureProvider._services;
         }
     }
 

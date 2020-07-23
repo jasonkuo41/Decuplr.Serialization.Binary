@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Decuplr.Serialization.LayoutService;
 using Microsoft.CodeAnalysis;
 
@@ -22,7 +23,7 @@ namespace Decuplr.Serialization.CodeGeneration {
         IComponentTypeInfo ProvideComponent(ITypeSymbol component);
     }
 
-    public interface ITypeParserDirector : IComponentProvider {
-        void CreateTypeParser(SchemaLayout layout, IParserGenerator generator);
+    public interface ITypeParserDirector {
+        void ComposeParser(CancellationToken ct);
     }
 }
