@@ -8,10 +8,10 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Decuplr.Serialization.CodeGeneration.Internal {
     internal sealed class ResultGenerator {
 
-        private readonly TypeLayout _layout;
+        private readonly SchemaLayout _layout;
         private readonly IGenerationStartup _provider;
 
-        public ResultGenerator(TypeLayout layout, IGenerationStartup provider) {
+        public ResultGenerator(SchemaLayout layout, IGenerationStartup provider) {
             _layout = layout;
             _provider = provider;
         }

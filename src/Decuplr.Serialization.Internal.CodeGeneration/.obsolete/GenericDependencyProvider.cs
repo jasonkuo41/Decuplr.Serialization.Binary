@@ -7,7 +7,7 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
 
     internal class GenericDependencyProvider : IDependencyProviderSource {
 
-        private class DefaultProvider : IComponentProvider {
+        private class DefaultProvider : IComponentProviderObsolete {
             public string FullTypeName { get; }
 
             public DefaultProvider(string fullTypeName) {
@@ -19,7 +19,7 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
             public string TryGetComponent(ParserDiscoveryArgs args, OutArgs<object> result) => $"return {args}.TryGetParser<{FullTypeName}>(out {result});";
         }
 
-        private class PrimitiveTypeProvider : IComponentProvider {
+        private class PrimitiveTypeProvider : IComponentProviderObsolete {
             public string FullTypeName => "ByteOrder";
 
             public string GetComponent(ParserDiscoveryArgs args) => $"return {args}.ByteOrder;";
@@ -29,7 +29,7 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
             public static PrimitiveTypeProvider Shared { get; } = new PrimitiveTypeProvider();
         }
 
-        private class StringTypeProvider : IComponentProvider {
+        private class StringTypeProvider : IComponentProviderObsolete {
             public string FullTypeName => "Encoding";
 
             public string GetComponent(ParserDiscoveryArgs args) => $"return {args}.{nameof(IParserDiscovery.TextEncoding)};";
@@ -39,11 +39,11 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
             public static StringTypeProvider Shared { get; } = new StringTypeProvider();
         }
 
-        private readonly Dictionary<string, IComponentProvider> _components = new Dictionary<string, IComponentProvider>();
+        private readonly Dictionary<string, IComponentProviderObsolete> _components = new Dictionary<string, IComponentProviderObsolete>();
 
-        public IReadOnlyDictionary<string, IComponentProvider> Components => _components;
+        public IReadOnlyDictionary<string, IComponentProviderObsolete> Components => _components;
 
-        private static IComponentProvider GetDefault(ITypeSymbol symbol) => symbol switch
+        private static IComponentProviderObsolete GetDefault(ITypeSymbol symbol) => symbol switch
         {
             _ when symbol.SpecialType == SpecialType.System_String => StringTypeProvider.Shared,
             _ when symbol.IsPrimitiveType() => PrimitiveTypeProvider.Shared,

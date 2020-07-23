@@ -9,13 +9,9 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
 
     class TypeComposerPrecusor {
 
-        public TypeLayout Type { get; }
+        public SchemaLayout Type { get; }
 
         public IReadOnlyList<MemberComposerPrecusor> MemberComposers { get; }
-    }
-
-    interface ISerializeSolution {
-
     }
 
     class TypeComposerBuilder {
@@ -26,17 +22,21 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
 
         public const string DefaultNamespace = "Decuplr.Serialization.Internal.Parsers";
 
-        private readonly TypeLayout _type;
+        private readonly SchemaLayout _type;
+        private readonly IEnumerable<IConditionResolverProvider> _resolvers;
+        private readonly IEnumerable<IMemberDataFormatterProvider> _formatter;
 
-        public TypeComposerBuilder(TypeLayout layout) {
+        public TypeComposerBuilder(SchemaLayout layout, IEnumerable<IConditionResolverProvider> resolvers, IEnumerable<IMemberDataFormatterProvider> memberFormatter) {
             _type = layout;
+            _resolvers = resolvers;
+            _formatter = memberFormatter;
         }
 
-        public TypeComposerPrecusor Build(string typeComposerNamespace, IDependencySourceProvider provider) => Build(typeComposerNamespace, _type.Type.UniqueName, provider);
-        public TypeComposerPrecusor Build(IDependencySourceProvider provider) => Build("Decuplr.Serialization.Internal.Parsers", provider);
-        public TypeComposerPrecusor Build(string typeComposerNamespace, string typeComposerName, IDependencySourceProvider provider) {
+        public TypeComposerPrecusor Build(string typeComposerNamespace, IComponentProvider provider) => Build(typeComposerNamespace, _type.Type.UniqueName, provider);
+        public TypeComposerPrecusor Build(IComponentProvider provider) => Build("Decuplr.Serialization.Internal.Parsers", provider);
+        public TypeComposerPrecusor Build(string typeComposerNamespace, string typeComposerName, IComponentProvider provider) {
 
-            var composers = _type.Layouts.Select(member => new MemberComposerBuilder(member, null, null).CreateStruct(provider)).ToList();
+            var composers = _type.Layouts.Select(member => new MemberComposerBuilder(member, _resolvers, _formatter).CreateStruct(provider)).ToList();
 
             var builder = new CodeSourceFileBuilder(typeComposerNamespace);
             builder.Using("System");

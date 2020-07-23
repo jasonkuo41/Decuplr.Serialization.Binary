@@ -8,6 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include=".obsolete\GenericDependencyProvider.cs" />
+    <Compile Include=".obsolete\IComponentProviderObsolete.cs" />
     <Compile Include=".obsolete\IDependencyProviderSource.cs" />
   </ItemGroup>
 

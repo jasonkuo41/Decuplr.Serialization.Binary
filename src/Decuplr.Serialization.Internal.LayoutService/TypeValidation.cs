@@ -70,7 +70,7 @@ namespace Decuplr.Serialization.LayoutService {
         /// <summary>
         /// Validate if every attribute is correct and can generate correct layout
         /// </summary>
-        public bool ValidateLayout(out TypeLayout? layout, out IEnumerable<Diagnostic> diagnostics) {
+        public bool ValidateLayout(out SchemaLayout? layout, out IEnumerable<Diagnostic> diagnostics) {
             var reporter = new DiagnosticReporter();
             var layoutMembers = ValidateLayoutInternal(reporter);
 
@@ -80,7 +80,7 @@ namespace Decuplr.Serialization.LayoutService {
                 return false;
             }
             Debug.Assert(layoutMembers != null);
-            layout = new TypeLayout(_type, layoutMembers!);
+            layout = new SchemaLayout(_type, layoutMembers!);
             return true;
 
             IReadOnlyList<MemberMetaInfo>? ValidateLayoutInternal(DiagnosticReporter reporter) {

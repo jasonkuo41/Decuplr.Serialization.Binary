@@ -123,14 +123,14 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
                 Serialize = Method.SerializeState(index),
             };
 
-        private CodeNodeBuilder AddComponents(CodeNodeBuilder builder, IReadOnlyList<IComponentData> components) {
+        private CodeNodeBuilder AddComponents(CodeNodeBuilder builder, IReadOnlyList<IComponentTypeInfo> components) {
             for (var i = 0; i < components.Count; ++i) {
-                builder.State($"private {components[i].FullName} {Field.Component(i)}");
+                builder.State($"private {components[i].FullTypeName} {Field.Component(i)}");
             }
             return builder;
         }
 
-        private CodeNodeBuilder AddComponentInitializers(CodeNodeBuilder builder, Type discoveryType, IReadOnlyList<IComponentData> components) {
+        private CodeNodeBuilder AddComponentInitializers(CodeNodeBuilder builder, Type discoveryType, IReadOnlyList<IComponentTypeInfo> components) {
             for (var i = 0; i < components.Count; ++i) {
                 const string parserName = "parser";
                 const string isSuccess = "isSuccess";
@@ -146,7 +146,7 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
             return builder;
         }
 
-        private CodeNodeBuilder AddConstructor(CodeNodeBuilder builder, Type discoveryType, IReadOnlyList<IComponentData> components) {
+        private CodeNodeBuilder AddConstructor(CodeNodeBuilder builder, Type discoveryType, IReadOnlyList<IComponentTypeInfo> components) {
             // Create Constructor
             const string parser = "parser";
             return builder.AddNode($"public {_structName}({discoveryType} {parser}) : this()", node => {
@@ -155,7 +155,7 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
             });
         }
 
-        private CodeNodeBuilder AddTryConstructor(CodeNodeBuilder builder, Type discoveryType, IReadOnlyList<IComponentData> components) {
+        private CodeNodeBuilder AddTryConstructor(CodeNodeBuilder builder, Type discoveryType, IReadOnlyList<IComponentTypeInfo> components) {
             // Arguments
             const string parser = "parser";
             const string isSuccess = "isSuccess";
@@ -187,7 +187,7 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
             return string.Empty;
         }
 
-        public MemberComposerPrecusor CreateStruct(IDependencySourceProvider provider) {
+        public MemberComposerPrecusor CreateStruct(IComponentProvider provider) {
             var components = _componentCollection.Components.Select(x => provider.ProvideComponent(x)).ToList();
 
             var builder = new CodeNodeBuilder();

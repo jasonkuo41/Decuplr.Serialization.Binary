@@ -1,24 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
+using Decuplr.Serialization.LayoutService;
 
 namespace Decuplr.Serialization.CodeGeneration {
     public interface ISerializationSolution {
-        GeneratedSolution Generated();
-    }
-
-    public interface IDeserializationSolution {
-        GeneratedSolution Generated();
-    }
-
-    public interface ILengthSolution {
-
-    }
-
-    public struct GeneratedSolution {
-        public string FileName { get; set; }
-        public string FullTypeName { get; set; }
-        public string SourceCode { get; set; }
-        public string EntryPoint { get; set; }
+        IEnumerable<GeneratedParserInfo> Generate(IComponentProvider provider, SchemaLayout layout, CancellationToken ct);
     }
 }
