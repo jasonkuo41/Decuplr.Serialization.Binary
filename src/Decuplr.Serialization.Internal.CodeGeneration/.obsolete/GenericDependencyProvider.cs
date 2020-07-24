@@ -1,10 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Decuplr.Serialization.Binary;
 using Decuplr.Serialization.CodeGeneration.Arguments;
+using Decuplr.Serialization.CodeGeneration.TypeComposite;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.CodeGeneration.Internal {
 
+    [Obsolete]
     internal class GenericDependencyProvider : IDependencyProviderSource {
 
         private class DefaultProvider : IComponentProviderObsolete {
@@ -43,6 +46,8 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
 
         public IReadOnlyDictionary<string, IComponentProviderObsolete> Components => _components;
 
+        IReadOnlyList<ITypeSymbol> IComponentCollection.Components => throw new System.NotImplementedException();
+
         private static IComponentProviderObsolete GetDefault(ITypeSymbol symbol) => symbol switch
         {
             _ when symbol.SpecialType == SpecialType.System_String => StringTypeProvider.Shared,
@@ -54,6 +59,10 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
             var componentName = $"component_{_components.Count}";
             _components.Add(componentName, GetDefault(symbol));
             return componentName;
+        }
+
+        ComposerMethods IComponentCollection.AddComponent(ITypeSymbol symbol) {
+            throw new System.NotImplementedException();
         }
     }
 }

@@ -1,8 +1,5 @@
-﻿using System;
-using System.Linq;
-using Decuplr.Serialization.LayoutService;
+﻿using Decuplr.Serialization.LayoutService;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Decuplr.Serialization.CodeGeneration.Internal {
     internal class GeneratorFeaturesProvider : IGenerationFeatures {
@@ -11,6 +8,12 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
 
         private GeneratorFeaturesProvider(IServiceCollection services) {
             _services = services;
+        }
+
+        public static IServiceCollection ConfigureServices(IGenerationStartup source, IServiceCollection collection) {
+            var featureProvider = new GeneratorFeaturesProvider(collection);
+            source.ConfigureFeatures(featureProvider);
+            return featureProvider._services;
         }
 
         public IGenerationFeatures AddConditionResolver<TResolver>() where TResolver : class, IConditionResolverProvider {
@@ -27,10 +30,10 @@ namespace Decuplr.Serialization.CodeGeneration.Internal {
             return this;
         }
 
-        public static IServiceCollection ConfigureServices(IGenerationStartup source, IServiceCollection collection) {
-            var featureProvider = new GeneratorFeaturesProvider(collection);
-            source.ConfigureFeatures(featureProvider);
-            return featureProvider._services;
+        public IGenerationFeatures UseSolution<TSolution>() where TSolution : class, ISerializationSolution {
+            _services.AddSingleton<TSolution>();
+            _services.AddSingleton<ISerializationSolution, TSolution>(services => services.GetRequiredService<TSolution>());
+            return this;
         }
     }
 

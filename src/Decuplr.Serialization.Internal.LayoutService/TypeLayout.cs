@@ -7,14 +7,21 @@ using Microsoft.CodeAnalysis;
 namespace Decuplr.Serialization.LayoutService {
     public class SchemaLayout : IEquatable<SchemaLayout> {
 
+        /// <summary>
+        /// The type that this layout represents
+        /// </summary>
         public NamedTypeMetaInfo Type { get; }
-        public IReadOnlyList<MemberMetaInfo> Layouts { get; }
+
+        /// <summary>
+        /// The layout members, in order
+        /// </summary>
+        public IReadOnlyList<MemberMetaInfo> Members { get; }
 
         public SchemaLayout(NamedTypeMetaInfo type, IReadOnlyList<MemberMetaInfo> typeMembers) {
             if (typeMembers.Any(x => x.ContainingFullType != type))
                 throw new ArgumentException($"Type Members '{string.Join(",", typeMembers.Where(x => x.ContainingFullType != type))}' must be a member of '{type.Symbol}' ");
             Type = type;
-            Layouts = typeMembers;
+            Members = typeMembers;
         }
 
         public SchemaLayout MakeGenericType(params ITypeSymbol[] symbols) {
@@ -25,7 +32,7 @@ namespace Decuplr.Serialization.LayoutService {
 
             IEnumerable<MemberMetaInfo> GetReordered(NamedTypeMetaInfo type) {
                 // We look up each layout and make sure that they are the similar instance (but different symbol owner)
-                foreach(var layout in Layouts) {
+                foreach(var layout in Members) {
                     foreach(var targetLayout in type.Members) {
                         if (layout.Location.Equals(targetLayout.Location))
                             yield return targetLayout;
@@ -37,22 +44,22 @@ namespace Decuplr.Serialization.LayoutService {
         public override int GetHashCode() {
             var hash = new HashCode();
             hash.Add(Type);
-            for (var i = 0; i < Layouts.Count; ++i)
-                hash.Add(Layouts[i]);
+            for (var i = 0; i < Members.Count; ++i)
+                hash.Add(Members[i]);
             return hash.ToHashCode();
         }
 
         public override bool Equals(object obj) => obj is SchemaLayout layout && Equals(layout);
 
         public bool Equals(SchemaLayout layout) {
-            if (layout.Layouts.Count != Layouts.Count)
+            if (layout.Members.Count != Members.Count)
                 return false;
 
             if (!Type.Equals(layout.Type))
                 return false;
 
-            for (int i = 0; i < Layouts.Count; i++) {
-                if (!Layouts[i].Equals(layout.Layouts[i]))
+            for (int i = 0; i < Members.Count; i++) {
+                if (!Members[i].Equals(layout.Members[i]))
                     return false;
             }
             return true;

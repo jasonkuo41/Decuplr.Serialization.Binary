@@ -2,6 +2,7 @@
 
 namespace Decuplr.Serialization.CodeGeneration {
 
+    [Obsolete]
     public struct GeneratedSourceCode {
 
         public GeneratedSourceCode(string fileName, string sourceText) {

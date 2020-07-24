@@ -25,8 +25,4 @@
 	  <ProjectReference Include="..\Decuplr.Serialization.Internal.SourceBuilder\Decuplr.Serialization.Internal.SourceBuilder.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="TypeComposers\Internal\" />
-	</ItemGroup>
-
 </Project>

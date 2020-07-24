@@ -4,6 +4,6 @@ using System.Text;
 
 namespace Decuplr.Serialization.CodeGeneration {
     public interface ISourceAddition {
-        void AddSource(GeneratedSourceCode sourceCode);
+        void AddSource(string fileName, string sourceCode);
     }
 }

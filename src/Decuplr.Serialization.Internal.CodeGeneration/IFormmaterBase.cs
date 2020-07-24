@@ -1,4 +1,5 @@
 ﻿using Decuplr.Serialization.CodeGeneration.Arguments;
+using Decuplr.Serialization.CodeGeneration.TypeComposite;
 
 namespace Decuplr.Serialization.CodeGeneration {
     public interface IFormatterParsingMethod<TArgs> :

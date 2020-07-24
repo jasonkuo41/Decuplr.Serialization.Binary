@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Decuplr.Serialization.CodeGeneration.Internal;
+using Decuplr.Serialization.CodeGeneration.TypeComposite;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Decuplr.Serialization.CodeGeneration {

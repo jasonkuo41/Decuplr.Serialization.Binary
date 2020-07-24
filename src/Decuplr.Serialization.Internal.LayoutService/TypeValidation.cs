@@ -1,56 +1,29 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Decuplr.Serialization.AnalysisService;
 using Decuplr.Serialization.LayoutService.Internal;
-using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.LayoutService {
 
     public class TypeValidation {
 
-        private class DefaultValidator : ITypeValidator {
-
-            private readonly TypeValidation _parent;
-            private readonly LayoutMemberCollection _layoutMembers = new LayoutMemberCollection();
-            private readonly LayoutMemberCollection _anyMembers = new LayoutMemberCollection();
-
-            public ILayoutMemberValidation LayoutMembers => _layoutMembers;
-            public ILayoutMemberValidation AnyMembers => _anyMembers;
-
-            public DefaultValidator(TypeValidation validation) {
-                _parent = validation;
-            }
-
-            public void Verify(IDiagnosticReporter reporter) {
-                var type = _parent._type;
-                _anyMembers.ValidateLayout(type, type.Members, reporter);
-                _layoutMembers.ValidateLayout(type, _parent._selectedMembers, reporter);
-            }
-        }
-
+        private static readonly IReadOnlyList<MemberMetaInfo> EmptyMember = Array.Empty<MemberMetaInfo>();
         private readonly NamedTypeMetaInfo _type;
-        private readonly SchemaInfo _precusor;
         private readonly IOrderSelector _orderSelector;
         private readonly List<IValidationSource> _sources = new List<IValidationSource>();
-        private readonly DefaultValidator _validation;
 
         private IEnumerable<MemberMetaInfo> _selectedMembers;
 
-        public ITypeValidator Validator => _validation;
-
-        private TypeValidation(NamedTypeMetaInfo type, SchemaInfo precusor, IOrderSelector orderSelector) {
+        private TypeValidation(NamedTypeMetaInfo type, IOrderSelector orderSelector) {
             _type = type;
-            _precusor = precusor;
             _orderSelector = orderSelector;
             _selectedMembers = type.Members;
-            _validation = new DefaultValidator(this);
         }
 
-        public static TypeValidation CreateFrom(NamedTypeMetaInfo type, SchemaInfo precusor, IOrderSelector orderSelector)
-            => new TypeValidation(type, precusor, orderSelector);
+        public static TypeValidation CreateFrom(NamedTypeMetaInfo type, IOrderSelector orderSelector)
+            => new TypeValidation(type, orderSelector);
 
         public TypeValidation Where(Func<MemberMetaInfo, bool> serializeMemberSelector) {
             _selectedMembers = _selectedMembers.Where(serializeMemberSelector);
@@ -70,41 +43,50 @@ namespace Decuplr.Serialization.LayoutService {
         /// <summary>
         /// Validate if every attribute is correct and can generate correct layout
         /// </summary>
-        public bool ValidateLayout(out SchemaLayout? layout, out IEnumerable<Diagnostic> diagnostics) {
-            var reporter = new DiagnosticReporter();
-            var layoutMembers = ValidateLayoutInternal(reporter);
-
-            diagnostics = reporter.ExportDiagnostics();
-            if (reporter.IsUnrecoverable) {
-                layout = null;
+        public bool TryValidateLayout(IDiagnosticReporter reporter, out SchemaLayout? layout) {
+            layout = null;
+            if (!TryEvalOrder(out var layoutMembers))
                 return false;
-            }
-            Debug.Assert(layoutMembers != null);
-            layout = new SchemaLayout(_type, layoutMembers!);
+
+            if (!TryEvalMember(reporter))
+                return false;
+
+            Debug.Assert(!reporter.ContainsError);
+            layout = new SchemaLayout(_type, layoutMembers);
             return true;
 
-            IReadOnlyList<MemberMetaInfo>? ValidateLayoutInternal(DiagnosticReporter reporter) {
-                var layoutFilter = new LayoutMemberCollection();
-                _orderSelector.ValidateMembers(layoutFilter);
-                layoutFilter.ValidateLayout(_type, _type.Members, reporter);
+            bool TryEvalOrder(out IReadOnlyList<MemberMetaInfo> members) {
+                members = EmptyMember;
 
-                // If we fail the elect member should we just skip this step and return early?
-                var layoutMembers = _orderSelector.GetOrder(_selectedMembers, _precusor.RequestLayout, reporter).ToList();
-                if (reporter.IsUnrecoverable)
-                    return null;
+                var layoutFilter = new FluentMemberValidator(_type, _type.Members);
 
-                // If layout members is empty then we don't serialize it too
-                if (layoutMembers.Count == 0) {
+                _orderSelector.ConfigureMemeberValidation(layoutFilter);
+                layoutFilter.ValidateLayout(reporter);
+
+                if (!_orderSelector.ContinueOnFailedValidation && reporter.ContainsError)
+                    return false;
+
+                // Generate the order from the selector
+                members = _orderSelector.GetOrder(_selectedMembers, reporter).ToList();
+
+                if (reporter.ContainsError)
+                    return false;
+
+                // If no member is present, we ignore this type and it would not be generated
+                if (members.Count == 0) {
                     reporter.ReportDiagnostic(DiagnosticHelper.NoMember(_type));
-                    return null;
+                    return false;
                 }
 
-                _validation.Verify(reporter);
+                return true;
+            }
 
-                if (reporter.IsUnrecoverable)
-                    return null;
-
-                return layoutMembers;
+            bool TryEvalMember(IDiagnosticReporter reporter) {
+                var validation = new FluentTypeValidator(_type, _selectedMembers);
+                foreach (var source in _sources)
+                    source.ValidConditions(validation);
+                validation.Verify(reporter);
+                return !reporter.ContainsError;
             }
 
         }

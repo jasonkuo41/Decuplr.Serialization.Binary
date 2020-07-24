@@ -119,6 +119,6 @@ namespace Decuplr.Serialization.SourceBuilder {
 
     public static class CodeNodeExtensions {
         public static CodeNodeBuilder DenoteHideEditor(this CodeNodeBuilder builder) => builder.Attribute("[EditorBrowsable(EditorBrowsableState.Never)]");
-        public static CodeNodeBuilder DenoteGenerated(this CodeNodeBuilder builder, Assembly assebmly) => builder.Attribute($"[GeneratedCode({assebmly.GetName().Name}, {assebmly.GetName().Version})]")
+        public static CodeNodeBuilder DenoteGenerated(this CodeNodeBuilder builder, Assembly assebmly) => builder.Attribute($"[GeneratedCode({assebmly.GetName().Name}, {assebmly.GetName().Version})]");
     }
 }

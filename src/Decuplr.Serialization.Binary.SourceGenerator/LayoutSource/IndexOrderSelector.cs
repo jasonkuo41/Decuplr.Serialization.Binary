@@ -41,7 +41,7 @@ namespace Decuplr.Serialization.Binary.LayoutService {
             }
         }
 
-        public void ValidateMembers(ILayoutMemberValidation filter) {
+        public void ConfigureMemeberValidation(IFluentMemberValidator filter) {
             filter.WhereAttribute<IndexAttribute>()
                   .InvalidOn(member => member.ContainsAttribute<IgnoreAttribute>())
                   .ReportDiagnostic(member => OrderDiagnostic.ConflictingAttributes(member, member.GetAttribute<IgnoreAttribute>()!, member.GetAttribute<IndexAttribute>()!))
