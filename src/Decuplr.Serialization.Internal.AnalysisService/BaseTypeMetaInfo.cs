@@ -6,11 +6,11 @@ using Microsoft.CodeAnalysis;
 namespace Decuplr.Serialization.AnalysisService {
     public abstract class BaseTypeMetaInfo<TSymbol> where TSymbol : ITypeSymbol {
 
-        private readonly SourceCodeAnalysis _analysis;
+        private readonly ITypeSymbolProvider _analysis;
 
         public TSymbol Symbol { get; }
 
-        public BaseTypeMetaInfo(SourceCodeAnalysis analysis, TSymbol symbol) {
+        protected BaseTypeMetaInfo(ITypeSymbolProvider analysis, TSymbol symbol) {
             _analysis = analysis;
             Symbol = symbol;
         }

@@ -2,15 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Decuplr.Serialization.AnalysisService;
 using Decuplr.Serialization.LayoutService;
 using Decuplr.Serialization.SourceBuilder;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.CodeGeneration.TypeComposite {
-
-    public interface IGeneratedTypeSymbol {
-
-    }
 
     public interface ITypeComposer {
         /// <summary>
@@ -32,15 +29,18 @@ namespace Decuplr.Serialization.CodeGeneration.TypeComposite {
         /// The member composers of this type composer
         /// </summary>
         IReadOnlyList<IMemberComposer> MemberComposers { get; }
+
+        /// <summary>
+        /// Methods that this signature presents
+        /// </summary>
+        IReadOnlyList<MethodSignature> Methods { get; }
     }
 
     public interface IMemberComposer {
 
     }
 
-
     public class MethodSignature {
-
         /// <summary>
         /// Is the method ref return, we don't support this feature yet
         /// </summary>
@@ -57,16 +57,16 @@ namespace Decuplr.Serialization.CodeGeneration.TypeComposite {
         public string MethodName { get; }
 
         /// <summary>
-        /// The returning type, maybe be void
+        /// The returning type, maybe be void, null if constructor
         /// </summary>
-        public ITypeSymbol ReturnType { get; }
+        public ITypeSymbol? ReturnType { get; }
 
         /// <summary>
         /// The arguments this method contains
         /// </summary>
         public IReadOnlyList<MethodArg> Arguments { get; }
 
-        private MethodSignature(string methodName, ITypeSymbol returnType, IEnumerable<MethodArg> args, bool isConstructor, bool isRefReturn) {
+        private MethodSignature(string methodName, ITypeSymbol? returnType, IEnumerable<MethodArg> args, bool isConstructor, bool isRefReturn) {
             MethodName = methodName;
             ReturnType = returnType;
             IsConstructor = isConstructor;
@@ -74,11 +74,17 @@ namespace Decuplr.Serialization.CodeGeneration.TypeComposite {
             Arguments = args.ToList();
         }
 
-        public MethodSignature CreateMethod(string methodName, ITypeSymbol returnType, IEnumerable<MethodArg> args)
+        public static MethodSignature CreateMethod(string methodName, ITypeSymbol returnType, IEnumerable<MethodArg> args)
             => new MethodSignature(methodName, returnType, args, isConstructor: false, isRefReturn: false);
 
-        public MethodSignature CreateConstructor(string fulltypeName, ITypeSymbol returnType, IEnumerable<MethodArg> args)
-            => new MethodSignature(fulltypeName, returnType, args, isConstructor: true, isRefReturn: false);
+        public static MethodSignature CreateMethod(string methodName, ITypeSymbol returnType, params MethodArg[] args)
+            => CreateMethod(methodName, returnType, args.AsEnumerable());
+
+        public static MethodSignature CreateConstructor(string fulltypeName, IEnumerable<MethodArg> args)
+            => new MethodSignature(fulltypeName, null, args, isConstructor: true, isRefReturn: false);
+
+        public static MethodSignature CreateConstructor(string fulltypeName, params MethodArg[] args)
+            => CreateConstructor(fulltypeName, args.AsEnumerable());
 
         private string GetModifierString(int i) {
             if (i > Arguments.Count)
@@ -97,7 +103,7 @@ namespace Decuplr.Serialization.CodeGeneration.TypeComposite {
         /// . For constructors, this returns <i>new MyMethod(a, in b)</i>
         /// </remarks>
         /// <returns></returns>
-        public string GetInvokeString(IEnumerable<string> argumentNames) {
+        public string GetInvocationString(IEnumerable<string> argumentNames) {
             var builder = new StringBuilder();
             if (IsConstructor)
                 builder.Append("new ");
@@ -115,6 +121,10 @@ namespace Decuplr.Serialization.CodeGeneration.TypeComposite {
                 }
             }
         }
+
+        public string CreateMethodHeader(Accessibility accessibility) {
+
+        }
     }
 
     public readonly struct MethodArg {
@@ -131,6 +141,10 @@ namespace Decuplr.Serialization.CodeGeneration.TypeComposite {
             ArgName = argName;
             Modifier = modifier;
         }
+
+        public static implicit operator MethodArg((ITypeSymbol, string) tuple) => new MethodArg(tuple.Item1, tuple.Item2);
+        public static implicit operator MethodArg((MethodArgModifier, ITypeSymbol, string) tuple) => new MethodArg(tuple.Item2, tuple.Item3, tuple.Item1);
+        public static implicit operator MethodArg((ITypeSymbol, string, MethodArgModifier) tuple) => new MethodArg(tuple.Item1, tuple.Item2, tuple.Item3);
     }
 
     public enum MethodArgModifier {
@@ -157,21 +171,32 @@ namespace Decuplr.Serialization.CodeGeneration.TypeComposite.Internal {
 
         public const string DefaultNamespace = "Decuplr.Serialization.Internal.Parsers";
 
+        private const string discovery = "discovery";
+        private const string isSuccess = "isSuccess";
+
         private readonly SchemaLayout _type;
         private readonly ISourceAddition _sourceAddition;
+        private readonly ITypeSymbolProvider _symbolSource;
         private readonly IEnumerable<IConditionResolverProvider> _resolvers;
         private readonly IEnumerable<IMemberDataFormatterProvider> _formatter;
 
-        public TypeComposerBuilder(SchemaLayout layout, ISourceAddition sourceAddition, IEnumerable<IConditionResolverProvider> resolvers, IEnumerable<IMemberDataFormatterProvider> memberFormatter) {
+        public TypeComposerBuilder(SchemaLayout layout, ISourceAddition sourceAddition, ITypeSymbolProvider symbolProvider, IEnumerable<IConditionResolverProvider> resolvers, IEnumerable<IMemberDataFormatterProvider> memberFormatter) {
             _type = layout;
             _resolvers = resolvers;
             _formatter = memberFormatter;
             _sourceAddition = sourceAddition;
+            _symbolSource = symbolProvider;
         }
 
-        public TypeComposer Build(string typeComposerNamespace, IComponentProvider provider) => Build(typeComposerNamespace, _type.Type.UniqueName, provider);
-        public TypeComposer Build(IComponentProvider provider) => Build("Decuplr.Serialization.Internal.Parsers", provider);
-        public TypeComposer Build(string typeComposerNamespace, string typeComposerName, IComponentProvider provider) {
+        private MethodSignature NonTryPattern(string fullName, IComponentProvider provider) 
+            => MethodSignature.CreateConstructor(fullName, (provider.DiscoveryType, discovery));
+
+        private MethodSignature TryPattern(string fullName, IComponentProvider provider) 
+            => MethodSignature.CreateConstructor(fullName, (provider.DiscoveryType, discovery), (MethodArgModifier.Out, _symbolSource.GetSymbol<bool>(), isSuccess));
+
+        public ITypeComposer Build(string typeComposerNamespace, IComponentProvider provider) => Build(typeComposerNamespace, _type.Type.UniqueName, provider);
+        public ITypeComposer Build(IComponentProvider provider) => Build("Decuplr.Serialization.Internal.Parsers", provider);
+        public ITypeComposer Build(string typeComposerNamespace, string typeComposerName, IComponentProvider provider) {
 
             var composers = _type.Members.Select(member => new MemberComposerBuilder(member, _resolvers, _formatter).CreateStruct(provider)).ToList();
 
@@ -184,9 +209,6 @@ namespace Decuplr.Serialization.CodeGeneration.TypeComposite.Internal {
                 for (var i = 0; i < composers.Count; ++i) {
                     node.State($"public {composers[i].Name} {Property.MemberName(i)} {{ get; }}");
                 }
-
-                const string discovery = "discovery";
-                const string isSuccess = "isSuccess";
 
                 node.NewLine();
                 node.Comment("Non-try Pattern");
@@ -208,6 +230,8 @@ namespace Decuplr.Serialization.CodeGeneration.TypeComposite.Internal {
             });
 
             _sourceAddition.AddSource($"{typeComposerName.Replace('.', '_')}_{typeComposerName}.cs", builder.ToString());
+
+            return new TypeComposer(typeComposerNamespace, typeComposerName);
         }
     }
 }

@@ -35,6 +35,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Misc", "Misc", "{043EBA6D-5
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Decuplr.Serialization.Internal.SourceBuilder", "src\Decuplr.Serialization.Internal.SourceBuilder\Decuplr.Serialization.Internal.SourceBuilder.csproj", "{1603EEF8-F255-41F8-AC6E-D74532D55E10}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Source Generator Next", "Source Generator Next", "{C90B0CCB-FE94-45D7-8B66-3300419D92AA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
