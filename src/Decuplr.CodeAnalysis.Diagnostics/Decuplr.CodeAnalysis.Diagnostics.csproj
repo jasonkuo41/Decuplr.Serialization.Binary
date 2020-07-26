@@ -5,7 +5,6 @@
 		<LangVersion>latest</LangVersion>
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<RootNamespace>Decuplr.Serialization.LayoutService</RootNamespace>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -16,6 +15,7 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Decuplr.CodeAnalysis\Decuplr.CodeAnalysis.csproj" />
+	  <ProjectReference Include="..\Decuplr.Serialization.Primitives\Decuplr.Serialization.Primitives.csproj" />
 	</ItemGroup>
 
 </Project>

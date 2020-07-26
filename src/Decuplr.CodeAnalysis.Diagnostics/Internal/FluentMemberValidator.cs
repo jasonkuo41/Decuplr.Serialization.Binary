@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Decuplr.CodeAnalysis.Meta;
 using Decuplr.Serialization.AnalysisService;
 using Decuplr.Serialization.Binary.Annotations;
 using Microsoft.CodeAnalysis;
@@ -120,7 +121,7 @@ namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
 
         public ISymbolRule<MemberMetaInfo> WhereMember(Func<MemberMetaInfo, bool> predicate) => new MemberRules(this, predicate);
 
-        public void ValidateLayout(IDiagnosticReporter reporter) {
+        public void Validate(IDiagnosticReporter reporter) {
 
             foreach (var attributePredicate in _attributePredicates) {
                 var (attribute, conditions) = (attributePredicate.Key, attributePredicate.Value);

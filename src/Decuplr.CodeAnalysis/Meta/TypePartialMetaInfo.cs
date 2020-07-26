@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
-using Decuplr.Serialization.AnalysisService;
+using Decuplr.CodeAnalysis.Meta.Internal;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
@@ -20,7 +19,7 @@ namespace Decuplr.CodeAnalysis.Meta {
 
         public IReadOnlyList<MemberMetaInfo> Members { get; }
 
-        internal TypePartialMetaInfo(NamedTypeMetaInfo source, ITypeSymbolProvider analysis, SyntaxModelPair syntaxPair, IReadOnlyList<SymbolKind> kinds, CancellationToken ct) {
+        internal TypePartialMetaInfo(NamedTypeMetaInfo source, ITypeSymbolProvider analysis, SyntaxModelPair syntaxPair, Func<ISymbol, bool>? memberPredicate, CancellationToken ct) {
             var attributeListing = syntaxPair.Syntax.GetAttributes(source.Symbol);
             Full = source;
             Location = syntaxPair.Syntax.GetLocation();
@@ -33,7 +32,7 @@ namespace Decuplr.CodeAnalysis.Meta {
                 foreach (var member in syntaxPair.Syntax.Members) {
                     var symbol = syntaxPair.Model.GetDeclaredSymbol(member, ct);
                     // Filter out null symbols and symbols that are not enlisted for interest
-                    if (symbol is null || !kinds.Contains(symbol.Kind))
+                    if (symbol is null || !(memberPredicate?.Invoke(symbol) ?? true))
                         continue;
                     // We don't support partial method, so we ignore symbols that are not impl.
                     // In future versions when we have use cases that can benefit from partial, then we should consider adding Attributes to the DefinitionPart

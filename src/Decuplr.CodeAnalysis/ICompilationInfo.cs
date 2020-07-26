@@ -9,20 +9,14 @@ namespace Decuplr.CodeAnalysis {
     public interface ICompilationInfo {
 
         /// <summary>
+        /// The compilation that was first introduced without modification
+        /// </summary>
+        Compilation SourceCompilation { get; }
+
+        /// <summary>
         /// All declaring syntaxes in the compilation
         /// </summary>
         IEnumerable<TypeDeclarationSyntax> DeclarationSyntaxes { get; }
 
-        /// <summary>
-        /// The schemas that this compiliation would be compiling
-        /// </summary>
-        IReadOnlyList<ISchemaFactory> CompilingSchemas { get; }
-
-        /// <summary>
-        /// Gets all related schema that references the symbol
-        /// </summary>
-        /// <param name="symbol">The symbol to lookup</param>
-        /// <returns></returns>
-        IEnumerable<ISchemaFactory> GetSchemaComponents(INamedTypeSymbol symbol);
     }
 }

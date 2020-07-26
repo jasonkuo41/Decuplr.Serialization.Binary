@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Decuplr.Serialization.AnalysisService;
-using Decuplr.Serialization.Binary.Annotations;
+using Decuplr.Serialization.Annotations;
 using Decuplr.Serialization.LayoutService.Internal;
 using Microsoft.CodeAnalysis;
 

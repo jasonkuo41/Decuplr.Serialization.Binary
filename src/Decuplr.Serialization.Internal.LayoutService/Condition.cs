@@ -1,4 +1,4 @@
-﻿using Decuplr.Serialization.Binary.Annotations;
+﻿using Decuplr.Serialization.Annotations;
 
 namespace Decuplr.Serialization.LayoutService {
     public struct Condition {

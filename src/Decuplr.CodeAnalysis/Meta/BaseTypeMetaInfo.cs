@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Decuplr.Serialization.AnalysisService;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Meta {

@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Decuplr.Serialization.AnalysisService;
-using Decuplr.Serialization.Binary.Annotations;
-using Decuplr.Serialization.LayoutService.Internal;
+using Decuplr.CodeAnalysis.Meta;
+using Decuplr.Serialization.Annotations;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Diagnostics {
@@ -31,7 +27,7 @@ namespace Decuplr.CodeAnalysis.Diagnostics {
             "Compared value is not a valid type",
             "'{0}' is not a valid type for operand '{1}'{2}."
         )]
-        internal static Diagnostic CompareValueInvalid(Condition condition, Location attributeLocation, string? additionExplanation = null) 
+        internal static Diagnostic CompareValueInvalid(Condition condition, Location attributeLocation, string? additionExplanation = null)
             => CreateDiagnostic(attributeLocation, new object?[] { condition.ComparedValue, condition.Operator, additionExplanation });
 
         [Diagnostic(3, DiagnosticSeverity.Error,
@@ -58,7 +54,7 @@ namespace Decuplr.CodeAnalysis.Diagnostics {
             "Target member's return type doesn't implement IComparable for comparation",
             "Target member '{0}' has a return type '{1}' that doesn't implement IComparable which is required for 'Operator.{2}'."
         )]
-        internal static Diagnostic ReturnTypeNotComparable(MemberMetaInfo targetMember, Operator @operator, Location attributeLocation) 
+        internal static Diagnostic ReturnTypeNotComparable(MemberMetaInfo targetMember, Operator @operator, Location attributeLocation)
             => CreateDiagnostic(attributeLocation, new Location[] { targetMember.Location }, new object?[] { targetMember.Symbol, targetMember.ReturnType, @operator });
 
         [Diagnostic(7, DiagnosticSeverity.Error,

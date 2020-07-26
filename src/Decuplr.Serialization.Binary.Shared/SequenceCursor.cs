@@ -12,20 +12,22 @@ namespace Decuplr.Serialization.Binary {
     // See the LICENSE file in the project root for more information.
 
     // This is a dumb down version of SequenceReader<T>, you cannot rewind with cursor, it's one use and should always move on
-    // Lot's of the surface API is stripped or modified to emphasize the concept of "it's a cursor not a reader"
+    // Lots of the surface API is stripped or modified to emphasize the concept of "it's a cursor not a reader"
     // This is passed around the library representing how much we have read from the sequence.
 
+    // TODO : Should we move this Decuplr.Serialization.Primitives under the namespace Decuplr.Serialization?
+
     /// <summary>
-    /// Represents a reading fowarding cursor for <see cref="ReadOnlySequence{T}"/> that cannot be rewinded
+    /// Represents a forward reading cursor for <see cref="ReadOnlySequence{T}"/> that cannot be rewinded
     /// </summary>
     /// <typeparam name="T">The type that the sequence holds</typeparam>
     public ref struct SequenceCursor<T> {
 
         private readonly ReadOnlySequence<T> Sequence;
+        private readonly long _length;
         private SequencePosition CurrentPosition;
         private SequencePosition NextPosition;
         private bool HasMoreData;
-        private long _length;
         private ReadOnlySpan<T> CurrentSpan;
         private int CurrentSpanIndex;
 

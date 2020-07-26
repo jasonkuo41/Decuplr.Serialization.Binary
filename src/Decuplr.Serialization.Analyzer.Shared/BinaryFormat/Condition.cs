@@ -1,5 +1,5 @@
-﻿using Decuplr.Serialization.Binary.Analyzers;
-using Decuplr.Serialization.Binary.Annotations;
+﻿using Decuplr.Serialization.Annotations;
+using Decuplr.Serialization.Binary.Analyzers;
 
 namespace Decuplr.Serialization.Analyzer.BinaryFormat {
     public struct Condition {

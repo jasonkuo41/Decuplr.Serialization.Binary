@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Decuplr.Serialization.Binary.Annotations;
+using Decuplr.Serialization.Annotations;
 
 namespace Decuplr.Serialization.Binary {
 

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+	<LangVersion>latest</LangVersion>
+	<Nullable>enable</Nullable>
+  </PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.6.0" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.0.0" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.5" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Decuplr.CodeAnalysis.Diagnostics\Decuplr.CodeAnalysis.Diagnostics.csproj" />
+	  <ProjectReference Include="..\Decuplr.CodeAnalysis\Decuplr.CodeAnalysis.csproj" />
+	</ItemGroup>
+
+</Project>

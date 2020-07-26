@@ -1,6 +1,6 @@
 ﻿namespace Decuplr.CodeAnalysis.Diagnostics {
-    public interface IFluentTypeValidator {
+    public interface IFluentTypeGroupValidator {
         IFluentMemberValidator AnyMembers { get; }
-        IFluentMemberValidator LayoutMembers { get; }
+        IFluentMemberValidator SelectedMembers { get; }
     }
 }

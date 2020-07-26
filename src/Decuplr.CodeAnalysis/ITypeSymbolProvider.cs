@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Serialization.AnalysisService {
+namespace Decuplr.CodeAnalysis {
     public interface ITypeSymbolProvider {
         INamedTypeSymbol GetSymbol<T>();
         INamedTypeSymbol GetSymbol(Type type);
