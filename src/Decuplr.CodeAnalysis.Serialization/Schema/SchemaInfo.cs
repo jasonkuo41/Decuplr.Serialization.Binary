@@ -26,6 +26,11 @@ namespace Decuplr.CodeAnalysis.Serialization {
         public IReadOnlyList<string> TargetNamespaces { get; }
 
         /// <summary>
+        /// The order selector that this schema uses
+        /// </summary>
+        public IOrderSelector OrderSelector { get; }
+
+        /// <summary>
         /// Represents the external arguments required to create this type (e.g. InlineData). 
         /// When not empty, it cannot be a TypeParser or IParserProvider
         /// </summary>
@@ -43,6 +48,7 @@ namespace Decuplr.CodeAnalysis.Serialization {
             NeverDeserialize = builder.NeverDeserialize;
             IsSealed = builder.IsSealed;
             SchemaName = builder.SchemaName;
+            OrderSelector = builder.OrderSelector;
             TargetNamespaces = builder.TargetNamespaces.ToList();
             ExternalArguments = builder.ExternalArguments.ToList();
             TargetTypes = builder.TargetTypes.ToList();

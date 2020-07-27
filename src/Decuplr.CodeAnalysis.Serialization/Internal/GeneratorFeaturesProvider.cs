@@ -1,4 +1,4 @@
-﻿using Decuplr.Serialization.LayoutService;
+﻿using Decuplr.CodeAnalysis.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Decuplr.CodeAnalysis.Serialization.Internal {
@@ -19,14 +19,14 @@ namespace Decuplr.CodeAnalysis.Serialization.Internal {
         public IGenerationFeatures AddConditionResolver<TResolver>() where TResolver : class, IConditionResolverProvider {
             _services.AddSingleton<TResolver>();
             _services.AddSingleton<IConditionResolverProvider, TResolver>(service => service.GetRequiredService<TResolver>());
-            _services.AddSingleton<IValidationSource, TResolver>(service => service.GetRequiredService<TResolver>());
+            _services.AddSingleton<IGroupValidationProvider, TResolver>(service => service.GetRequiredService<TResolver>());
             return this;
         }
 
         public IGenerationFeatures AddFormatResolver<TResolver>() where TResolver : class, IMemberDataFormatterProvider {
             _services.AddSingleton<TResolver>();
             _services.AddSingleton<IMemberDataFormatterProvider, TResolver>(service => service.GetRequiredService<TResolver>());
-            _services.AddSingleton<IValidationSource, TResolver>(service => service.GetRequiredService<TResolver>());
+            _services.AddSingleton<IGroupValidationProvider, TResolver>(service => service.GetRequiredService<TResolver>());
             return this;
         }
 

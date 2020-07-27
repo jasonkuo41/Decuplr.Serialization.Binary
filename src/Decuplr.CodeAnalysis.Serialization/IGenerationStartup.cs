@@ -10,6 +10,6 @@ namespace Decuplr.CodeAnalysis.Serialization {
     public interface IGenerationStartup {
         string Name { get; }
         void ConfigureFeatures(IGenerationFeatures provider);
-        bool TryGetSchemaInfo(NamedTypeMetaInfo metaInfo, out SchemaInfo schema, out IOrderSelector orderSelector);
+        bool TryGetSchemaInfo(NamedTypeMetaInfo metaInfo, out SchemaInfo schema);
     }
 }

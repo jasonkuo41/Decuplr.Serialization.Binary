@@ -17,18 +17,24 @@ namespace Decuplr.CodeAnalysis.Serialization {
         /// </summary>
         public IReadOnlyList<MemberMetaInfo> Members { get; }
 
-        public SchemaLayout(NamedTypeMetaInfo type, IReadOnlyList<MemberMetaInfo> typeMembers) {
+        /// <summary>
+        /// The info of this schema
+        /// </summary>
+        public SchemaInfo LayoutInfo { get; }
+
+        public SchemaLayout(NamedTypeMetaInfo type, IReadOnlyList<MemberMetaInfo> typeMembers, SchemaInfo schemaInfo) {
             if (typeMembers.Any(x => x.ContainingFullType != type))
                 throw new ArgumentException($"Type Members '{string.Join(",", typeMembers.Where(x => x.ContainingFullType != type))}' must be a member of '{type.Symbol}' ");
             Type = type;
             Members = typeMembers;
+            LayoutInfo = schemaInfo;
         }
 
         public SchemaLayout MakeGenericType(params ITypeSymbol[] symbols) {
             // Poor performance, if compile speed is too slow we can look at this
             var type = Type.MakeGenericType(symbols);
             var typeMember = GetReordered(type).ToList();
-            return new SchemaLayout(type, typeMember);
+            return new SchemaLayout(type, typeMember, LayoutInfo);
 
             IEnumerable<MemberMetaInfo> GetReordered(NamedTypeMetaInfo type) {
                 // We look up each layout and make sure that they are the similar instance (but different symbol owner)

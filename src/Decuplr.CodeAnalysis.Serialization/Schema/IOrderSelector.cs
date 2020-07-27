@@ -18,9 +18,8 @@ namespace Decuplr.CodeAnalysis.Serialization {
         /// <summary>
         /// Generates and reorders the member to the defined order, with error reporting capability
         /// </summary>
-        /// <param name="memberInfo">The elected member that shall be ordered</param>
-        /// <param name="diagnostic">A reporter to report diagnostics to</param>
+        /// <param name="typeInfo">The elected member that shall be ordered</param>
         /// <returns>The order of the members</returns>
-        IEnumerable<MemberMetaInfo> GetOrder(IEnumerable<MemberMetaInfo> memberInfo);
+        IReadOnlyList<MemberMetaInfo> GetOrder(NamedTypeMetaInfo typeInfo);
     }
 }

@@ -11,16 +11,58 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Decuplr.CodeAnalysis.Serialization.Internal {
 
+    internal interface IStartupServiceProvider {
+        IServiceProvider this [IGenerationStartup startup] { get; }
+        IServiceProvider GetServiceProvider(IGenerationStartup startup);
+    }
+
+    internal class StartupServiceProvider : IStartupServiceProvider {
+
+        private readonly Dictionary<IGenerationStartup, IServiceProvider> _startupServices;
+
+        public StartupServiceProvider(IEnumerable<IGenerationStartup> startups, IServiceCollection sourceCollection, IServiceProvider sourceProvider) {
+            // Configure service provider foreach startup
+            _startupServices = startups.ToDictionary(startup => startup, startup => {
+                // Maybe we can make this lazy initialized
+                // We include all services provided by the generator to each startup
+                var services = new ServiceCollection { sourceCollection.Select(x => new ServiceDescriptor(x.ServiceType, _ => sourceProvider.GetService(x.ServiceType), x.Lifetime)) };
+                services.AddFeatureProvider(startup);
+                return services.BuildServiceProvider() as IServiceProvider;
+            });
+        }
+
+        public IServiceProvider this[IGenerationStartup startup] => _startupServices[startup];
+
+        public IServiceProvider GetServiceProvider(IGenerationStartup startup) => _startupServices[startup];
+    }
+
     internal class CodeGenerator : ICodeGenerator {
 
+        public CodeGenerator(IStartupServiceProvider startupServices) {
+
+        }
+
+        public void GenerateFiles() {
+            throw new NotImplementedException();
+        }
+
+        public void VerifySyntax() {
+            throw new NotImplementedException();
+        }
+    }
+
+    internal class LegacyCodeGenerator : ICodeGenerator {
+
         private static readonly SymbolKind[] ValidSerializeKind = new[] { SymbolKind.Field, SymbolKind.Property };
+        // We should make this configurable
+        private static readonly HashSet<SymbolKind> DefaultMemberKinds = new HashSet<SymbolKind> { SymbolKind.Method, SymbolKind.Field, SymbolKind.Property, SymbolKind.Event };
 
         private readonly IReadOnlyDictionary<IGenerationStartup, IServiceProvider> _startups;
         private readonly IServiceCollection _generatorServices;
         private readonly IServiceProvider _generatorProvider;
 
-        internal CodeGenerator(IServiceCollection services) {
-            _generatorServices = ConfigureServices(services);
+        internal LegacyCodeGenerator(IServiceCollection services) {
+            _generatorServices = services;
             _generatorProvider = _generatorServices.BuildServiceProvider();
             _startups = ConfigureGenerationStartup(_generatorServices, _generatorProvider);
         }
@@ -32,19 +74,8 @@ namespace Decuplr.CodeAnalysis.Serialization.Internal {
                 // We include all services provided by the generator to each startup
                 var services = new ServiceCollection { sourceCollection.Select(x => new ServiceDescriptor(x.ServiceType, _ => sourceServices.GetService(x.ServiceType), x.Lifetime) };
                 services.AddFeatureProvider(startup);
-                services.AddParsingContext();
                 return services.BuildServiceProvider() as IServiceProvider;
             });
-        }
-
-        private static IServiceCollection ConfigureServices(IServiceCollection collection) {
-            // We add compilation context (and not parsing context) because here scope is considering the compilation as a whole
-            collection.AddCompilationContext();
-
-            collection.AddSourceMetaAnalysis();
-            collection.AddSourceValidation();
-
-            return collection;
         }
 
         private bool TryElectProvider(NamedTypeMetaInfo type, out IReadOnlyCollection<(IGenerationStartup Startup, SchemaInfo Config, IOrderSelector Selector)> electedProvider) {
@@ -57,9 +88,6 @@ namespace Decuplr.CodeAnalysis.Serialization.Internal {
             electedProvider = providers;
             return electedProvider.Count != 0;
         }
-
-        private SourceCodeAnalysis GetSourceCodeAnalysis(IEnumerable<TypeDeclarationSyntax> declarationSyntaxes, Compilation compilation, CancellationToken ct)
-            => new SourceCodeAnalysis(declarationSyntaxes, compilation, ct, SymbolKind.Method, SymbolKind.Field, SymbolKind.Property, SymbolKind.Event);
 
         private bool VerifySyntax(SourceCodeAnalysis analysis, IDiagnosticReporter diagnostics, List<TypeLayoutInfo>? layoutConfigs) {
 
@@ -88,7 +116,10 @@ namespace Decuplr.CodeAnalysis.Serialization.Internal {
         }
 
         public void VerifySyntax() {
-
+            var typeMetas = _generatorProvider.GetRequiredService<ISourceMetaAnalysis>().GetMetaInfo(memberSymbol => DefaultMemberKinds.Contains(memberSymbol.Kind));
+            foreach(var typeMeta in typeMetas) {
+                
+            }
             _generatorProvider.GetRequiredService<ISourceValidation>().Validate()
         }
 
@@ -102,18 +133,13 @@ namespace Decuplr.CodeAnalysis.Serialization.Internal {
 
             using var generatorScope = _generatorProvider.CreateScope();
             var provider = generatorScope.ServiceProvider;
-
-            var compileInfo = provider.GetRequiredService<CompilationContext>();
-            compileInfo.DiagnosticReporter = diagnostics;
-            compileInfo.SourceProvider = sourceTarget;
-            compileInfo.SymbolProvider = analysis;
-            compileInfo.CompilationInfo = new SchemaCompilationInfo(layouts.Select(x => new SchemaFactory(this, compileInfo, x, ct)));
+            new SchemaCompilationInfo(layouts.Select(x => new SchemaFactory(this, compileInfo, x, ct)));
 
             provider.GetRequiredService<ITypeParserDirector>().ComposeParser(ct);
         }
 
         private class SchemaFactory : ISchemaFactory {
-            private readonly CodeGenerator _parent;
+            private readonly LegacyCodeGenerator _parent;
             private readonly CompilationContext _compilationContext;
             private readonly CancellationToken _ct;
 
@@ -123,7 +149,7 @@ namespace Decuplr.CodeAnalysis.Serialization.Internal {
 
             public SchemaInfo Info { get; }
 
-            public SchemaFactory(CodeGenerator generator, CompilationContext context, TypeLayoutInfo layoutInfo, CancellationToken ct) {
+            public SchemaFactory(LegacyCodeGenerator generator, CompilationContext context, TypeLayoutInfo layoutInfo, CancellationToken ct) {
                 (Layout, Startup, Info) = layoutInfo;
                 _compilationContext = context;
                 _parent = generator;

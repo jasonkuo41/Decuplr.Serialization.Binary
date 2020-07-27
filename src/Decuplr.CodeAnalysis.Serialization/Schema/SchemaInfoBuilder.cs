@@ -6,15 +6,15 @@ using Microsoft.CodeAnalysis;
 namespace Decuplr.CodeAnalysis.Serialization {
     public class SchemaInfoBuilder {
 
-        public SchemaInfoBuilder(string schemaName, IEnumerable<INamedTypeSymbol> targetTypes) {
+        public SchemaInfoBuilder(string schemaName, IOrderSelector orderSelector, IEnumerable<INamedTypeSymbol> targetTypes) {
             if (targetTypes is null || targetTypes.Count() == 0)
                 throw new ArgumentException("A schema must always have a target type to be built to");
             SchemaName = schemaName;
             TargetTypes.AddRange(targetTypes);
         }
 
-        public SchemaInfoBuilder(string schemaName, params INamedTypeSymbol[] targetTypes) 
-            : this(schemaName, targetTypes.AsEnumerable()) { 
+        public SchemaInfoBuilder(string schemaName, IOrderSelector orderSelector, params INamedTypeSymbol[] targetTypes) 
+            : this(schemaName, orderSelector, targetTypes.AsEnumerable()) { 
         }
 
         /// <summary>
@@ -31,6 +31,11 @@ namespace Decuplr.CodeAnalysis.Serialization {
         /// The name of the schema that this would generate
         /// </summary>
         public string SchemaName { get; set; }
+
+        /// <summary>
+        /// The order selector that this schema uses
+        /// </summary>
+        public IOrderSelector OrderSelector { get; set; }
 
         /// <summary>
         /// Indicates the namespaces that this type would be targeted to
