@@ -14,7 +14,6 @@ namespace Decuplr.CodeAnalysis.Serialization {
 
         private readonly Compilation _compilation;
         private readonly IEnumerable<TypeDeclarationSyntax> _syntaxes;
-        private readonly ServiceCollection _services = new ServiceCollection();
         private readonly HashSet<Type> _startups = new HashSet<Type>();
 
         private Action<IServiceCollection>? _serviceConfig;
@@ -29,7 +28,7 @@ namespace Decuplr.CodeAnalysis.Serialization {
         public CodeGeneratorBuilder AddStartup<TProvider>() where TProvider : class, IGenerationStartup {
             if (!_startups.Add(typeof(IGenerationStartup)))
                 return this;
-            _services.AddSingleton<IGenerationStartup, TProvider>();
+            ConfigureStartupServices(services => services.AddSingleton<IGenerationStartup, TProvider>());
             return this;
         }
 
@@ -52,19 +51,24 @@ namespace Decuplr.CodeAnalysis.Serialization {
             if (_startups.Count == 0)
                 throw new ArgumentException("No entry startup is provided. Code Generation Failed");
 
-            _services.AddSingleton<ICodeGenerator, CodeGenerator>();
-            _services.AddSingleton<IStartupServiceProvider, StartupServiceProvider>(services => new StartupServiceProvider(services.GetServices<IGenerationStartup>(), _services, services));
-            _services.AddSingleton<ITypeParserDirector>(providerFactory);
-            _services.AddSingleton<ICompilationInfo>(new CompilationInfo(_compilation, _syntaxes));
-            _services.AddSingleton<IDiagnosticReporter>(new DiagnosticReporter(_diagnosticCb));
-            _services.AddSingleton<ISourceAddition>(new SourceAddition(_sourceCallback));
-            _services.AddSourceMetaAnalysis(); // ISourceMetaAnalysis
-            _services.AddSourceValidation(); // ISourceValidation
+            var services = new ServiceCollection();
+            services.AddSingleton<ICodeGenerator, CodeGenerator>();
+            services.AddSingleton<ITypeParserDirector>(providerFactory);
+            services.AddSingleton<ICompilationInfo>(new CompilationInfo(_compilation, _syntaxes));
+            services.AddSingleton<IDiagnosticReporter>(new DiagnosticReporter(_diagnosticCb));
+            services.AddSingleton<ISourceAddition>(new SourceAddition(_sourceCallback));
+            services.AddSourceMetaAnalysis(); // ISourceMetaAnalysis
+            services.AddSourceValidation(); // ISourceValidation
 
-            _serviceConfig?.Invoke(_services);
+            // Setup some internal services
+            services.AddSingleton(provider => ActivatorUtilities.CreateInstance<StartupServiceProvider>(provider, services, provider));
+            services.AddSingleton<CodeGenerator.SyntaxVerification>();
 
-            var appServices = _services.BuildServiceProvider();
+            _serviceConfig?.Invoke(services);
+
+            var appServices = services.BuildServiceProvider();
             return appServices.GetRequiredService<ICodeGenerator>();
         }
+
     }
 }

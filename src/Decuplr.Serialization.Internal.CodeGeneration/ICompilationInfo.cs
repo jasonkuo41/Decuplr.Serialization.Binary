@@ -7,11 +7,6 @@ namespace Decuplr.Serialization.CodeGeneration {
     /// </summary>
     public interface ICompilationInfo {
         /// <summary>
-        /// Get's the assembly symbol that this compilation takes
-        /// </summary>
-        IAssemblySymbol CompilingAssembly { get; }
-
-        /// <summary>
         /// The schemas that this compiliation would be compiling
         /// </summary>
         IReadOnlyList<ISchemaFactory> CompilingSchemas { get; }

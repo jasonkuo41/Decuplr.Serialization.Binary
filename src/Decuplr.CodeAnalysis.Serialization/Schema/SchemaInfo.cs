@@ -1,10 +1,18 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using Decuplr.CodeAnalysis.Meta;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Serialization {
 
     public class SchemaInfo {
+
+        /// <summary>
+        /// The source type that is responsible for producing this schema info
+        /// </summary>
+        public NamedTypeMetaInfo SourceTypeInfo { get; private set; }
+
         /// <summary>
         /// Indicates the parser should never be deserialized
         /// </summary>
@@ -41,10 +49,11 @@ namespace Decuplr.CodeAnalysis.Serialization {
         /// </summary>
         public IReadOnlyList<INamedTypeSymbol> TargetTypes { get; }
 
-        public static SchemaInfoBuilder CreateBuilder(string schemaName, params INamedTypeSymbol[] targetTypes) => new SchemaInfoBuilder(schemaName, targetTypes);
-        public static SchemaInfoBuilder CreateBuilder(string schemaName, IEnumerable<INamedTypeSymbol> targetTypes) => new SchemaInfoBuilder(schemaName, targetTypes);
+        public static SchemaInfoBuilder CreateBuilder(string schemaName, NamedTypeMetaInfo type, IOrderSelector orderSelector, params INamedTypeSymbol[] targetTypes) => new SchemaInfoBuilder(schemaName, type, orderSelector, targetTypes);
+        public static SchemaInfoBuilder CreateBuilder(string schemaName, NamedTypeMetaInfo type, IOrderSelector orderSelector, IEnumerable<INamedTypeSymbol> targetTypes) => new SchemaInfoBuilder(schemaName, type, orderSelector, targetTypes);
 
         internal SchemaInfo(SchemaInfoBuilder builder) {
+            SourceTypeInfo = builder.SourceTypeInfo;
             NeverDeserialize = builder.NeverDeserialize;
             IsSealed = builder.IsSealed;
             SchemaName = builder.SchemaName;
@@ -54,5 +63,10 @@ namespace Decuplr.CodeAnalysis.Serialization {
             TargetTypes = builder.TargetTypes.ToList();
         }
 
+        public SchemaInfo MakeGenericType(params ITypeSymbol[] symbols) {
+            var schemaInfo = (SchemaInfo)MemberwiseClone();
+            schemaInfo.SourceTypeInfo = SourceTypeInfo.MakeGenericType(symbols);
+            return schemaInfo;
+        }
     }
 }

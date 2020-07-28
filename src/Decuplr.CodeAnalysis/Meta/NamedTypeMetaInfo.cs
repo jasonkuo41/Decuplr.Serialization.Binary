@@ -8,14 +8,13 @@ using Microsoft.CodeAnalysis.CSharp;
 
 namespace Decuplr.CodeAnalysis.Meta {
 
-    public class NamedTypeMetaInfo : BaseTypeMetaInfo<INamedTypeSymbol>, IEquatable<NamedTypeMetaInfo> {
+    public class NamedTypeMetaInfo : ISymbolMetaInfo<INamedTypeSymbol>, IEquatable<NamedTypeMetaInfo> {
 
         private readonly ITypeSymbolProvider _analysis;
-        private readonly IEnumerable<SyntaxModelPair> _syntax;
-        private readonly Func<ISymbol, bool>? _memberPredicate;
-        private readonly CancellationToken _ct;
 
         public bool IsPartial { get; }
+
+        public INamedTypeSymbol Symbol { get; }
 
         public IReadOnlyList<MemberMetaInfo> Members { get; }
 
@@ -25,24 +24,24 @@ namespace Decuplr.CodeAnalysis.Meta {
 
         public Location FirstLocation { get; }
 
-        internal NamedTypeMetaInfo(ITypeSymbolProvider analysis, INamedTypeSymbol symbol, IEnumerable<SyntaxModelPair> syntax, Func<ISymbol, bool>? memberPredicate, CancellationToken ct)
-            : base(analysis, symbol) {
-            _analysis = analysis;
-            _syntax = syntax;
-            _memberPredicate = memberPredicate;
-            _ct = ct;
+        ITypeSymbolProvider ISymbolMetaInfo<INamedTypeSymbol>.SymbolProvider => _analysis;
 
+        internal NamedTypeMetaInfo(ITypeSymbolProvider analysis, INamedTypeSymbol symbol, IEnumerable<SyntaxModelPair> syntax, Func<ISymbol, bool>? memberPredicate, CancellationToken ct) {
+            _analysis = analysis;
+
+            Symbol = symbol;
             IsPartial = syntax.Any(x => x.Syntax.Modifiers.Any(SyntaxKind.PartialKeyword));
-            Declarations = syntax.Select(x => new TypePartialMetaInfo(this, analysis, x, memberPredicate, ct)).ToList();
             FirstLocation = syntax.First().Syntax.GetLocation();
             Attributes = Declarations.SelectMany(x => x.Attributes).ToList();
+
+            Declarations = syntax.Select(x => new TypePartialMetaInfo(this, analysis, x, memberPredicate, ct)).ToList();
             Members = Declarations.SelectMany(x => x.Members).ToList();
         }
 
         public NamedTypeMetaInfo MakeGenericType(params ITypeSymbol[] symbols) {
             if (!Symbol.IsUnboundGenericType)
                 throw new InvalidOperationException($"{Symbol} is not a unbound generic type.");
-            return new NamedTypeMetaInfo(_analysis, Symbol.Construct(symbols), _syntax, _memberPredicate, _ct);
+            return new NamedTypeMetaInfo(this, Symbol.Construct(symbols));
         }
 
         public bool ContainsAttribute<TAttribute>() where TAttribute : Attribute {

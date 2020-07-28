@@ -1,21 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Decuplr.CodeAnalysis.Meta;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Serialization {
     public class SchemaInfoBuilder {
 
-        public SchemaInfoBuilder(string schemaName, IOrderSelector orderSelector, IEnumerable<INamedTypeSymbol> targetTypes) {
+        public SchemaInfoBuilder(string schemaName, NamedTypeMetaInfo sourceType, IOrderSelector orderSelector, IEnumerable<INamedTypeSymbol> targetTypes) {
             if (targetTypes is null || targetTypes.Count() == 0)
                 throw new ArgumentException("A schema must always have a target type to be built to");
+            SourceTypeInfo = sourceType;
+            OrderSelector = orderSelector;
             SchemaName = schemaName;
             TargetTypes.AddRange(targetTypes);
         }
 
-        public SchemaInfoBuilder(string schemaName, IOrderSelector orderSelector, params INamedTypeSymbol[] targetTypes) 
-            : this(schemaName, orderSelector, targetTypes.AsEnumerable()) { 
+        public SchemaInfoBuilder(string schemaName, NamedTypeMetaInfo sourceType, IOrderSelector orderSelector, params INamedTypeSymbol[] targetTypes) 
+            : this(schemaName, sourceType, orderSelector, targetTypes.AsEnumerable()) { 
         }
+
+        /// <summary>
+        /// The type that is resposible for this
+        /// </summary>
+        public NamedTypeMetaInfo SourceTypeInfo { get; }
 
         /// <summary>
         /// Indicates the parser should never be deserialized

@@ -4,6 +4,8 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Meta {
+
+    [Obsolete]
     public abstract class BaseTypeMetaInfo<TSymbol> where TSymbol : ITypeSymbol {
 
         private readonly ITypeSymbolProvider _analysis;

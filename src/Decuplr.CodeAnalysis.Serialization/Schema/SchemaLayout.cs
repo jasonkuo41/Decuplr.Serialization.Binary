@@ -5,7 +5,7 @@ using Decuplr.CodeAnalysis.Meta;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Serialization {
-    public class SchemaLayout : IEquatable<SchemaLayout> {
+    public class SchemaLayout {
 
         /// <summary>
         /// The type that this layout represents
@@ -22,7 +22,8 @@ namespace Decuplr.CodeAnalysis.Serialization {
         /// </summary>
         public SchemaInfo LayoutInfo { get; }
 
-        public SchemaLayout(NamedTypeMetaInfo type, IReadOnlyList<MemberMetaInfo> typeMembers, SchemaInfo schemaInfo) {
+        public SchemaLayout(SchemaInfo schemaInfo, IReadOnlyList<MemberMetaInfo> typeMembers) {
+            var type = schemaInfo.SourceTypeInfo;
             if (typeMembers.Any(x => x.ContainingFullType != type))
                 throw new ArgumentException($"Type Members '{string.Join(",", typeMembers.Where(x => x.ContainingFullType != type))}' must be a member of '{type.Symbol}' ");
             Type = type;
@@ -32,9 +33,9 @@ namespace Decuplr.CodeAnalysis.Serialization {
 
         public SchemaLayout MakeGenericType(params ITypeSymbol[] symbols) {
             // Poor performance, if compile speed is too slow we can look at this
-            var type = Type.MakeGenericType(symbols);
-            var typeMember = GetReordered(type).ToList();
-            return new SchemaLayout(type, typeMember, LayoutInfo);
+            var layout = LayoutInfo.MakeGenericType(symbols);
+            var typeMember = GetReordered(layout.SourceTypeInfo).ToList();
+            return new SchemaLayout(layout, typeMember);
 
             IEnumerable<MemberMetaInfo> GetReordered(NamedTypeMetaInfo type) {
                 // We look up each layout and make sure that they are the similar instance (but different symbol owner)
@@ -45,30 +46,6 @@ namespace Decuplr.CodeAnalysis.Serialization {
                     }
                 }
             }
-        }
-
-        public override int GetHashCode() {
-            var hash = new HashCode();
-            hash.Add(Type);
-            for (var i = 0; i < Members.Count; ++i)
-                hash.Add(Members[i]);
-            return hash.ToHashCode();
-        }
-
-        public override bool Equals(object obj) => obj is SchemaLayout layout && Equals(layout);
-
-        public bool Equals(SchemaLayout layout) {
-            if (layout.Members.Count != Members.Count)
-                return false;
-
-            if (!Type.Equals(layout.Type))
-                return false;
-
-            for (int i = 0; i < Members.Count; i++) {
-                if (!Members[i].Equals(layout.Members[i]))
-                    return false;
-            }
-            return true;
         }
 
     }

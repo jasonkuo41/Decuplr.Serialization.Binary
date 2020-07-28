@@ -10,11 +10,6 @@ namespace Decuplr.Serialization.CodeGeneration {
         SchemaLayout Layout { get; }
 
         /// <summary>
-        /// The info regard of this schema
-        /// </summary>
-        SchemaInfo Info { get; }
-
-        /// <summary>
         /// Generate the target schema
         /// </summary>
         /// <param name="parserName">The name of the generated schema</param>
