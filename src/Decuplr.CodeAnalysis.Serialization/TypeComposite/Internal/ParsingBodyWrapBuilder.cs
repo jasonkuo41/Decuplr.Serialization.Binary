@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Decuplr.Serialization.AnalysisService;
+using Decuplr.CodeAnalysis.Meta;
 using Decuplr.CodeAnalysis.Serialization.Arguments;
 using Decuplr.CodeAnalysis.Serialization.TypeComposite;
 using Decuplr.Serialization.SourceBuilder;

@@ -29,6 +29,8 @@ namespace Decuplr.CodeAnalysis.Meta {
 
         public IReadOnlyList<IReadOnlyList<AttributeData>> Attributes { get; }
 
+        public MemberMetaInfo? GenericDefinition { get; }
+
         internal MemberMetaInfo(TypePartialMetaInfo typemeta, MemberDeclarationSyntax syntax, ITypeSymbolProvider analysis, ISymbol memberSymbol) {
             (Attributes, _attributeLocation) = syntax.GetAttributes(memberSymbol);
             Location = syntax.GetLocation();
@@ -37,6 +39,21 @@ namespace Decuplr.CodeAnalysis.Meta {
             ReturnType = ReturnTypeMetaInfo.FromMember(analysis, memberSymbol);
 
             _analysis = analysis;
+        }
+
+        internal MemberMetaInfo(TypePartialMetaInfo parent, MemberMetaInfo source, ISymbol memberSymbol) {
+            if (!memberSymbol.OriginalDefinition.Equals(source.Symbol, SymbolEqualityComparer.Default))
+                throw new ArgumentException($"New symbol '{memberSymbol}' is not a member of the constructed the generic definition from the source symbol '{source.Symbol}'", nameof(memberSymbol));
+
+            (Attributes, _attributeLocation) = (source.Attributes, source._attributeLocation);
+            Location = source.Location;
+            ContainingType = parent;
+            Symbol = memberSymbol;
+            ReturnType = source.ReturnType;
+
+            _analysis = source._analysis;
+
+            GenericDefinition = source;
         }
 
         public bool ContainsAttribute<TAttribute>() where TAttribute : Attribute => ContainsAttribute(typeof(TAttribute));
@@ -89,7 +106,7 @@ namespace Decuplr.CodeAnalysis.Meta {
             return Attributes.SelectMany(x => x).Where(x => x.AttributeClass?.Equals(symbol, SymbolEqualityComparer.Default) ?? false).Select(x => GetLocation(x));
         }
 
-        public bool Equals(MemberMetaInfo other) => ContainingFullType.Equals(other.ContainingFullType) && Location.Equals(other.Location);
+        public bool Equals(MemberMetaInfo other) => Symbol.Equals(other.Symbol, SymbolEqualityComparer.Default);
         public override bool Equals(object obj) => obj is MemberMetaInfo memberInfo && Equals(memberInfo);
         public override int GetHashCode() => HashCode.Combine(ContainingFullType, Location);
     }

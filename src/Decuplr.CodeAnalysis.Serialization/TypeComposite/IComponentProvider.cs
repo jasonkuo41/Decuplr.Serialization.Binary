@@ -1,5 +1,4 @@
 ﻿using System;
-using Decuplr.Serialization.LayoutService;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Serialization.TypeComposite {

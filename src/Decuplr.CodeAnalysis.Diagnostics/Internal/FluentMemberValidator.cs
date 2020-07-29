@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Decuplr.CodeAnalysis.Meta;
-using Decuplr.Serialization.AnalysisService;
-using Decuplr.Serialization.Binary.Annotations;
+using Decuplr.Serialization.Annotations;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Diagnostics.Internal {

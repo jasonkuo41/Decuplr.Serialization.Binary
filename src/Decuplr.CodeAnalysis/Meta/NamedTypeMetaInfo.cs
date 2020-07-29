@@ -24,6 +24,8 @@ namespace Decuplr.CodeAnalysis.Meta {
 
         public Location FirstLocation { get; }
 
+        public NamedTypeMetaInfo? GenericDefinition { get; }
+
         ITypeSymbolProvider ISymbolMetaInfo<INamedTypeSymbol>.SymbolProvider => _analysis;
 
         internal NamedTypeMetaInfo(ITypeSymbolProvider analysis, INamedTypeSymbol symbol, IEnumerable<SyntaxModelPair> syntax, Func<ISymbol, bool>? memberPredicate, CancellationToken ct) {
@@ -36,6 +38,20 @@ namespace Decuplr.CodeAnalysis.Meta {
 
             Declarations = syntax.Select(x => new TypePartialMetaInfo(this, analysis, x, memberPredicate, ct)).ToList();
             Members = Declarations.SelectMany(x => x.Members).ToList();
+        }
+
+        private NamedTypeMetaInfo(NamedTypeMetaInfo source, INamedTypeSymbol newSymbol) {
+            _analysis = source._analysis;
+
+            Symbol = newSymbol;
+            IsPartial = source.IsPartial;
+            FirstLocation = source.FirstLocation;
+            Attributes = source.Attributes;
+
+            Declarations = source.Declarations.Select(x => new TypePartialMetaInfo(this, x, newSymbol)).ToList();
+            Members = Declarations.SelectMany(x => x.Members).ToList();
+
+            GenericDefinition = source;
         }
 
         public NamedTypeMetaInfo MakeGenericType(params ITypeSymbol[] symbols) {

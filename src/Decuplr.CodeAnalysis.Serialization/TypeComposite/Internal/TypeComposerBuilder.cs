@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Decuplr.Serialization.LayoutService;
 using Decuplr.Serialization.SourceBuilder;
 using Microsoft.CodeAnalysis;
 
@@ -12,19 +11,13 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite {
         /// <summary>
         /// The layout that this composer represents
         /// </summary>
-        SchemaLayout CompositeType { get; }
-        
-        /// <summary>
-        /// A full referencable name to the composer
-        /// </summary>
-        string FullName { get; }
+        SchemaLayout SourceSchema { get; }
 
         /// <summary>
-        /// A short hand name of the composer, namely the type name
+        /// The symbol that the compser respresents
         /// </summary>
-        string Name { get; }
+        ITypeSymbol ComposerSymbol { get; }
 
-        /// <summary>
         /// The member composers of this type composer
         /// </summary>
         IReadOnlyList<IMemberComposer> MemberComposers { get; }
@@ -39,125 +32,12 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite {
 
     }
 
-    public class MethodSignature {
-        /// <summary>
-        /// Is the method ref return, we don't support this feature yet
-        /// </summary>
-        public bool IsRefReturn { get; }
-
-        /// <summary>
-        /// Is this method a constructor
-        /// </summary>
-        public bool IsConstructor { get; }
-
-        /// <summary>
-        /// The name of the method, the full name of the constructor if this is a constructor
-        /// </summary>
-        public string MethodName { get; }
-
-        /// <summary>
-        /// The returning type, maybe be void, null if constructor
-        /// </summary>
-        public ITypeSymbol? ReturnType { get; }
-
-        /// <summary>
-        /// The arguments this method contains
-        /// </summary>
-        public IReadOnlyList<MethodArg> Arguments { get; }
-
-        private MethodSignature(string methodName, ITypeSymbol? returnType, IEnumerable<MethodArg> args, bool isConstructor, bool isRefReturn) {
-            MethodName = methodName;
-            ReturnType = returnType;
-            IsConstructor = isConstructor;
-            IsRefReturn = isRefReturn;
-            Arguments = args.ToList();
-        }
-
-        public static MethodSignature CreateMethod(string methodName, ITypeSymbol returnType, IEnumerable<MethodArg> args)
-            => new MethodSignature(methodName, returnType, args, isConstructor: false, isRefReturn: false);
-
-        public static MethodSignature CreateMethod(string methodName, ITypeSymbol returnType, params MethodArg[] args)
-            => CreateMethod(methodName, returnType, args.AsEnumerable());
-
-        public static MethodSignature CreateConstructor(string fulltypeName, IEnumerable<MethodArg> args)
-            => new MethodSignature(fulltypeName, null, args, isConstructor: true, isRefReturn: false);
-
-        public static MethodSignature CreateConstructor(string fulltypeName, params MethodArg[] args)
-            => CreateConstructor(fulltypeName, args.AsEnumerable());
-
-        private string GetModifierString(int i) {
-            if (i > Arguments.Count)
-                throw new ArgumentOutOfRangeException();
-            var modifier = Arguments[i].Modifier;
-            if (modifier == MethodArgModifier.None)
-                return string.Empty;
-            return $"{modifier.ToString().ToLowerInvariant()} ";
-        }
-
-        /// <summary>
-        /// Gets the invocation string, without target object
-        /// </summary>
-        /// <remarks>
-        /// For example for method : <i>int MyMethod(int value, in double data)</i>, this returns : <i>MyMethod(a, in b)</i>
-        /// . For constructors, this returns <i>new MyMethod(a, in b)</i>
-        /// </remarks>
-        /// <returns></returns>
-        public string GetInvocationString(IEnumerable<string> argumentNames) {
-            var builder = new StringBuilder();
-            if (IsConstructor)
-                builder.Append("new ");
-            builder.Append(MethodName);
-            builder.Append('(');
-            builder.Append(string.Join(",", GetArgName(argumentNames)));
-            builder.Append(')');
-            return builder.ToString();
-
-            IEnumerable<string> GetArgName(IEnumerable<string> argNames) {
-                var i = 0;
-                foreach(var arg in argNames) {
-                    yield return $"{GetModifierString(i)}{arg}";
-                    ++i;
-                }
-            }
-        }
-
-        public string CreateMethodHeader(Accessibility accessibility) {
-
-        }
-    }
-
-    public readonly struct MethodArg {
-        public ITypeSymbol Type { get; }
-        public string ArgName { get; }
-        public MethodArgModifier Modifier { get; }
-        public MethodArg(ITypeSymbol type, string argName) : this (type, argName, MethodArgModifier.None) {
-            Type = type;
-            ArgName = argName;
-        }
-
-        public MethodArg(ITypeSymbol type, string argName, MethodArgModifier modifier) {
-            Type = type;
-            ArgName = argName;
-            Modifier = modifier;
-        }
-
-        public static implicit operator MethodArg((ITypeSymbol, string) tuple) => new MethodArg(tuple.Item1, tuple.Item2);
-        public static implicit operator MethodArg((MethodArgModifier, ITypeSymbol, string) tuple) => new MethodArg(tuple.Item2, tuple.Item3, tuple.Item1);
-        public static implicit operator MethodArg((ITypeSymbol, string, MethodArgModifier) tuple) => new MethodArg(tuple.Item1, tuple.Item2, tuple.Item3);
-    }
-
-    public enum MethodArgModifier {
-        None = 0,
-        Ref = 1,
-        In = 2,
-        Out = 3
-    }
 }
 
 namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
 
     internal class TypeComposer : ITypeComposer {
-        public SchemaLayout CompositeType { get; }
+        public SchemaLayout SourceSchema { get; }
 
         public string FullName { get; }
     }
@@ -187,14 +67,13 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
             _symbolSource = symbolProvider;
         }
 
-        private MethodSignature NonTryPattern(string fullName, IComponentProvider provider) 
+        private MethodSignature NonTryPattern(string fullName, IComponentProvider provider)
             => MethodSignature.CreateConstructor(fullName, (provider.DiscoveryType, discovery));
 
-        private MethodSignature TryPattern(string fullName, IComponentProvider provider) 
+        private MethodSignature TryPattern(string fullName, IComponentProvider provider)
             => MethodSignature.CreateConstructor(fullName, (provider.DiscoveryType, discovery), (MethodArgModifier.Out, _symbolSource.GetSymbol<bool>(), isSuccess));
 
-        public ITypeComposer Build(string typeComposerNamespace, IComponentProvider provider) => Build(typeComposerNamespace, _type.Type.UniqueName, provider);
-        public ITypeComposer Build(IComponentProvider provider) => Build("Decuplr.Serialization.Internal.Parsers", provider);
+        public ITypeComposer Build(string typeComposer, IComponentProvider provider) => Build("Decuplr.Serialization.Internal.Parsers", typeComposer, provider);
         public ITypeComposer Build(string typeComposerNamespace, string typeComposerName, IComponentProvider provider) {
 
             var composers = _type.Members.Select(member => new MemberComposerBuilder(member, _resolvers, _formatter).CreateStruct(provider)).ToList();

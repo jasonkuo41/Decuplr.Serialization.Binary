@@ -9,14 +9,10 @@ namespace Decuplr.CodeAnalysis.Meta {
         public static IEnumerable<INamedTypeSymbol> GetInterfaces(this ISymbolMetaInfo<ITypeSymbol> meta, Type type) {
             if (!type.IsInterface)
                 throw new ArgumentException(nameof(type));
-            var typeSymbol = meta.SymbolProvider.GetSymbol(type);
+            var interfaceSymbol = meta.SymbolProvider.GetSymbol(type);
             if (type.IsGenericTypeDefinition)
-                return meta.Symbol.AllInterfaces.Where(x => x.IsGenericType || x.IsUnboundGenericType).Where(x => {
-                    if (x.IsUnboundGenericType)
-                        return x.Equals(typeSymbol, SymbolEqualityComparer.Default);
-                    return x.ConstructUnboundGenericType().Equals(typeSymbol, SymbolEqualityComparer.Default);
-                });
-            return meta.Symbol.AllInterfaces.Where(x => x.Equals(typeSymbol, SymbolEqualityComparer.Default));
+                return meta.Symbol.AllInterfaces.Where(x => x.IsGenericType).Where(x => x.ConstructedFrom.Equals(interfaceSymbol, SymbolEqualityComparer.Default));
+            return meta.Symbol.AllInterfaces.Where(x => x.Equals(interfaceSymbol, SymbolEqualityComparer.Default));
         }
 
         public static bool Implements(this ISymbolMetaInfo<ITypeSymbol> meta, Type type) => meta.GetInterfaces(type).Any();

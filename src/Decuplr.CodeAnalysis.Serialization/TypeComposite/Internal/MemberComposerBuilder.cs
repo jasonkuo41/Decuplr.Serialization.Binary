@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Decuplr.Serialization.AnalysisService;
+using Decuplr.CodeAnalysis.Meta;
 using Decuplr.CodeAnalysis.Serialization.Arguments;
 using Decuplr.Serialization.SourceBuilder;
 using Microsoft.CodeAnalysis;

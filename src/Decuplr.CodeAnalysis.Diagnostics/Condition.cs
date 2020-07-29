@@ -1,4 +1,4 @@
-﻿using Decuplr.Serialization.Binary.Annotations;
+﻿using Decuplr.Serialization.Annotations;
 
 namespace Decuplr.CodeAnalysis.Diagnostics {
     public struct Condition {

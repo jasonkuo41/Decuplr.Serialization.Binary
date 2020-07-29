@@ -38,13 +38,8 @@ namespace Decuplr.CodeAnalysis.Serialization {
             return new SchemaLayout(layout, typeMember);
 
             IEnumerable<MemberMetaInfo> GetReordered(NamedTypeMetaInfo type) {
-                // We look up each layout and make sure that they are the similar instance (but different symbol owner)
-                foreach (var layout in Members) {
-                    foreach (var targetLayout in type.Members) {
-                        if (layout.Location.Equals(targetLayout.Location))
-                            yield return targetLayout;
-                    }
-                }
+                var lookup = type.Members.ToDictionary(x => x.GenericDefinition, after => after);
+                return Members.Select(source => lookup[source]);
             }
         }
 

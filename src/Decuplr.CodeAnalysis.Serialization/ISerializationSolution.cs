@@ -1,6 +1,5 @@
 ﻿using System.Threading;
 using Decuplr.CodeAnalysis.Serialization.TypeComposite;
-using Decuplr.Serialization.LayoutService;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Serialization {

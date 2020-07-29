@@ -5,13 +5,19 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Meta {
-    public class ReturnTypeMetaInfo : BaseTypeMetaInfo<ITypeSymbol> {
+    public class ReturnTypeMetaInfo : ISymbolMetaInfo<ITypeSymbol> {
 
+        private readonly ITypeSymbolProvider _provider;
+
+        public ITypeSymbol Symbol { get; }
         public string Name => Symbol.Name;
         public bool IsVoid => Symbol.SpecialType == SpecialType.System_Void;
 
-        public ReturnTypeMetaInfo(ITypeSymbolProvider analysis, ITypeSymbol symbol)
-            : base(analysis, symbol) {
+        ITypeSymbolProvider ISymbolMetaInfo<ITypeSymbol>.SymbolProvider => _provider;
+
+        public ReturnTypeMetaInfo(ITypeSymbolProvider analysis, ITypeSymbol symbol) {
+            _provider = analysis;
+            Symbol = symbol;
         }
 
         public static ReturnTypeMetaInfo? FromMember(ITypeSymbolProvider analysis, ISymbol memberSymbol) {

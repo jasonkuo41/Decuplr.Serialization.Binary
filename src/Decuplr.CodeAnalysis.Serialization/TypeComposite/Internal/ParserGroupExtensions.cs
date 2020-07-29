@@ -1,5 +1,5 @@
 ﻿using System;
-using Decuplr.Serialization.AnalysisService;
+using Decuplr.CodeAnalysis.Meta;
 using Decuplr.CodeAnalysis.Serialization.Arguments;
 using Decuplr.Serialization.SourceBuilder;
 

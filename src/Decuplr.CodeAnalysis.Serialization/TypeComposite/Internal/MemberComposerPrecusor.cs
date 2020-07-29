@@ -1,4 +1,4 @@
-﻿using Decuplr.Serialization.AnalysisService;
+﻿using Decuplr.CodeAnalysis.Meta;
 using Decuplr.Serialization.SourceBuilder;
 
 namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {

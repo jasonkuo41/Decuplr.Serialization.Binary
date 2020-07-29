@@ -13,6 +13,6 @@ namespace Decuplr.Serialization.SourceBuilder {
 
         internal static bool AnyClampsWith(this string str, string start, string end)
             => str.AnyStartsWith(start) && str.AnyEndsWith(end);
-
+        s
     }
 }

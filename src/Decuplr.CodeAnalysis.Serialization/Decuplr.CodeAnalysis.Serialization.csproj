@@ -14,6 +14,7 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Decuplr.CodeAnalysis.Diagnostics\Decuplr.CodeAnalysis.Diagnostics.csproj" />
+	  <ProjectReference Include="..\Decuplr.CodeAnalysis.SourceBuilder\Decuplr.CodeAnalysis.SourceBuilder.csproj" />
 	  <ProjectReference Include="..\Decuplr.CodeAnalysis\Decuplr.CodeAnalysis.csproj" />
 	</ItemGroup>
 
