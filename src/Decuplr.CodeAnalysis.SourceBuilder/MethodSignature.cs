@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace Decuplr.Serialization.SourceBuilder {
 
@@ -10,35 +11,54 @@ namespace Decuplr.Serialization.SourceBuilder {
 
         private readonly Accessibility _accessibility;
         private readonly string _methodName;
-        private readonly List<MethodArg> _arguments;
+        private readonly string _fullTypeName;
+        private readonly List<MethodArg> _arguments = new List<MethodArg>();
 
-        public static MethodSignatureBuilder CreateMethod(TypeQualifyName typeName, string methodName) {
-
+        private MethodSignatureBuilder(string fullTypeName, string methodName) {
+            if (!SyntaxFacts.IsValidIdentifier(methodName))
+                throw new ArgumentException($"Invalid method name '{methodName}'.", nameof(methodName));
+            _methodName = methodName;
+            _fullTypeName = fullTypeName;
         }
+
+        public static MethodSignatureBuilder CreateMethod(INamedTypeSymbol type, string methodName)
+            => new MethodSignatureBuilder(type.ToString(), methodName);
+
+        public static MethodSignatureBuilder CreateMethod(TypeQualifyName typeName, string methodName)
+            => new MethodSignatureBuilder(typeName.ToString(), methodName);
 
         public static MethodSignature CreateConstructor(TypeQualifyName typeName, IEnumerable<MethodArg> args)
-            => new MethodSignature(fulltypeName, null, args, isConstructor: true, RefKind.None);
-
+            => CreateConstructor(Accessibility.Public, typeName, args.AsEnumerable());
         public static MethodSignature CreateConstructor(TypeQualifyName typeName, params MethodArg[] args)
-            => CreateConstructor(fulltypeName, args.AsEnumerable());
+            => CreateConstructor(Accessibility.Public, typeName, args.AsEnumerable());
 
-        public static MethodSignatureBuilder AppendArgument(MethodArg arg) {
+        public static MethodSignature CreateConstructor(Accessibility accessibility, TypeQualifyName typeName, params MethodArg[] args)
+            => CreateConstructor(accessibility, typeName, args.AsEnumerable());
 
+        public static MethodSignature CreateConstructor(Accessibility accessibility, TypeQualifyName typeName, IEnumerable<MethodArg> args)
+            => new MethodSignature(accessibility, typeName.ToString(), null, args, isConstructor: true, RefKind.None);
+
+        public MethodSignatureBuilder AddArgument(MethodArg arg) {
+            _arguments.Add(arg);
+            return this;
         }
 
-        public static MethodSignatureBuilder AppendArgument(params MethodArg[] args) {
-
+        public MethodSignatureBuilder AddArgument(params MethodArg[] args) {
+            _arguments.AddRange(args);
+            return this;
         }
 
         public MethodSignature WithReturn(ITypeSymbol symbol) => WithReturn(RefKind.None, symbol);
 
-        public MethodSignature WithReturn(RefKind refKind, ITypeSymbol symbol) {
-
-        }
+        public MethodSignature WithReturn(RefKind refKind, ITypeSymbol symbol)
+            => new MethodSignature(_accessibility, _methodName, symbol, _arguments, false, refKind);
     }
 
     public class MethodSignature {
         
+        /// <summary>
+        /// The reference kind this method returns
+        /// </summary>
         public RefKind ReturnRefKind { get; }
 
         /// <summary>
@@ -47,7 +67,12 @@ namespace Decuplr.Serialization.SourceBuilder {
         public bool IsConstructor { get; }
 
         /// <summary>
-        /// The name of the method, the full name of the constructor if this is a constructor
+        /// The accessibility of this method
+        /// </summary>
+        public Accessibility Accessibility { get; }
+
+        /// <summary>
+        /// The name of the method, the full name of the type if this is a constructor
         /// </summary>
         public string MethodName { get; }
 
@@ -61,30 +86,16 @@ namespace Decuplr.Serialization.SourceBuilder {
         /// </summary>
         public IReadOnlyList<MethodArg> Arguments { get; }
 
-        internal MethodSignature(string methodName, ITypeSymbol? returnType, IEnumerable<MethodArg> args, bool isConstructor, RefKind returnRefKind) {
+        internal MethodSignature(Accessibility accessibility, string methodName, ITypeSymbol? returnType, IEnumerable<MethodArg> args, bool isConstructor, RefKind returnRefKind) {
             if (returnRefKind != RefKind.None && returnRefKind != RefKind.Ref)
                 throw new ArgumentException($"Invalid returning ref kind {returnRefKind}");
+            Accessibility = accessibility;
             MethodName = methodName;
             ReturnType = returnType;
             IsConstructor = isConstructor;
             ReturnRefKind = returnRefKind;
             Arguments = args.ToList();
         }
-
-        public static MethodSignature CreateMethod(string methodName, ITypeSymbol returnType, IEnumerable<MethodArg> args)
-            => CreateMethod(methodName, returnType, RefKind.None, args);
-
-        public static MethodSignature CreateMethod(string methodName, ITypeSymbol returnType, RefKind returnRefKind, IEnumerable<MethodArg> args)
-            => new MethodSignature(methodName, returnType, args, isConstructor: false, returnRefKind);
-
-        public static MethodSignature CreateMethod(string methodName, ITypeSymbol returnType, params MethodArg[] args)
-            => CreateMethod(methodName, returnType, args.AsEnumerable());
-
-        public static MethodSignature CreateConstructor(string fulltypeName, IEnumerable<MethodArg> args)
-            => new MethodSignature(fulltypeName, null, args, isConstructor: true, RefKind.None);
-
-        public static MethodSignature CreateConstructor(string fulltypeName, params MethodArg[] args)
-            => CreateConstructor(fulltypeName, args.AsEnumerable());
 
         private string ApplyModifier(int i, string argName) {
             if (i > Arguments.Count)
@@ -106,6 +117,12 @@ namespace Decuplr.Serialization.SourceBuilder {
         /// </remarks>
         /// <returns></returns>
         public string GetInvocationString(IEnumerable<string> argumentNames) {
+            
+            var argList = argumentNames.ToList();
+            // Check for default argument in the future
+            if (argList.Count != Arguments.Count)
+                throw new ArgumentException($"Invalid argument count, passed {argList.Count}, but expected {Arguments.Count}.");
+
             var builder = new StringBuilder();
             if (IsConstructor)
                 builder.Append("new ");

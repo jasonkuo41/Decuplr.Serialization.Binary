@@ -7,16 +7,18 @@ using Decuplr.Serialization.SourceBuilder;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
-    internal class MemberComposerBuilder {
+
+    // WARN : Don't add this to the DI, use MemberComposerFactory!
+    internal class MemberComposerSource {
 
         private class PublicParsingMethodBuilder : ParsingMethodBuilder {
 
             private const string parent = "parent";
-            private readonly MemberComposerBuilder _builder;
+            private readonly MemberComposerSource _builder;
 
             public override IReadOnlyList<string> PrependArguments { get; }
 
-            public PublicParsingMethodBuilder(MemberComposerBuilder builder)
+            public PublicParsingMethodBuilder(MemberComposerSource builder)
                 : base(builder._member, ComposerMethodNames.DefaultNames) {
                 _builder = builder;
                 PrependArguments = new[] { $"in {_builder._member.ContainingFullType.Symbol} {parent}" };
@@ -86,19 +88,19 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
         private const string SequenceCursor = "SequenceCursor<byte>";
 
         private readonly MemberMetaInfo _member;
-        private readonly string _structName;
+        private readonly GeneratingTypeName _typeName;
         private readonly IReadOnlyList<IConditionalFormatter> _conditions;
         private readonly IMemberDataFormatter _format;
         private readonly ComponentCollection _componentCollection = new ComponentCollection();
         private readonly ThrowCollection _throwCollection = new ThrowCollection("ThrowHelper");
 
         // Maybe we can change use to DI to resolve all this
-        public MemberComposerBuilder(MemberMetaInfo layoutMember, IEnumerable<IConditionResolverProvider> conditions, IEnumerable<IMemberDataFormatterProvider> formatters) {
+        public MemberComposerSource(MemberMetaInfo layoutMember, GeneratingTypeName typeName, IEnumerable<IConditionResolverProvider> conditions, IEnumerable<IMemberDataFormatterProvider> formatters) {
             if (_member.ReturnType is null)
                 throw new ArgumentException("Invalid layout member (No Return Type)");
             _member = layoutMember;
             _conditions = conditions.Select(x => x.GetResolver(layoutMember, _throwCollection)).ToList();
-            _structName = $"{_member.ContainingFullType.UniqueName}_{_member.Name}_Depedency";
+            _typeName = typeName;
             _format = GetFormatResolver();
 
             IMemberDataFormatter GetFormatResolver() {
@@ -128,7 +130,7 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
             return builder;
         }
 
-        private CodeNodeBuilder AddComponentInitializers(CodeNodeBuilder builder, Type discoveryType, IReadOnlyList<IComponentTypeInfo> components) {
+        private CodeNodeBuilder AddComponentInitializers(CodeNodeBuilder builder, INamedTypeSymbol discoveryType, IReadOnlyList<IComponentTypeInfo> components) {
             for (var i = 0; i < components.Count; ++i) {
                 const string parserName = "parser";
                 const string isSuccess = "isSuccess";
@@ -144,22 +146,22 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
             return builder;
         }
 
-        private CodeNodeBuilder AddConstructor(CodeNodeBuilder builder, Type discoveryType, IReadOnlyList<IComponentTypeInfo> components) {
+        private CodeNodeBuilder AddConstructor(CodeNodeBuilder builder, INamedTypeSymbol discoveryType, IReadOnlyList<IComponentTypeInfo> components) {
             // Create Constructor
             const string parser = "parser";
-            return builder.AddNode($"public {_structName}({discoveryType} {parser}) : this()", node => {
+            return builder.AddNode($"public {_typeName.TypeName}({discoveryType} {parser}) : this()", node => {
                 for (var i = 0; i < components.Count; ++i)
                     node.State($"{Field.Component(i)} = {Method.InitializeComponent(i)} ( {parser} )");
             });
         }
 
-        private CodeNodeBuilder AddTryConstructor(CodeNodeBuilder builder, Type discoveryType, IReadOnlyList<IComponentTypeInfo> components) {
+        private CodeNodeBuilder AddTryConstructor(CodeNodeBuilder builder, INamedTypeSymbol discoveryType, IReadOnlyList<IComponentTypeInfo> components) {
             // Arguments
             const string parser = "parser";
             const string isSuccess = "isSuccess";
 
             // Create Constructor with try pattern
-            builder.AddNode($"public {_structName}({discoveryType} parser, out bool {isSuccess}) : this()", node => {
+            builder.AddNode($"public {_typeName.TypeName}({discoveryType} parser, out bool {isSuccess}) : this()", node => {
                 for (var i = 0; i < components.Count; ++i) {
                     // Initialize every component
                     node.State($"{Field.Component(i)} = {Method.InitializeComponent(i)} ( {parser}, out {isSuccess} )");
@@ -185,13 +187,13 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
             return string.Empty;
         }
 
-        public MemberComposerPrecusor CreateStruct(IComponentProvider provider) {
+        public IMemberComposer CreateStruct(IComponentProvider provider) {
             var components = _componentCollection.Components.Select(x => provider.ProvideComponent(x)).ToList();
 
             var builder = new CodeNodeBuilder();
 
-            builder.DenoteHideEditor().DenoteGenerated(typeof(MemberComposerBuilder).Assembly);
-            builder.AddNode($"internal readonly struct {_structName} {GetGenericArgs()}", node => {
+            builder.DenoteHideEditor().DenoteGenerated(typeof(MemberComposerSource).Assembly);
+            builder.AddNode($"internal readonly struct {_typeName.TypeName} {GetGenericArgs()}", node => {
 
                 // Fields & Field Initialization
                 builder.Comment($"Depedency provided by {provider.Name}");

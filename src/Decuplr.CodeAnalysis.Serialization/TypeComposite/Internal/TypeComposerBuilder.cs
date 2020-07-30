@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Decuplr.CodeAnalysis.Meta;
 using Decuplr.Serialization.SourceBuilder;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace Decuplr.CodeAnalysis.Serialization.TypeComposite {
 
@@ -18,9 +20,10 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite {
         /// </summary>
         ITypeSymbol ComposerSymbol { get; }
 
-        /// The member composers of this type composer
+        /// <summary>
+        /// The member composers of this type composer, indexed by their property name
         /// </summary>
-        IReadOnlyList<IMemberComposer> MemberComposers { get; }
+        IReadOnlyDictionary<string, IMemberComposer> MemberComposers { get; }
 
         /// <summary>
         /// Methods that this signature presents
@@ -29,7 +32,11 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite {
     }
 
     public interface IMemberComposer {
+        MemberMetaInfo TargetMember { get; }
 
+        ITypeSymbol ComposerSymbol { get; }
+
+        IReadOnlyList<MethodSignature> Methods { get; }
     }
 
 }
@@ -37,9 +44,21 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite {
 namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
 
     internal class TypeComposer : ITypeComposer {
+
         public SchemaLayout SourceSchema { get; }
 
-        public string FullName { get; }
+        public ITypeSymbol ComposerSymbol { get; }
+
+        public IReadOnlyDictionary<string, IMemberComposer> MemberComposers { get; }
+
+        public IReadOnlyList<MethodSignature> Methods { get; }
+
+        public TypeComposer(SchemaLayout sourceSchema, ITypeSymbol composerSymbol, IReadOnlyList<IMemberComposer> memberComposers, IReadOnlyList<MethodSignature> methods) {
+            SourceSchema = sourceSchema;
+            ComposerSymbol = composerSymbol;
+            MemberComposers = memberComposers;
+            Methods = methods;
+        }
     }
 
     internal class TypeComposerBuilder {
@@ -48,18 +67,17 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
             public static string MemberName(int index) => $"Member_{index}";
         }
 
-        public const string DefaultNamespace = "Decuplr.Serialization.Internal.Parsers";
-
         private const string discovery = "discovery";
         private const string isSuccess = "isSuccess";
 
         private readonly SchemaLayout _type;
+        private readonly MemberComposerFactory _memberFactory;
         private readonly ISourceAddition _sourceAddition;
         private readonly ITypeSymbolProvider _symbolSource;
         private readonly IEnumerable<IConditionResolverProvider> _resolvers;
         private readonly IEnumerable<IMemberDataFormatterProvider> _formatter;
 
-        public TypeComposerBuilder(SchemaLayout layout, ISourceAddition sourceAddition, ITypeSymbolProvider symbolProvider, IEnumerable<IConditionResolverProvider> resolvers, IEnumerable<IMemberDataFormatterProvider> memberFormatter) {
+        public TypeComposerBuilder(SchemaLayout layout, MemberComposerFactory memberFactory, ISourceAddition sourceAddition, ITypeSymbolProvider symbolProvider, IEnumerable<IConditionResolverProvider> resolvers, IEnumerable<IMemberDataFormatterProvider> memberFormatter) {
             _type = layout;
             _resolvers = resolvers;
             _formatter = memberFormatter;
@@ -67,37 +85,53 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
             _symbolSource = symbolProvider;
         }
 
-        private MethodSignature NonTryPattern(string fullName, IComponentProvider provider)
-            => MethodSignature.CreateConstructor(fullName, (provider.DiscoveryType, discovery));
+        private MethodSignature NonTryPattern(GeneratingTypeName fullName, IComponentProvider provider)
+            => MethodSignatureBuilder.CreateConstructor(fullName, (provider.DiscoveryType, discovery));
 
-        private MethodSignature TryPattern(string fullName, IComponentProvider provider)
-            => MethodSignature.CreateConstructor(fullName, (provider.DiscoveryType, discovery), (MethodArgModifier.Out, _symbolSource.GetSymbol<bool>(), isSuccess));
+        private MethodSignature TryPattern(GeneratingTypeName fullName, IComponentProvider provider)
+            => MethodSignatureBuilder.CreateConstructor(fullName, (provider.DiscoveryType, discovery), (RefKind.Out, _symbolSource.GetSymbol<bool>(), isSuccess));
 
-        public ITypeComposer Build(string typeComposer, IComponentProvider provider) => Build("Decuplr.Serialization.Internal.Parsers", typeComposer, provider);
-        public ITypeComposer Build(string typeComposerNamespace, string typeComposerName, IComponentProvider provider) {
+        public ITypeComposer Build(GeneratingTypeName typeName, IComponentProvider provider, Func<MemberMetaInfo, GeneratingTypeName> memberCompositeNameFactory) {
 
-            var composers = _type.Members.Select(member => new MemberComposerBuilder(member, _resolvers, _formatter).CreateStruct(provider)).ToList();
+            var composers = _type.Members.Select(member => _memberFactory.Build(member, memberCompositeNameFactory(member), provider)).ToList();
 
-            var builder = new CodeSourceFileBuilder(typeComposerNamespace);
+            var builder = new CodeSourceFileBuilder(typeName.Namespace);
             builder.Using("System");
 
             builder.DenoteHideEditor();
             builder.DenoteGenerated(typeof(TypeComposerBuilder).Assembly);
-            builder.AddNode($"internal readonly struct {typeComposerName}", node => {
+
+            // Possible glitches here!
+            Action<CodeNodeBuilder> lastAction = builder => AddComposerStruct(builder, typeName, composers, provider);
+
+            var buildingList = new List<Action<CodeNodeBuilder>> { lastAction };
+            
+            foreach (var (parentKind, parentName) in typeName.Parents.Reverse()) {
+                lastAction = builder => builder.AddNode($"partial {parentKind.ToString().ToLower()} {parentName}", lastAction);
+            }
+
+            _sourceAddition.AddSource($"{typeName}_generated.cs", builder.ToString());
+
+            return new TypeComposer(_type, _symbolSource.GetSymbol(typeName.ToString()), composers);
+        }
+
+        private void AddComposerStruct(CodeNodeBuilder builder, GeneratingTypeName typeName, List<MemberComposerPrecusor> composers, IComponentProvider provider) {
+
+            builder.AddNode($"internal readonly struct {typeName.TypeName}", node => {
                 for (var i = 0; i < composers.Count; ++i) {
                     node.State($"public {composers[i].Name} {Property.MemberName(i)} {{ get; }}");
                 }
 
                 node.NewLine();
                 node.Comment("Non-try Pattern");
-                node.AddNode($"public {typeComposerName} ({provider.DiscoveryType} {discovery})", node => {
+                node.AddNode($"public {typeName.TypeName} ({provider.DiscoveryType} {discovery})", node => {
                     for (var i = 0; i < composers.Count; ++i) {
                         node.State($"{Property.MemberName(i)} = new {composers[i].Name} ({discovery})");
                     }
                 }).NewLine();
 
                 node.Comment("Try Pattern");
-                node.AddNode($"public {typeComposerName} ({provider.DiscoveryType} {discovery}, out bool {isSuccess})", node => {
+                node.AddNode($"public {typeName.TypeName} ({provider.DiscoveryType} {discovery}, out bool {isSuccess})", node => {
                     for (var i = 0; i < composers.Count; ++i) {
                         node.State($"{Property.MemberName(i)} = new {composers[i].Name} ({discovery}, out {isSuccess})");
                         node.If($"!{isSuccess}", node => {
@@ -107,9 +141,6 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
                 });
             });
 
-            _sourceAddition.AddSource($"{typeComposerName.Replace('.', '_')}_{typeComposerName}.cs", builder.ToString());
-
-            return new TypeComposer(typeComposerNamespace, typeComposerName);
         }
     }
 }
