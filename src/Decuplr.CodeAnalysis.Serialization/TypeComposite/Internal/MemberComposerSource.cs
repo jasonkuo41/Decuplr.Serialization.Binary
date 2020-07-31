@@ -192,6 +192,8 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
             return string.Empty;
         }
 
+        private MethodSignature TryConstructor => MethodSignatureBuilder.CreateConstructor(Accessibility.Public, _typeName, )
+
         public IMemberComposer CreateStruct(ITypeComposer typeComposer, IComponentProvider provider, Func<GeneratingTypeName, string, INamedTypeSymbol> symbolProvider) {
             var components = _componentCollection.Components.Select(x => provider.ProvideComponent(x)).ToList();
 
