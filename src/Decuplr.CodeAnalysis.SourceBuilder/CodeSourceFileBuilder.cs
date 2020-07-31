@@ -36,10 +36,12 @@ namespace Decuplr.Serialization.SourceBuilder {
 
         public void NestType(GeneratingTypeName typeName, string nodeName, Action<CodeNodeBuilder> node) {
             Action<CodeNodeBuilder> lastAction = builder => builder.AddNode(nodeName, node);
-            foreach (var (parentKind, parentName) in typeName.Parents.Reverse()) {
-                lastAction = builder => builder.AddNode($"partial {parentKind.ToString().ToLower()} {parentName}", lastAction);
+            foreach (var (parentKind, parentName, parentParams) in typeName.Parents.Reverse()) {
+                lastAction = builder => builder.AddNode($"partial {parentKind.ToString().ToLower()} {parentName}{GetParamsActual(parentParams)}", lastAction);
             }
             lastAction(this);
+
+            static string GetParamsActual(IReadOnlyList<string> param) => param.Count == 0 ? "" : $" <{string.Join(",", param)}>";
         }
 
         public override string ToString() {
