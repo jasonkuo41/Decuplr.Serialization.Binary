@@ -6,26 +6,23 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 
-namespace Decuplr.CodeAnalysis.Internal {
-    internal class TypeSymbolProvider : ITypeSymbolProvider {
+namespace Decuplr.CodeAnalysis.Serialization.Internal {
+    internal class TypeSymbolProvider : ITypeSymbolProvider, ISourceAddition {
 
         private static Exception NotSupported { get; } = new NotSupportedException("Type is not found with the current compilation");
 
         private readonly CancellationToken _ct;
+        private readonly Action<GeneratedSourceText>? _sourceTextCb;
+
         private readonly Dictionary<Type, INamedTypeSymbol> _cachedSymbols = new Dictionary<Type, INamedTypeSymbol>();
         private readonly CSharpCompilation _sourceCompilation;
         private CSharpCompilation _currentCompilation;
 
-        public TypeSymbolProvider(Compilation compilation, CancellationToken ct) {
-            _sourceCompilation = compilation as CSharpCompilation ?? throw new NotSupportedException("Source Generator does not support languages other then C#");
+        public TypeSymbolProvider(ICompilationInfo info, ICompilationLifetime lifetime, Action<GeneratedSourceText>? sourceTextCb) {
+            _sourceCompilation = info.SourceCompilation as CSharpCompilation ?? throw new NotSupportedException("Source Generator does not support languages other then C#");
             _currentCompilation = _sourceCompilation;
-            _ct = ct;
-        }
-
-        public void AddSource(string sourceCode) {
-            var sourceText = SourceText.From(sourceCode, Encoding.UTF8);
-            var syntax = CSharpSyntaxTree.ParseText(sourceText, new CSharpParseOptions(_sourceCompilation.LanguageVersion), "", null, true, _ct);
-            _currentCompilation = _currentCompilation.AddSyntaxTrees(syntax);
+            _sourceTextCb = sourceTextCb;
+            _ct = lifetime.OnCompilationCancelled;
         }
 
         public INamedTypeSymbol GetSymbol<T>() => GetSymbol(typeof(T));
@@ -57,6 +54,14 @@ namespace Decuplr.CodeAnalysis.Internal {
                 return false;
             _cachedSymbols.Add(type, symbol);
             return true;
+        }
+
+        public void AddSource(string fileName, string sourceCode) => AddSource(fileName, SourceText.From(sourceCode, Encoding.UTF8));
+        public void AddSource(string fileName, SourceText text) => AddSource(new GeneratedSourceText(fileName, text));
+        public void AddSource(GeneratedSourceText sourceText) {
+            var syntax = CSharpSyntaxTree.ParseText(sourceText.Text, new CSharpParseOptions(_sourceCompilation.LanguageVersion), "", null, true, _ct);
+            _currentCompilation = _currentCompilation.AddSyntaxTrees(syntax);
+            _sourceTextCb?.Invoke(sourceText);
         }
     }
 

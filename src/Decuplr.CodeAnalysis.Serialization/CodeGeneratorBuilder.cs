@@ -56,7 +56,13 @@ namespace Decuplr.CodeAnalysis.Serialization {
             services.AddSingleton<ITypeParserDirector>(providerFactory);
             services.AddSingleton<ICompilationInfo>(new CompilationInfo(_compilation, _syntaxes));
             services.AddSingleton<IDiagnosticReporter>(new DiagnosticReporter(_diagnosticCb));
-            services.AddSingleton<ISourceAddition>(new SourceAddition(_sourceCallback));
+            services.AddSingleton<IUniqueNameProvider>(new UniqueNameProvider());
+            // Add TypeSymbolProvider / SourceAddition
+            {   
+                services.AddSingleton(provider => ActivatorUtilities.CreateInstance<TypeSymbolProvider>(provider, _sourceCallback));
+                services.AddSingleton<ITypeSymbolProvider>(provider => provider.GetRequiredService<TypeSymbolProvider>());
+                services.AddSingleton<ISourceAddition>(provider => provider.GetRequiredService<TypeSymbolProvider>());
+            }
             services.AddSourceMetaAnalysis(); // ISourceMetaAnalysis
             services.AddSourceValidation(); // ISourceValidation
 

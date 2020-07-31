@@ -11,9 +11,11 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite {
         /// </summary>
         /// <param name="services"></param>
         /// <returns></returns>
-        public static IServiceCollection AddTypeComposite(IServiceCollection services) {
+        public static IServiceCollection AddTypeComposite(this IServiceCollection services) {
             services.AddScoped<TypeComposerBuilder>();
+            services.AddScoped<ITypeComposerBuilder, TypeComposerBuilder>(services => services.GetRequiredService<TypeComposerBuilder>());
             services.AddScoped<MemberComposerFactory>();
+            return services;
         }
     }
 }

@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Standart.Hash.xxHash;
 
-namespace Decuplr.CodeAnalysis.Internal {
+namespace Decuplr.CodeAnalysis.Serialization.Internal {
     internal class UniqueNameProvider : IUniqueNameProvider {
 
         // This isn't good but it would do the job 

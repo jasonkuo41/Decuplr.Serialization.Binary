@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.CodeAnalysis;
+﻿using Microsoft.CodeAnalysis;
 
-namespace Decuplr.CodeAnalysis {
+namespace Decuplr.CodeAnalysis.Serialization {
     /// <summary>
     /// Provides a unique and valid symbol name from a symbol
     /// </summary>

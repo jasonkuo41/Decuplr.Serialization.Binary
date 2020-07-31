@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Decuplr.CodeAnalysis.Serialization.TypeComposite;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Decuplr.CodeAnalysis.Serialization.Internal {
@@ -14,6 +15,7 @@ namespace Decuplr.CodeAnalysis.Serialization.Internal {
                 // Maybe we can make this lazy initialized
                 // We include all services provided by the generator to each startup
                 var services = new ServiceCollection { sourceCollection.Select(x => new ServiceDescriptor(x.ServiceType, _ => sourceProvider.GetService(x.ServiceType), x.Lifetime)) };
+                services.AddTypeComposite();
                 services.AddFeatureProvider(startup);
                 return services.BuildServiceProvider() as IServiceProvider;
             });

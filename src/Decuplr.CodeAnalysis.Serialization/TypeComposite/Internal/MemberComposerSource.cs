@@ -91,16 +91,21 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
         private readonly GeneratingTypeName _typeName;
         private readonly IReadOnlyList<IConditionalFormatter> _conditions;
         private readonly IMemberDataFormatter _format;
+        private readonly ITypeSymbolProvider _symbols;
         private readonly ComponentCollection _componentCollection = new ComponentCollection();
         private readonly ThrowCollection _throwCollection = new ThrowCollection("ThrowHelper");
 
         // Maybe we can change use to DI to resolve all this
-        public MemberComposerSource(MemberMetaInfo layoutMember, GeneratingTypeName typeName, IEnumerable<IConditionResolverProvider> conditions, IEnumerable<IMemberDataFormatterProvider> formatters) {
+        public MemberComposerSource(MemberMetaInfo layoutMember, GeneratingTypeName typeName,
+                                    IEnumerable<IConditionResolverProvider> conditions,
+                                    IEnumerable<IMemberDataFormatterProvider> formatters,
+                                    ITypeSymbolProvider symbolProvider) {
             if (_member.ReturnType is null)
                 throw new ArgumentException("Invalid layout member (No Return Type)");
             _member = layoutMember;
-            _conditions = conditions.Select(x => x.GetResolver(layoutMember, _throwCollection)).ToList();
             _typeName = typeName;
+            _symbols = symbolProvider;
+            _conditions = conditions.Select(x => x.GetResolver(layoutMember, _throwCollection)).ToList();
             _format = GetFormatResolver();
 
             IMemberDataFormatter GetFormatResolver() {
@@ -161,7 +166,7 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
             const string isSuccess = "isSuccess";
 
             // Create Constructor with try pattern
-            builder.AddNode($"public {_typeName.TypeName}({discoveryType} parser, out bool {isSuccess}) : this()", node => {
+            builder.AddNode($"public {_typeName.TypeName}({discoveryType} {parser}, out bool {isSuccess}) : this()", node => {
                 for (var i = 0; i < components.Count; ++i) {
                     // Initialize every component
                     node.State($"{Field.Component(i)} = {Method.InitializeComponent(i)} ( {parser}, out {isSuccess} )");
@@ -187,13 +192,14 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
             return string.Empty;
         }
 
-        public IMemberComposer CreateStruct(IComponentProvider provider) {
+        public IMemberComposer CreateStruct(ITypeComposer typeComposer, IComponentProvider provider, Func<GeneratingTypeName, string, INamedTypeSymbol> symbolProvider) {
             var components = _componentCollection.Components.Select(x => provider.ProvideComponent(x)).ToList();
 
-            var builder = new CodeNodeBuilder();
+            var builder = new CodeSourceFileBuilder(_typeName.Namespace);
+            builder.Using("System");
 
             builder.DenoteHideEditor().DenoteGenerated(typeof(MemberComposerSource).Assembly);
-            builder.AddNode($"internal readonly struct {_typeName.TypeName} {GetGenericArgs()}", node => {
+            builder.NestType(_typeName, $"internal readonly struct {_typeName.TypeName} {GetGenericArgs()}", node => {
 
                 // Fields & Field Initialization
                 builder.Comment($"Depedency provided by {provider.Name}");
@@ -226,7 +232,13 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
                 _throwCollection.AddThrowClass(builder);
             });
 
-            return new MemberComposerPrecusor(_member, _structName, builder);
+            var methods = new MethodSignature[] {
+                MethodSignatureBuilder.CreateConstructor(_typeName, (provider.DiscoveryType, "parser")),
+                MethodSignatureBuilder.CreateConstructor(_typeName, (provider.DiscoveryType, "parser"), (RefKind.Out, _symbols.GetSymbol<bool>(), "isSuccess")),
+                MethodSignatureBuilder.CreateMethod(_typeName, Method.TryDeserializeState(0)).AddArgument()
+            };
+
+            return new MemberComposer(typeComposer, _member, symbolProvider(_typeName, builder.ToString()), methods);
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
@@ -30,6 +32,14 @@ namespace Decuplr.Serialization.SourceBuilder {
                 _assemblyAttributes.Add(attributes);
             else
                 _assemblyAttributes.Add($"[{attributes}]");
+        }
+
+        public void NestType(GeneratingTypeName typeName, string nodeName, Action<CodeNodeBuilder> node) {
+            Action<CodeNodeBuilder> lastAction = builder => builder.AddNode(nodeName, node);
+            foreach (var (parentKind, parentName) in typeName.Parents.Reverse()) {
+                lastAction = builder => builder.AddNode($"partial {parentKind.ToString().ToLower()} {parentName}", lastAction);
+            }
+            lastAction(this);
         }
 
         public override string ToString() {
