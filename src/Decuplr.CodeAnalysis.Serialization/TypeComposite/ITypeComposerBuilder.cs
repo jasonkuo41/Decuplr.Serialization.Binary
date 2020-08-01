@@ -4,6 +4,6 @@ using Decuplr.Serialization.SourceBuilder;
 
 namespace Decuplr.CodeAnalysis.Serialization.TypeComposite {
     public interface ITypeComposerBuilder {
-        ITypeComposer BuildTypeComposer(IComponentProvider provider, GeneratingTypeName typeName, Func<MemberMetaInfo, GeneratingTypeName> memberCompositeNameFactory);
+        ITypeComposer BuildTypeComposer(SchemaLayout layout, IComponentProvider provider, GeneratingTypeName typeName, Func<MemberMetaInfo, GeneratingTypeName> memberCompositeNameFactory);
     }
 }

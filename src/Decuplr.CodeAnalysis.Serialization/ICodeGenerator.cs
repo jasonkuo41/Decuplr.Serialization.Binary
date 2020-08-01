@@ -7,6 +7,10 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Decuplr.CodeAnalysis.Serialization {
     public interface ICodeGenerator {
+        event EventHandler<Diagnostic> OnReportedDiagnostic;
+
+        event EventHandler<GeneratedSourceText> OnGeneratedSource;
+
         void VerifySyntax();
         void GenerateFiles();
     }

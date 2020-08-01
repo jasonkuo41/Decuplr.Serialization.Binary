@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using Decuplr.Serialization.AnalysisService;
+using Decuplr.CodeAnalysis.Meta;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary {

@@ -1,11 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using Decuplr.Serialization.Binary.FormatSource;
-using Decuplr.Serialization.Binary.ParserProviders;
-using Decuplr.Serialization.CodeGeneration;
+using Decuplr.CodeAnalysis.Serialization;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -13,6 +8,7 @@ namespace Decuplr.Serialization.Binary {
 
     [Generator]
     public class LibraryGenerator : ISourceGenerator {
+
         private class CandidateSyntaxReceiver : ISyntaxReceiver {
 
             public List<TypeDeclarationSyntax> DeclaredTypes { get; } = new List<TypeDeclarationSyntax>();
@@ -27,6 +23,8 @@ namespace Decuplr.Serialization.Binary {
             }
         }
 
+        private readonly ICodeGeneratorFactory _genFactory = CommonGeneratorSetup.CreateCommonFactory();
+
         public void Initialize(InitializationContext context) => context.RegisterForSyntaxNotifications(() => new CandidateSyntaxReceiver());
 
         public void Execute(SourceGeneratorContext context) {
@@ -34,16 +32,11 @@ namespace Decuplr.Serialization.Binary {
                 if (!(context.SyntaxReceiver is CandidateSyntaxReceiver receiver))
                     return;
 
-                var builder = new CodeGeneratorBuilder();
-
-                builder.AddStartup<BinaryFormatProvider>();
-                builder.AddStartup<BinaryParserProvider>();
-
-                var generator = builder.UseDependencyProvider<InlineDependencyProvider>()
-                                       .UseDependencyProvider<DefaultDependencyProvider>()
-                                       .CreateGenerator();
-
-                generator.GenerateFiles(receiver.DeclaredTypes, context.Compilation, context.CancellationToken);
+                _genFactory.RunGeneration(context.Compilation, receiver.DeclaredTypes, generator => {
+                    generator.OnReportedDiagnostic += (_, diagnostic) => context.ReportDiagnostic(diagnostic);
+                    generator.OnGeneratedSource += (_, source) => context.AddSourceWithDebug(source);
+                    generator.GenerateFiles();
+                });
             }
             catch (Exception e) {
                 context.WriteException(e);
@@ -51,5 +44,4 @@ namespace Decuplr.Serialization.Binary {
         }
 
     }
-
 }

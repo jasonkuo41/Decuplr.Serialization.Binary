@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Decuplr.Serialization.AnalysisService;
+﻿using Decuplr.CodeAnalysis.Meta;
+using Decuplr.CodeAnalysis.Serialization;
 using Decuplr.Serialization.Binary.LayoutService;
-using Decuplr.Serialization.CodeGeneration;
-using Decuplr.Serialization.LayoutService;
 
 namespace Decuplr.Serialization.Binary.FormatSource {
     internal abstract class GeneratorProviderBase : IGenerationStartup {

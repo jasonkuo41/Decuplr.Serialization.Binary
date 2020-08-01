@@ -6,18 +6,14 @@ using Microsoft.CodeAnalysis;
 namespace Decuplr.CodeAnalysis.Serialization.Internal {
     internal class DiagnosticReporter : IDiagnosticReporter {
 
-        private readonly Action<Diagnostic>? _diagnostics;
+        public event EventHandler<Diagnostic>? OnReportedDiagnostic;
 
         public bool ContainsError { get; private set; }
-
-        public DiagnosticReporter(Action<Diagnostic>? diagnosticAction) {
-            _diagnostics = diagnosticAction;
-        }
 
         public void ReportDiagnostic(Diagnostic diagnostic) {
             if (diagnostic.Severity == DiagnosticSeverity.Error)
                 ContainsError = true;
-            _diagnostics?.Invoke(diagnostic);
+            OnReportedDiagnostic?.Invoke(this, diagnostic);
         }
 
         public void ReportDiagnostic(IEnumerable<Diagnostic> diagnostics) {

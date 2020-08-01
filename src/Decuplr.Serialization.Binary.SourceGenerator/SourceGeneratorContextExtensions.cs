@@ -2,25 +2,19 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
-using Decuplr.Serialization.CodeGeneration;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CodeFixes;
-using Microsoft.CodeAnalysis.Text;
 
 namespace Decuplr.Serialization.Binary {
-    static class SourceGeneratorContextExtensions {
+    internal static class SourceGeneratorContextExtensions {
 
         [Conditional("DEBUG")]
-        private static void WriteFiles(IEnumerable<GeneratedSourceCode> sourceCodes, string path) {
+        private static void WriteFiles(GeneratedSourceText sourceCode, string path) {
             var directory = Path.Combine(Directory.GetCurrentDirectory(), path);
             Directory.CreateDirectory(directory);
-            foreach (var sourceCode in sourceCodes) {
-                File.WriteAllText(Path.Combine(directory, sourceCode.FileName), sourceCode.SourceText);
-            }
+            File.WriteAllText(Path.Combine(directory, sourceCode.HintName), sourceCode.Text.ToString());
         }
 
-        private static string OutputException(Exception exception) => 
+        private static string OutputException(Exception exception) =>
 @$"An Exception Has Occured : 
     {exception.GetType().Name}
 
@@ -44,11 +38,10 @@ StackTrace :
             File.WriteAllText(Path.Combine(directory, Path.ChangeExtension(errorFilename, ".txt")), OutputException(exception));
         }
 
-        public static void AddSource(this SourceGeneratorContext generatorContext, IEnumerable<GeneratedSourceCode> sourceCodes, string? debugOutputPath = null) {
+        public static void AddSourceWithDebug(this SourceGeneratorContext generatorContext, GeneratedSourceText sourceCode, string? debugOutputPath = null) {
             debugOutputPath ??= ".generated";
-            foreach(var sourceCode in sourceCodes)
-                generatorContext.AddSource(sourceCode.FileName, SourceText.From(sourceCode.SourceText, Encoding.UTF8));
-            WriteFiles(sourceCodes, debugOutputPath);
+            WriteFiles(sourceCode, debugOutputPath);
+            generatorContext.AddSource(sourceCode.HintName, sourceCode.Text);
         }
 
         public static void WriteException(this SourceGeneratorContext generatorContext, Exception exception, string? debugOutputPath = null, string? errorFileName = null) {
@@ -62,11 +55,6 @@ StackTrace :
                    @$"An exception has occured during compilation. {exception.GetType()} : {exception.Message} (Site : {exception.TargetSite})", DiagnosticSeverity.Warning, true), Location.None));
                 currentException = currentException.InnerException;
             }
-        }
-
-        public static void ReportDiagnostic(this SourceGeneratorContext context, IEnumerable<Diagnostic> diagnostics) {
-            foreach (var diagnostic in diagnostics)
-                context.ReportDiagnostic(diagnostic);
         }
 
     }

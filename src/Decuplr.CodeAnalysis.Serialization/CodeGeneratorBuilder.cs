@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Decuplr.CodeAnalysis.Diagnostics;
 using Decuplr.CodeAnalysis.Meta;
 using Decuplr.CodeAnalysis.Serialization.Internal;
+using Decuplr.CodeAnalysis.Serialization.StartupServices;
 using Decuplr.CodeAnalysis.Serialization.TypeComposite;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -12,18 +13,28 @@ namespace Decuplr.CodeAnalysis.Serialization {
 
     public class CodeGeneratorBuilder {
 
-        private readonly Compilation _compilation;
-        private readonly IEnumerable<TypeDeclarationSyntax> _syntaxes;
+        private class CodeGeneratorFactory : ICodeGeneratorFactory {
+            private readonly IServiceProvider _services;
+
+            public CodeGeneratorFactory(IServiceProvider services) {
+                _services = services;
+            }
+
+            public void RunGeneration(Compilation compilation, IEnumerable<TypeDeclarationSyntax> syntaxes, Action<ICodeGenerator> generatorAction) {
+                using var scope = _services.CreateScope();
+                var service = scope.ServiceProvider;
+                {
+                    var compileInfo = service.GetRequiredService<CompilationInfo>();
+                    compileInfo.SourceCompilation = compilation;
+                    compileInfo.DeclarationSyntaxes = syntaxes;
+                }
+                generatorAction(service.GetRequiredService<ICodeGenerator>());
+            }
+        }
+
         private readonly HashSet<Type> _startups = new HashSet<Type>();
 
         private Action<IServiceCollection>? _serviceConfig;
-        private Action<Diagnostic>? _diagnosticCb;
-        private Action<GeneratedSourceText>? _sourceCallback;
-
-        public CodeGeneratorBuilder(Compilation compilation, IEnumerable<TypeDeclarationSyntax> syntaxes) {
-            _compilation = compilation;
-            _syntaxes = syntaxes;
-        }
 
         public CodeGeneratorBuilder AddStartup<TProvider>() where TProvider : class, IGenerationStartup {
             if (!_startups.Add(typeof(IGenerationStartup)))
@@ -37,43 +48,41 @@ namespace Decuplr.CodeAnalysis.Serialization {
             return this;
         }
 
-        public CodeGeneratorBuilder OnReportedDiagnostics(Action<Diagnostic> diagnosticCb) {
-            _diagnosticCb += diagnosticCb;
-            return this;
-        }
-
-        public CodeGeneratorBuilder OnAddSource(Action<GeneratedSourceText> sourceCallback) {
-            _sourceCallback = sourceCallback;
-            return this;
-        }
-
-        public ICodeGenerator CreateGenerator<TProvider>(Func<IServiceProvider, TProvider> providerFactory) where TProvider : class, ITypeParserDirector {
+        public ICodeGeneratorFactory BuildGenerator<TProvider>(Func<IServiceProvider, TProvider> providerFactory) where TProvider : class, ITypeParserDirector {
             if (_startups.Count == 0)
                 throw new ArgumentException("No entry startup is provided. Code Generation Failed");
 
             var services = new ServiceCollection();
-            services.AddSingleton<ICodeGenerator, CodeGenerator>();
-            services.AddSingleton<ITypeParserDirector>(providerFactory);
-            services.AddSingleton<ICompilationInfo>(new CompilationInfo(_compilation, _syntaxes));
-            services.AddSingleton<IDiagnosticReporter>(new DiagnosticReporter(_diagnosticCb));
-            services.AddSingleton<IUniqueNameProvider>(new UniqueNameProvider());
+
+            // Singleton Area (Compilation Agnostic Services)
+            {
+                services.AddSingleton<IUniqueNameProvider>(new UniqueNameProvider());
+                services.AddSingleton<ICodeGeneratorFactory, CodeGeneratorFactory>();
+            }
+
+            services.AddScoped<ICodeGenerator, CodeGenerator>();
+            services.AddScoped<ITypeParserDirector>(providerFactory);
+
+            services.AddScoped<CompilationInfo>();
+            services.AddScoped<ICompilationInfo>(services => services.GetRequiredService<CompilationInfo>());
+
+            services.AddScoped<DiagnosticReporter>();
+            services.AddScoped<IDiagnosticReporter>(services => services.GetRequiredService<DiagnosticReporter>());
             // Add TypeSymbolProvider / SourceAddition
             {   
-                services.AddSingleton(provider => ActivatorUtilities.CreateInstance<TypeSymbolProvider>(provider, _sourceCallback));
-                services.AddSingleton<ITypeSymbolProvider>(provider => provider.GetRequiredService<TypeSymbolProvider>());
-                services.AddSingleton<ISourceAddition>(provider => provider.GetRequiredService<TypeSymbolProvider>());
+                services.AddScoped<TypeSymbolCollection>();
+                services.AddScoped<ITypeSymbolProvider>(provider => provider.GetRequiredService<TypeSymbolCollection>());
+                services.AddScoped<ISourceAddition>(provider => provider.GetRequiredService<TypeSymbolCollection>());
             }
             services.AddSourceMetaAnalysis(); // ISourceMetaAnalysis
-            services.AddSourceValidation(); // ISourceValidation
+            services.AddGenerationStartupServices();
 
             // Setup some internal services
-            services.AddSingleton(provider => ActivatorUtilities.CreateInstance<StartupServiceProvider>(provider, services, provider));
-            services.AddSingleton<CodeGenerator.SyntaxVerification>();
+            services.AddScoped<CodeGenerator.SyntaxVerification>();
 
             _serviceConfig?.Invoke(services);
 
-            var appServices = services.BuildServiceProvider();
-            return appServices.GetRequiredService<ICodeGenerator>();
+            return services.BuildServiceProvider().GetRequiredService<ICodeGeneratorFactory>();
         }
 
     }

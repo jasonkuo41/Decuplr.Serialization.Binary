@@ -14,13 +14,11 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
         private const string discovery = "discovery";
         private const string isSuccess = "isSuccess";
 
-        private readonly SchemaLayout _type;
         private readonly MemberComposerFactory _memberFactory;
         private readonly ISourceAddition _sourceAddition;
         private readonly ITypeSymbolProvider _symbolSource;
 
-        public TypeComposerBuilder(SchemaLayout layout, MemberComposerFactory memberFactory, ISourceAddition sourceAddition, ITypeSymbolProvider symbolProvider) {
-            _type = layout;
+        public TypeComposerBuilder(MemberComposerFactory memberFactory, ISourceAddition sourceAddition, ITypeSymbolProvider symbolProvider) {
             _memberFactory = memberFactory;
             _sourceAddition = sourceAddition;
             _symbolSource = symbolProvider;
@@ -37,9 +35,9 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
             TryPattern(fullName, provider)
         };
 
-        public ITypeComposer BuildTypeComposer(IComponentProvider provider, GeneratingTypeName typeName, Func<MemberMetaInfo, GeneratingTypeName> memberCompositeNameFactory) {
+        public ITypeComposer BuildTypeComposer(SchemaLayout layout, IComponentProvider provider, GeneratingTypeName typeName, Func<MemberMetaInfo, GeneratingTypeName> memberCompositeNameFactory) {
 
-            var mCompName = _type.Members.Select(x => memberCompositeNameFactory(x)).ToList();
+            var mCompName = layout.Members.Select(x => memberCompositeNameFactory(x)).ToList();
 
             var builder = new CodeSourceFileBuilder(typeName.Namespace);
             builder.Using("System");
@@ -73,9 +71,9 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
 
             _sourceAddition.AddSource($"{typeName}_generated.cs", builder.ToString());
 
-            var typeComposer = new TypeComposer(_type, _symbolSource.GetSymbol(typeName.ToString()), GetDefaultSignature(typeName, provider));
-            for (var i = 0; i < _type.Members.Count; ++i) {
-                typeComposer.Add(Property.MemberName(i), _memberFactory.Build(typeComposer, _type.Members[i], mCompName[i], provider));
+            var typeComposer = new TypeComposer(layout, _symbolSource.GetSymbol(typeName.ToString()), GetDefaultSignature(typeName, provider));
+            for (var i = 0; i < layout.Members.Count; ++i) {
+                typeComposer.Add(Property.MemberName(i), _memberFactory.Build(typeComposer, layout.Members[i], mCompName[i], provider));
             }
             return typeComposer;
         }

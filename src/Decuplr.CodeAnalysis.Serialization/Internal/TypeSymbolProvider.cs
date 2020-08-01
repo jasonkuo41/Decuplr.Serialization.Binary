@@ -7,21 +7,21 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 
 namespace Decuplr.CodeAnalysis.Serialization.Internal {
-    internal class TypeSymbolProvider : ITypeSymbolProvider, ISourceAddition {
+    internal class TypeSymbolCollection : ITypeSymbolProvider, ISourceAddition {
 
         private static Exception NotSupported { get; } = new NotSupportedException("Type is not found with the current compilation");
 
         private readonly CancellationToken _ct;
-        private readonly Action<GeneratedSourceText>? _sourceTextCb;
 
         private readonly Dictionary<Type, INamedTypeSymbol> _cachedSymbols = new Dictionary<Type, INamedTypeSymbol>();
         private readonly CSharpCompilation _sourceCompilation;
         private CSharpCompilation _currentCompilation;
 
-        public TypeSymbolProvider(ICompilationInfo info, ICompilationLifetime lifetime, Action<GeneratedSourceText>? sourceTextCb) {
+        public event EventHandler<GeneratedSourceText>? OnSourceGenerated;
+
+        public TypeSymbolCollection(ICompilationInfo info, ICompilationLifetime lifetime) {
             _sourceCompilation = info.SourceCompilation as CSharpCompilation ?? throw new NotSupportedException("Source Generator does not support languages other then C#");
             _currentCompilation = _sourceCompilation;
-            _sourceTextCb = sourceTextCb;
             _ct = lifetime.OnCompilationCancelled;
         }
 
@@ -61,7 +61,7 @@ namespace Decuplr.CodeAnalysis.Serialization.Internal {
         public void AddSource(GeneratedSourceText sourceText) {
             var syntax = CSharpSyntaxTree.ParseText(sourceText.Text, new CSharpParseOptions(_sourceCompilation.LanguageVersion), "", null, true, _ct);
             _currentCompilation = _currentCompilation.AddSyntaxTrees(syntax);
-            _sourceTextCb?.Invoke(sourceText);
+            OnSourceGenerated?.Invoke(this, sourceText);
         }
     }
 

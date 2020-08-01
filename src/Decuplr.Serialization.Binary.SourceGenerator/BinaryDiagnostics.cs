@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using System.Net.Http.Headers;
 using System.Text;
+using Decuplr.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary {
-    static class DiagnosticHelperLegacy {
+    class BinaryDiagnostics : DiagnosticHelper {
         private const string IdTitle = "BFSG";
         private const string Category = "Decuplr.BinaryPacker.SourceGenerator";
 

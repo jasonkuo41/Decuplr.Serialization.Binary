@@ -9,7 +9,6 @@ namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
 
     internal class SourceValidation : ISourceValidation {
 
-        private static readonly IReadOnlyList<MemberMetaInfo> EmptyMember = Array.Empty<MemberMetaInfo>();
         private readonly IDiagnosticReporter _diagnostics;
         private readonly IEnumerable<IGroupValidationProvider> _groupProviders;
         private readonly IEnumerable<ITypeValidationProvider> _typeProviders;

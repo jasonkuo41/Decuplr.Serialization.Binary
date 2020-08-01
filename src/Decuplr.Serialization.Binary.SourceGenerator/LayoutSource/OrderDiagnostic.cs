@@ -1,15 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using Decuplr.Serialization.AnalysisService;
-using Decuplr.Serialization.LayoutService;
+using Decuplr.CodeAnalysis.Diagnostics;
+using Decuplr.CodeAnalysis.Meta;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.LayoutService {
-    
+
     [DiagnosticSource("DSID", "Decuplr.Serialization.IndexOrder")]
-    internal class OrderDiagnostic : DiagnosticHelper {
+    internal class OrderDiagnostic : BinaryDiagnostics {
         [Diagnostic(0, DiagnosticSeverity.Error, "Invalid serialization target", "Keyword {0} of '{1}' is not a valid target for serialization.")]
         internal static Diagnostic InvalidKeyword(string invalidKeyword, MemberMetaInfo member) => CreateDiagnostic(member.Location, new object?[] { invalidKeyword, member.Symbol });
 

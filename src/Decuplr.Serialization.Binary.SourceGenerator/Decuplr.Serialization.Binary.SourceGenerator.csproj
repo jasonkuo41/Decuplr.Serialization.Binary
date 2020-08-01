@@ -13,39 +13,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include=".obsolete\EmbeddedCode.cs" />
-    <Compile Include=".obsolete\GeneratedFormatFunction.cs" />
-    <Compile Include=".obsolete\GeneratedParser.cs" />
-    <Compile Include=".obsolete\GeneratedTypeBuilder.cs" />
-    <Compile Include=".obsolete\IGeneratedType.cs" />
-    <Compile Include=".preobsolete\Arguments\ParserArguments.cs" />
-    <Compile Include=".preobsolete\BinaryPackerEntryPointGenerator.cs" />
-    <Compile Include=".preobsolete\CodeAnalysisExtensions.cs" />
-    <Compile Include=".preobsolete\CommonAttributes.cs" />
-    <Compile Include=".preobsolete\MrBoilerPlate.cs" />
-    <Compile Include=".preobsolete\Providers\BinaryFormatSourceProvider.cs" />
-    <Compile Include=".preobsolete\Providers\BinaryParserSourceProvider.cs" />
-    <Compile Include=".preobsolete\Providers\IParserGenerateSource.cs" />
-    <Compile Include=".preobsolete\Schemas\GenericParserProviderWrapper.cs" />
-    <Compile Include=".preobsolete\Schemas\IDeserializeSolution.cs" />
-    <Compile Include=".preobsolete\Schemas\ISerializeSolution.cs" />
-    <Compile Include=".preobsolete\Schemas\ParserProviderWrapper.cs" />
-    <Compile Include=".preobsolete\Schemas\PartialTypeDeserialize.cs" />
-    <Compile Include=".preobsolete\Schemas\PartialTypeSerialize.cs" />
-    <Compile Include=".preobsolete\Schemas\SchemaParserConverter.cs" />
-    <Compile Include=".preobsolete\Schemas\TypeParserGenerator.cs" />
-    <Compile Include=".preobsolete\Templates\ParserKinds\IParserKindProvider.cs" />
-    <Compile Include=".preobsolete\Templates\ParserSource\DependencyCollection.cs" />
-    <Compile Include=".preobsolete\Templates\ParserSource\GeneratedDependencyParser.cs" />
-    <Compile Include=".preobsolete\Templates\ParserSource\IComponentName.cs" />
-    <Compile Include=".preobsolete\Templates\ParserSource\IParserDependencyComponent.cs" />
-    <Compile Include=".preobsolete\Templates\ParserSource\ParserDependencyPrecusor.cs" />
-    <Compile Include=".preobsolete\Templates\ParserSource\ParserFunctionTemplate.cs" />
-    <Compile Include=".preobsolete\Templates\ParserSource\PrimitiveByteDependency.cs" />
-    <Compile Include=".preobsolete\Templates\ParserSource\TypeParserWrappedDependency.cs" />
-    <Compile Include=".preobsolete\Utility\DiagnosticHelper.cs" />
-    <Compile Include=".preobsolete\Utility\TypeFormatLayoutExtensions.cs" />
-    <Compile Include=".preobsolete\Utility\xxHash64.cs" />
+    <Compile Remove=".preobsolete\**" />
+    <EmbeddedResource Remove=".preobsolete\**" />
+    <None Remove=".preobsolete\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -54,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Decuplr.CodeAnalysis.Serialization\Decuplr.CodeAnalysis.Serialization.csproj" />
     <ProjectReference Include="..\Decuplr.Serialization.Binary.Shared\Decuplr.Serialization.Binary.Shared.csproj" />
   </ItemGroup>
 

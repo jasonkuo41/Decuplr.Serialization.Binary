@@ -1,4 +1,8 @@
-﻿using System.Collections.Immutable;
+﻿using System.Collections.Concurrent;
+using System.Collections.Immutable;
+using System.Linq;
+using Decuplr.CodeAnalysis.Diagnostics;
+using Decuplr.CodeAnalysis.Serialization;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -7,30 +11,25 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace Decuplr.Serialization.Binary {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class LibraryAnalyzer : DiagnosticAnalyzer {
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(DiagnosticHelperLegacy.CannotFindMatchingParserType);
 
+        private readonly ICodeGeneratorFactory _generatorFactory = CommonGeneratorSetup.CreateCommonFactory();
+
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.CreateRange(DiagnosticHelper.Descriptors.Select(x => x.Value));
 
         public override void Initialize(AnalysisContext context) {
             context.EnableConcurrentExecution();
-            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
-            context.RegisterSyntaxNodeAction(SyntaxAnalysis, SyntaxKind.StructDeclaration, SyntaxKind.ClassDeclaration);
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
+            context.RegisterSymbolAction(SymbolAnalysis, SymbolKind.NamedType);
         }
 
-        public void SyntaxAnalysis(SyntaxNodeAnalysisContext context) {
-            if (!(context.Node is TypeDeclarationSyntax typeDeclareSyntax))
+        public void SymbolAnalysis(SymbolAnalysisContext context) {
+            if (!(context.Symbol is INamedTypeSymbol symbol))
                 return;
-            context.ReportDiagnostic(Diagnostic.Create(DiagnosticHelperLegacy.CannotFindMatchingParserType, typeDeclareSyntax.GetLocation()));
-            foreach (var type in SourceCodeAnalyzer.AnalyzeTypeSyntax(new TypeDeclarationSyntax[] { typeDeclareSyntax }, context.Compilation, context.CancellationToken)) {
-                var precusor = new SchemaPrecusor {
-                    NeverDeserialize = false,
-                    IsSealed = true,
-                    RequestLayout = LayoutOrder.Auto,
-                    TargetNamespaces = new string[] { "Default" }
-                };
-                TypeFormatLayout.TryGetLayout(type, ref precusor, out var diagnostics, out _);
-                foreach (var diagnostic in diagnostics)
-                    context.ReportDiagnostic(diagnostic);
-            }
+            var syntaxes = symbol.DeclaringSyntaxReferences.Select(x => (TypeDeclarationSyntax)x.GetSyntax(context.CancellationToken));
+            _generatorFactory.RunGeneration(context.Compilation, syntaxes, generator => {
+                generator.OnReportedDiagnostic += (_, diagnostic) => context.ReportDiagnostic(diagnostic);
+                generator.VerifySyntax();
+            });
         }
     }
 }

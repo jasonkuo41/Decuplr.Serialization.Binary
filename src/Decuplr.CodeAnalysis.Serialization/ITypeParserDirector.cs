@@ -1,7 +1,8 @@
-﻿using System.Threading;
+﻿using System.Collections.Generic;
+using System.Threading;
 
 namespace Decuplr.CodeAnalysis.Serialization {
     public interface ITypeParserDirector {
-        void ComposeParser();
+        void ComposeParser(IEnumerable<SchemaLayout> layouts);
     }
 }

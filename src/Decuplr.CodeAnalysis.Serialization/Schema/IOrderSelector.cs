@@ -13,7 +13,12 @@ namespace Decuplr.CodeAnalysis.Serialization {
         /// </remarks>
         bool ContinueOnFailedValidation { get; }
 
-        bool IsValidMember(MemberMetaInfo member);
+        /// <summary>
+        /// If a member should consider to be verified
+        /// </summary>
+        /// <param name="member"></param>
+        /// <returns></returns>
+        bool IsCandidateMember(MemberMetaInfo member);
 
         /// <summary>
         /// Generates and reorders the member to the defined order, with error reporting capability

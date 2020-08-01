@@ -1,5 +1,6 @@
 ﻿using Decuplr.CodeAnalysis.Serialization.Arguments;
 using Decuplr.Serialization.SourceBuilder;
+using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Serialization.TypeComposite {
     /// <summary>
@@ -9,7 +10,7 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite {
         /// <summary>
         /// The full name of the component, for example "TypeParser`T" or "ByteOrder"
         /// </summary>
-        string FullTypeName { get; }
+        INamedTypeSymbol Type { get; }
 
         void ProvideInitialize(CodeNodeBuilder builder, string discoveryName);
 

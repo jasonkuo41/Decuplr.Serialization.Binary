@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Decuplr.Serialization</RootNamespace>
+	<LangVersion>latest</LangVersion>
   </PropertyGroup>
 
 </Project>

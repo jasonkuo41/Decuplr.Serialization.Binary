@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using Decuplr.CodeAnalysis.Meta;
 using Decuplr.CodeAnalysis.Serialization.Arguments;
-using Decuplr.CodeAnalysis.Serialization.TypeComposite;
 using Decuplr.Serialization.SourceBuilder;
 
 namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
@@ -10,9 +9,9 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
 
         private readonly IComposerMethodBodyBuilder _body;
 
-        public override IReadOnlyList<string> PrependArguments => Array.Empty<string>(); 
-        
-        public ParsingBodyWrapBuilder(MemberMetaInfo member, ComposerMethodNames methodNames, IComposerMethodBodyBuilder bodyBuilder) 
+        public override IReadOnlyList<string> PrependArguments => Array.Empty<string>();
+
+        public ParsingBodyWrapBuilder(MemberMetaInfo member, ComposerMethodNames methodNames, IComposerMethodBodyBuilder bodyBuilder)
             : base(member, methodNames) {
             _body = bodyBuilder;
         }

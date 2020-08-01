@@ -192,7 +192,7 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
             return string.Empty;
         }
 
-        private MethodSignature TryConstructor => MethodSignatureBuilder.CreateConstructor(Accessibility.Public, _typeName, )
+        //private MethodSignature TryConstructor => MethodSignatureBuilder.CreateConstructor(Accessibility.Public, _typeName, )
 
         public IMemberComposer CreateStruct(ITypeComposer typeComposer, IComponentProvider provider, Func<GeneratingTypeName, string, INamedTypeSymbol> symbolProvider) {
             var components = _componentCollection.Components.Select(x => provider.ProvideComponent(x)).ToList();
@@ -204,7 +204,6 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
             builder.NestType(_typeName, $"internal readonly struct {_typeName.TypeName} {GetGenericArgs()}", node => {
 
                 // Fields & Field Initialization
-                builder.Comment($"Depedency provided by {provider.Name}");
                 AddComponents(builder, components).NewLine();
                 AddComponentInitializers(builder, provider.DiscoveryType, components).NewLine();
 
@@ -237,7 +236,7 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
             var methods = new MethodSignature[] {
                 MethodSignatureBuilder.CreateConstructor(_typeName, (provider.DiscoveryType, "parser")),
                 MethodSignatureBuilder.CreateConstructor(_typeName, (provider.DiscoveryType, "parser"), (RefKind.Out, _symbols.GetSymbol<bool>(), "isSuccess")),
-                MethodSignatureBuilder.CreateMethod(_typeName, Method.TryDeserializeState(0)).AddArgument()
+                MethodSignatureBuilder.CreateMethod(_typeName, Method.TryDeserializeState(0)).AddArgument().WithReturn(_symbols.GetSymbol<bool>())
             };
 
             return new MemberComposer(typeComposer, _member, symbolProvider(_typeName, builder.ToString()), methods);

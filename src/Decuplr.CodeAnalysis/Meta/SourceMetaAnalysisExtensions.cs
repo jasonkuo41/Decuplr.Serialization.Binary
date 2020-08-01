@@ -9,7 +9,7 @@ namespace Decuplr.CodeAnalysis.Meta {
         /// </summary>
         /// <returns>The service collection</returns>
         public static IServiceCollection AddSourceMetaAnalysis(this IServiceCollection services) {
-            services.TryAddSingleton<ISourceMetaAnalysis, SourceCodeAnalysis>();
+            services.TryAddScoped<ISourceMetaAnalysis, SourceCodeAnalysis>();
             return services;
         }
     }
