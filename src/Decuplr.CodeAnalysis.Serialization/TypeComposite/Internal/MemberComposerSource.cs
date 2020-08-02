@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Decuplr.CodeAnalysis.Meta;
 using Decuplr.CodeAnalysis.Serialization.Arguments;
-using Decuplr.Serialization.SourceBuilder;
+using Decuplr.CodeAnalysis.SourceBuilder;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
@@ -130,7 +130,7 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
 
         private CodeNodeBuilder AddComponents(CodeNodeBuilder builder, IReadOnlyList<IComponentTypeInfo> components) {
             for (var i = 0; i < components.Count; ++i) {
-                builder.State($"private {components[i].FullTypeName} {Field.Component(i)}");
+                builder.State($"private {components[i].Type} {Field.Component(i)}");
             }
             return builder;
         }

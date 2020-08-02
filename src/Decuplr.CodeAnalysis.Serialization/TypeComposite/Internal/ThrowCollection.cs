@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using Decuplr.CodeAnalysis.Serialization.TypeComposite;
-using Decuplr.Serialization.SourceBuilder;
+using Decuplr.CodeAnalysis.SourceBuilder;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {

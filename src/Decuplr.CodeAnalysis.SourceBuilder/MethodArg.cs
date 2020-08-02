@@ -2,7 +2,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
-namespace Decuplr.Serialization.SourceBuilder {
+namespace Decuplr.CodeAnalysis.SourceBuilder {
     public class MethodArg {
 
         public ITypeSymbol? BackingSymbol { get; }

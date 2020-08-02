@@ -4,7 +4,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
-namespace Decuplr.Serialization.SourceBuilder {
+namespace Decuplr.CodeAnalysis.SourceBuilder {
     public struct GeneratingTypeName {
 
         private readonly string _namespace;

@@ -5,7 +5,7 @@ using Decuplr.CodeAnalysis.Meta;
 using Decuplr.CodeAnalysis.Serialization.Arguments;
 using Decuplr.CodeAnalysis.Serialization.TypeComposite;
 using Decuplr.Serialization;
-using Decuplr.Serialization.SourceBuilder;
+using Decuplr.CodeAnalysis.SourceBuilder;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {

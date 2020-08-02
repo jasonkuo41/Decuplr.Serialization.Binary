@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Serialization.SourceBuilder {
+namespace Decuplr.CodeAnalysis.SourceBuilder {
 
     public class MethodSignature {
         

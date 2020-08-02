@@ -51,7 +51,7 @@ namespace Decuplr.Serialization.Binary {
     }
 
     /// <summary>
-    /// Indicates that a circular reference of antoher schema was detected, thus the parser can be created
+    /// Indicates that a circular reference of antoher schema was detected, thus the parser cannot be created
     /// </summary>
     public class CircularSchemaReferenceException : BinarySerializationException {
 

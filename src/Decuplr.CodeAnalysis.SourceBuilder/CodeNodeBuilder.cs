@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.ComponentModel;
 using System.Reflection;
 
-namespace Decuplr.Serialization.SourceBuilder {
+namespace Decuplr.CodeAnalysis.SourceBuilder {
     public class CodeNodeBuilder {
 
         private class NodeInfo {

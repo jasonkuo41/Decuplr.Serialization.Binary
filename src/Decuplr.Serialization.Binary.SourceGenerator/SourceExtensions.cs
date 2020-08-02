@@ -5,7 +5,7 @@ using System.IO;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary {
-    internal static class SourceGeneratorContextExtensions {
+    internal static class SourceExtensions {
 
         [Conditional("DEBUG")]
         private static void WriteFiles(GeneratedSourceText sourceCode, string path) {

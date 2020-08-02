@@ -19,18 +19,25 @@ namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
             _diagnostics = diagnostics;
         }
 
-        public void Validate(NamedTypeMetaInfo type, Func<MemberMetaInfo, bool> memberSelector) {
+        public void Validate(TypeMetaSelection selection) {
             foreach (var typeValidation in _typeProviders) {
-                var typeValidator = new FluentMemberValidator(type, type.Members);
-                typeValidation.ConfigureValidation(typeValidator);
-                typeValidator.Validate(_diagnostics);
+                ValidateExternal(selection.Type, typeValidation, _diagnostics);
             }
             foreach (var groupValidation in _groupProviders) {
-                var groupValidator = new FluentTypeValidator(type, type.Members.Where(memberSelector), type.Members.Where(x => !memberSelector(x)));
-                groupValidation.ConfigureValidation(groupValidator);
-                groupValidator.Validate(_diagnostics);
+                ValidateExternal(selection, groupValidation, _diagnostics);
             }
         }
 
+        public void ValidateExternal(TypeMetaSelection selection, IGroupValidationProvider groupValidation, IDiagnosticReporter reporter) {
+            var groupValidator = new FluentTypeValidator(selection);
+            groupValidation.ConfigureValidation(groupValidator);
+            groupValidator.Validate(reporter);
+        }
+
+        public void ValidateExternal(NamedTypeMetaInfo type, ITypeValidationProvider typeValidation, IDiagnosticReporter reporter) {
+            var typeValidator = new FluentMemberValidator(TypeMetaSelection.Any(type));
+            typeValidation.ConfigureValidation(typeValidator);
+            typeValidator.Validate(reporter);
+        }
     }
 }

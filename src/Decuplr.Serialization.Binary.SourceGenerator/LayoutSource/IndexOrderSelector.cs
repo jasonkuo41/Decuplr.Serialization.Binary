@@ -2,30 +2,20 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using Decuplr.Serialization.AnalysisService;
-using Decuplr.Serialization.Binary;
-using Decuplr.Serialization.LayoutService;
+using Decuplr.CodeAnalysis.Diagnostics;
+using Decuplr.CodeAnalysis.Meta;
+using Decuplr.CodeAnalysis.Serialization;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.LayoutService {
     internal class IndexOrderSelector : IOrderSelector {
 
-        private readonly static Dictionary<LayoutOrder, IndexOrderSelector> Selectors = new Dictionary<LayoutOrder, IndexOrderSelector> {
-            [LayoutOrder.Auto] = new IndexOrderSelector(LayoutOrder.Auto),
-            [LayoutOrder.Sequential] = new IndexOrderSelector(LayoutOrder.Sequential),
-            [LayoutOrder.Explicit] = new IndexOrderSelector(LayoutOrder.Explicit),
-        };
-
+        private readonly IDiagnosticReporter _diagnostic;
         private readonly LayoutOrder _declaredOrder;
 
-        private IndexOrderSelector(LayoutOrder order) {
+        public IndexOrderSelector(IDiagnosticReporter diagnostic, LayoutOrder order) {
             _declaredOrder = order;
-        }
-
-        public static IOrderSelector GetSelector(LayoutOrder order) {
-            if (Selectors.TryGetValue(order, out var selector))
-                return selector;
-            throw new ArgumentException("Invalid Order Type");
+            _diagnostic = diagnostic;
         }
 
         private bool HasUnsupportedReturnType(ReturnTypeMetaInfo? returnType) {
@@ -41,7 +31,7 @@ namespace Decuplr.Serialization.Binary.LayoutService {
             }
         }
 
-        public void ConfigureMemeberValidation(IFluentMemberValidator filter) {
+        public void ConfigureValidation(IFluentMemberValidator filter) {
             filter.WhereAttribute<IndexAttribute>()
                   .InvalidOn(member => member.ContainsAttribute<IgnoreAttribute>())
                   .ReportDiagnostic(member => OrderDiagnostic.ConflictingAttributes(member, member.GetAttribute<IgnoreAttribute>()!, member.GetAttribute<IndexAttribute>()!))
@@ -56,20 +46,20 @@ namespace Decuplr.Serialization.Binary.LayoutService {
                   .ReportDiagnostic(member => OrderDiagnostic.UnsupportedType(member));
         }
 
-        private IEnumerable<MemberMetaInfo> GetSequentialOrder(IEnumerable<MemberMetaInfo> memberInfo, IDiagnosticReporter diagnostic, bool isExplicit) {
+        private IReadOnlyList<MemberMetaInfo> GetSequentialOrder(IEnumerable<MemberMetaInfo> memberInfo, bool isExplicit) {
             var indexes = memberInfo.Where(x => x.ContainsAttribute<IndexAttribute>());
             if (indexes.Any()) {
                 Debug.Assert(isExplicit);
                 foreach (var indexmember in indexes)
-                    diagnostic.ReportDiagnostic(OrderDiagnostic.ExplicitSequentialShouldNotIndex(indexmember, indexmember.GetLocation<IndexAttribute>()!));
-                return Enumerable.Empty<MemberMetaInfo>();
+                    _diagnostic.ReportDiagnostic(OrderDiagnostic.ExplicitSequentialShouldNotIndex(indexmember, indexmember.GetLocation<IndexAttribute>()!));
+                return Array.Empty<MemberMetaInfo>();
             }
 
             var partials = memberInfo.Where(x => x.ContainingFullType.IsPartial);
             if (partials.Any()) {
                 var type = partials.First().ContainingFullType;
-                diagnostic.ReportDiagnostic(OrderDiagnostic.SequentialCannotBePartial(type, isExplicit));
-                return Enumerable.Empty<MemberMetaInfo>();
+                _diagnostic.ReportDiagnostic(OrderDiagnostic.SequentialCannotBePartial(type, isExplicit));
+                return Array.Empty<MemberMetaInfo>();
             }
 
             // Get all the possible members that will be serialized
@@ -80,36 +70,37 @@ namespace Decuplr.Serialization.Binary.LayoutService {
                                           .Where(x => x.ReturnType != null);
 
             foreach (var member in electedMember.Where(x => HasUnsupportedReturnType(x.ReturnType!)))
-                diagnostic.ReportDiagnostic(OrderDiagnostic.UnsupportedTypeHint(member));
+                _diagnostic.ReportDiagnostic(OrderDiagnostic.UnsupportedTypeHint(member));
 
-            return electedMember;
+            return electedMember.ToList();
         }
 
-        private IEnumerable<MemberMetaInfo> GetExplicitOrder(IEnumerable<MemberMetaInfo> memberInfo, IDiagnosticReporter diagnostic) {
+        private IReadOnlyList<MemberMetaInfo> GetExplicitOrder(IEnumerable<MemberMetaInfo> memberInfo) {
 
             foreach (var ignoredMember in memberInfo.Where(x => x.ContainsAttribute<IgnoreAttribute>()))
-                diagnostic.ReportDiagnostic(OrderDiagnostic.ExplicitDontNeedIgnore(ignoredMember));
+                _diagnostic.ReportDiagnostic(OrderDiagnostic.ExplicitDontNeedIgnore(ignoredMember));
 
             var indexLookup = new Dictionary<int, MemberMetaInfo>();
-            foreach(var member in memberInfo) {
+            foreach (var member in memberInfo) {
                 if (!member.ContainsAttribute<IndexAttribute>())
                     continue;
                 var index = (int)member.GetAttribute<IndexAttribute>()!.ConstructorArguments[0].Value!;
                 // Check if we have duplicate index
                 if (indexLookup.TryGetValue(index, out var duplicateMember)) {
-                    diagnostic.ReportDiagnostic(OrderDiagnostic.DuplicateIndexs(index, duplicateMember, member));
+                    _diagnostic.ReportDiagnostic(OrderDiagnostic.DuplicateIndexs(index, duplicateMember, member));
                     continue;
                 }
                 indexLookup.Add(index, member);
             }
-            return indexLookup.OrderBy(x => x.Key).Select(x => x.Value);
+            return indexLookup.OrderBy(x => x.Key).Select(x => x.Value).ToList();
         }
 
-        public IEnumerable<MemberMetaInfo> GetOrder(IEnumerable<MemberMetaInfo> memberInfo, IDiagnosticReporter diagnostic) {
+        public IReadOnlyList<MemberMetaInfo> GetOrder(NamedTypeMetaInfo typeInfo) {
+            var memberInfo = typeInfo.Members;
             return GetImplicitLayout(out var isExplicit) switch
             {
-                LayoutOrder.Explicit => GetExplicitOrder(memberInfo, diagnostic),
-                LayoutOrder.Sequential => GetSequentialOrder(memberInfo, diagnostic, isExplicit),
+                LayoutOrder.Explicit => GetExplicitOrder(memberInfo),
+                LayoutOrder.Sequential => GetSequentialOrder(memberInfo, isExplicit),
                 _ => AssertInvalid(),
             };
 
@@ -120,10 +111,14 @@ namespace Decuplr.Serialization.Binary.LayoutService {
                 return memberInfo.Any(x => x.ContainsAttribute<IndexAttribute>()) ? LayoutOrder.Explicit : LayoutOrder.Sequential;
             }
 
-            IEnumerable<MemberMetaInfo> AssertInvalid() {
+            static IReadOnlyList<MemberMetaInfo> AssertInvalid() {
                 Debug.Fail($"Invalid Layout state");
                 throw new ArgumentException("Invalid Binary Layout");
             }
+        }
+
+        public bool IsCandidateMember(MemberMetaInfo member) {
+            throw new NotImplementedException();
         }
     }
 }

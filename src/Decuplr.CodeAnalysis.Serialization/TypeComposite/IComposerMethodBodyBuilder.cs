@@ -1,5 +1,5 @@
 ﻿using Decuplr.CodeAnalysis.Serialization.Arguments;
-using Decuplr.Serialization.SourceBuilder;
+using Decuplr.CodeAnalysis.SourceBuilder;
 
 namespace Decuplr.CodeAnalysis.Serialization.TypeComposite {
     public interface IComposerMethodBodyBuilder {

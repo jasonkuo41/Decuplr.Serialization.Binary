@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Serialization.SourceBuilder {
+namespace Decuplr.CodeAnalysis.SourceBuilder {
     static class CodeAnalysisExtensions {
         
         public static IEnumerable<INamedTypeSymbol> GetContainingTypes(this INamedTypeSymbol symbol) {

@@ -5,14 +5,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Serialization {
     public interface IOrderSelector : ITypeValidationProvider {
-        /// <summary>
-        /// Should the validation proccess continue to select the orders even if the member validation fails
-        /// </summary>
-        /// <remarks>
-        /// By setting this option to true, allows diagnostics to be generated if any issue was found with ordering even if there's faulty members
-        /// </remarks>
-        bool ContinueOnFailedValidation { get; }
-
+        
         /// <summary>
         /// If a member should consider to be verified
         /// </summary>

@@ -1,7 +1,7 @@
 ﻿using System;
 using Decuplr.CodeAnalysis.Meta;
 using Decuplr.CodeAnalysis.Serialization.Arguments;
-using Decuplr.Serialization.SourceBuilder;
+using Decuplr.CodeAnalysis.SourceBuilder;
 
 namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
     internal static class ParserGroupExtensions {

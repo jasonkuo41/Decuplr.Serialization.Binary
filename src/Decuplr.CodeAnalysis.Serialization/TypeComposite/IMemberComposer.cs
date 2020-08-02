@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using Decuplr.CodeAnalysis.Meta;
-using Decuplr.Serialization.SourceBuilder;
+using Decuplr.CodeAnalysis.SourceBuilder;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Serialization.TypeComposite {

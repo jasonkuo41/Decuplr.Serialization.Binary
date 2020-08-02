@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 
-namespace Decuplr.Serialization.SourceBuilder {
+namespace Decuplr.CodeAnalysis.SourceBuilder {
     static class StringExtensions {
 
         internal static bool AnyEndsWith(this string str, string end) 
@@ -13,6 +12,7 @@ namespace Decuplr.Serialization.SourceBuilder {
 
         internal static bool AnyClampsWith(this string str, string start, string end)
             => str.AnyStartsWith(start) && str.AnyEndsWith(end);
-        
+
     }
+
 }

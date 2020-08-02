@@ -2,7 +2,7 @@
 
 #if HIGH_LEVEL
 
-namespace Decuplr.Serialization.SourceBuilder {
+namespace Decuplr.CodeAnalysis.SourceBuilder {
     [Flags]
     public enum TypeModifiers {
         None = 0,

@@ -95,15 +95,13 @@ namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
         private readonly Dictionary<Type, List<IConditionRules>> _attributePredicates = new Dictionary<Type, List<IConditionRules>>();
         private readonly List<PredicateConditionPair> _memberPredicates = new List<PredicateConditionPair>();
         private readonly NamedTypeMetaInfo _type;
-        private readonly HashSet<MemberMetaInfo> _selectedMembers;
-        private readonly List<MemberMetaInfo> _excludedMembers;
+        private readonly IReadOnlyList<MemberMetaInfo> _selectedMembers;
+        private readonly IReadOnlyList<MemberMetaInfo> _excludedMembers;
 
-        public FluentMemberValidator(NamedTypeMetaInfo type, IEnumerable<MemberMetaInfo> members) {
-            _type = type;
-            _selectedMembers = new HashSet<MemberMetaInfo>(members);
-            _excludedMembers = type.Members.Where(x => !_selectedMembers.Contains(x)).ToList();
-
-            Debug.Assert(members.All(x => x.ContainingFullType.Equals(type)));
+        public FluentMemberValidator(TypeMetaSelection selection) {
+            _type = selection.Type;
+            _selectedMembers = selection.SelectedMembers;
+            _excludedMembers = selection.UnselectedMembers;
         }
 
         private void Add(Type type, IConditionRules rules) {

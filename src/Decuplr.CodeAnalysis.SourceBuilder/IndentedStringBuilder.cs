@@ -2,7 +2,7 @@
 using System.CodeDom.Compiler;
 using System.Text;
 
-namespace Decuplr.Serialization.SourceBuilder {
+namespace Decuplr.CodeAnalysis.SourceBuilder {
     internal class IndentedStringBuilder {
         private readonly int _tabCount;
         private readonly StringBuilder _builder;

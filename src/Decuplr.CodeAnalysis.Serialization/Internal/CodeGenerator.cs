@@ -4,28 +4,36 @@ using System.Linq;
 using Decuplr.CodeAnalysis.Diagnostics;
 using Decuplr.CodeAnalysis.Meta;
 using Decuplr.CodeAnalysis.Serialization.StartupServices;
+using Decuplr.CodeAnalysis.Serialization.TypeComposite;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Decuplr.CodeAnalysis.Serialization.Internal {
     internal class CodeGenerator : ICodeGenerator {
 
+        internal struct SchemaSolution {
+            public SchemaInfo Schema { get; set; }
+            public IParsingSolution Solution { get; set; }
+        }
+
         internal class SyntaxVerification {
 
             private readonly IGenerationStartupServices _startupServices;
             private readonly List<IGenerationStartup> _startups;
             private readonly ISourceMetaAnalysis _analysis;
-            private readonly Dictionary<IGenerationStartup, List<SchemaInfo>> _schemaInfos = new Dictionary<IGenerationStartup, List<SchemaInfo>>();
+            private readonly IDiagnosticReporter _diagnostic;
+            private readonly Dictionary<IGenerationStartup, List<SchemaSolution>> _schemaInfos = new Dictionary<IGenerationStartup, List<SchemaSolution>>();
 
             public bool HasVerified { get; private set; } = false;
 
-            public SyntaxVerification(IGenerationStartupServices startupServices, IEnumerable<IGenerationStartup> startups, ISourceMetaAnalysis analysis) {
+            public SyntaxVerification(IGenerationStartupServices startupServices, IEnumerable<IGenerationStartup> startups, ISourceMetaAnalysis analysis, IDiagnosticReporter diagnostic) {
                 _startupServices = startupServices;
                 _analysis = analysis;
+                _diagnostic = diagnostic;
                 _startups = startups.ToList();
             }
 
-            internal void VerifySyntax(out IReadOnlyDictionary<IGenerationStartup, List<SchemaInfo>> schemas) {
+            internal void VerifySyntax(out IReadOnlyDictionary<IGenerationStartup, List<SchemaSolution>> schemas) {
                 if (HasVerified) {
                     schemas = _schemaInfos;
                     return;
@@ -33,7 +41,6 @@ namespace Decuplr.CodeAnalysis.Serialization.Internal {
                 HasVerified = true;
 
                 var schemaInfos = new Dictionary<IGenerationStartup, List<SchemaInfo>>();
-                schemas = schemaInfos;
 
                 foreach (var startup in _startups) {
                     foreach (var type in _analysis.GetMetaInfo(DefaultMemberSelector)) {
@@ -46,15 +53,38 @@ namespace Decuplr.CodeAnalysis.Serialization.Internal {
                     }
                 }
 
-                foreach (var (startup, schemaList) in schemaInfos) {
-                    var service = _startupServices.GetStartupScopeService(startup);
+                schemas = schemaInfos.ToDictionary(x => x.Key, x => {
+                    var service = _startupServices.GetStartupScopeService(x.Key);
                     var syntaxVerify = service.GetRequiredService<ISourceValidation>();
-                    foreach (var schema in schemaList) {
-                        syntaxVerify.Validate(schema.SourceTypeInfo, schema.OrderSelector.IsCandidateMember);
-                    }
-                }
+                    var solutions = service.GetServices<IParsingSolution>();
+                    return x.Value.Select(x => ValidateSchemas(syntaxVerify, solutions, x)).ToList();
+                });
             }
 
+            private SchemaSolution ValidateSchemas(ISourceValidation syntaxVerify, IEnumerable<IParsingSolution> solutions, SchemaInfo schema) {
+                var solution = ElectAndReportDiagnostic(syntaxVerify, solutions, schema);
+                syntaxVerify.Validate(schema.SourceTypeInfo, schema.OrderSelector.IsCandidateMember);
+                return new SchemaSolution {
+                    Schema = schema,
+                    Solution = solution
+                };
+
+                IParsingSolution ElectAndReportDiagnostic(ISourceValidation syntaxVerify, IEnumerable<IParsingSolution> solutions, SchemaInfo schema) {
+                    DiagnosticReporterCollection? lastReporter = null;
+                    IParsingSolution? finalSolution = null;
+                    foreach (var solution in solutions) {
+                        finalSolution = solution;
+                        lastReporter = new DiagnosticReporterCollection();
+                        syntaxVerify.ValidateExternal(schema.SourceTypeInfo, schema.OrderSelector.IsCandidateMember, solution, lastReporter);
+                        if (!lastReporter.ContainsError)
+                            break;
+                    }
+                    _diagnostic.ReportDiagnostic(lastReporter?.Diagnostics ?? throw NoSolutionIsFound());
+                    return finalSolution ?? throw NoSolutionIsFound();
+                }
+
+                static Exception NoSolutionIsFound() => new InvalidOperationException("No Parsing Solution is not found");
+            }
         }
 
         // We should make this configurable
@@ -63,7 +93,10 @@ namespace Decuplr.CodeAnalysis.Serialization.Internal {
         private readonly SyntaxVerification _syntaxVerify;
         private readonly DiagnosticReporter _diagnostics;
         private readonly ITypeParserDirector _director;
+        private readonly IGenerationStartupServices _genservices;
         private readonly TypeSymbolCollection _symbolCollection;
+        private readonly TypeParserHost _parserHost;
+        private readonly IEnumerable<IGenerationFinalization> _finalizations;
         private bool _isGenerated = false;
 
         public event EventHandler<Diagnostic> OnReportedDiagnostic {
@@ -84,11 +117,20 @@ namespace Decuplr.CodeAnalysis.Serialization.Internal {
             remove => _symbolCollection.OnSourceGenerated -= value;
         }
 
-        public CodeGenerator(ITypeParserDirector director, SyntaxVerification verification, DiagnosticReporter diagnostics, TypeSymbolCollection symbolCollection) {
+        public CodeGenerator(ITypeParserDirector director,
+                             IGenerationStartupServices genservices,
+                             SyntaxVerification verification,
+                             DiagnosticReporter diagnostics,
+                             TypeSymbolCollection symbolCollection,
+                             TypeParserHost parserHost,
+                             IEnumerable<IGenerationFinalization> finalizations) {
             _diagnostics = diagnostics;
             _director = director;
             _syntaxVerify = verification;
+            _genservices = genservices;
             _symbolCollection = symbolCollection;
+            _parserHost = parserHost;
+            _finalizations = finalizations;
         }
 
         private static bool DefaultMemberSelector(ISymbol memberSymbol) => DefaultMemberKinds.Contains(memberSymbol.Kind);
@@ -96,7 +138,7 @@ namespace Decuplr.CodeAnalysis.Serialization.Internal {
         public void VerifySyntax() => _syntaxVerify.VerifySyntax(out _);
 
         public void GenerateFiles() {
-            _syntaxVerify.VerifySyntax(out var schemas);
+            _syntaxVerify.VerifySyntax(out var startupSchemas);
 
             // Don't generate any file if we have error in our diagnostics
             if (_diagnostics.ContainsError)
@@ -106,8 +148,15 @@ namespace Decuplr.CodeAnalysis.Serialization.Internal {
                 return;
             _isGenerated = true;
 
-            var layouts = schemas.SelectMany(x => x.Value).Select(x => new SchemaLayout(x, x.OrderSelector.GetOrder(x.SourceTypeInfo)));
-            _director.ComposeParser();
+            _director.ComposeParser(startupSchemas.SelectMany(x => {
+                var (startup, schemas) = x;
+                var services = _genservices.GetStartupScopeService(startup);
+                return schemas.Select(x => (Schema: new SchemaLayout(x.Schema, x.Schema.OrderSelector.GetOrder(x.Schema.SourceTypeInfo)), x.Solution))
+                              .Select(x => _parserHost.CreateBuilder(x.Schema, x.Solution));
+            }).ToList());
+
+            foreach (var finalizer in _finalizations)
+                finalizer.OnGenerationFinalized(_parserHost.GeneratedParsers);
         }
 
     }

@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis;
 
 #if HIGH_LEVEL
 
-namespace Decuplr.Serialization.SourceBuilder {
+namespace Decuplr.CodeAnalysis.SourceBuilder {
 
     public struct ArgumentType {
 
