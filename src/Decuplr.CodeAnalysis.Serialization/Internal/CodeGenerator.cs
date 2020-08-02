@@ -12,7 +12,7 @@ namespace Decuplr.CodeAnalysis.Serialization.Internal {
     internal class CodeGenerator : ICodeGenerator {
 
         internal struct SchemaSolution {
-            public SchemaInfo Schema { get; set; }
+            public SchemaLayout Schema { get; set; }
             public IParsingSolution Solution { get; set; }
         }
 
@@ -50,6 +50,7 @@ namespace Decuplr.CodeAnalysis.Serialization.Internal {
                             list.Add(schemaInfo);
                         else
                             schemaInfos.Add(startup, new List<SchemaInfo> { schemaInfo });
+                        "Make the SchemaLayout obsolete I think";
                     }
                 }
 
@@ -62,20 +63,28 @@ namespace Decuplr.CodeAnalysis.Serialization.Internal {
             }
 
             private SchemaSolution ValidateSchemas(ISourceValidation syntaxVerify, IEnumerable<IParsingSolution> solutions, SchemaInfo schema) {
-                var solution = ElectAndReportDiagnostic(syntaxVerify, solutions, schema);
-                syntaxVerify.Validate(schema.SourceTypeInfo, schema.OrderSelector.IsCandidateMember);
+                // Verify the order
+                var type = schema.SourceTypeInfo;
+                var orderSelector = schema.OrderSelector;
+                syntaxVerify.ValidateExternal(type, orderSelector, _diagnostic);
+                if (_diagnostic.ContainsError && orderSelector.ContinueDiagnosticAfterError) {
+                    return default;
+                }
+                var selection = new TypeMetaSelection(schema.SourceTypeInfo, orderSelector.GetOrder(type));
+                var solution = ElectAndReportDiagnostic(syntaxVerify, solutions, selection);
+                syntaxVerify.Validate(selection);
                 return new SchemaSolution {
-                    Schema = schema,
+                    Schema = new SchemaLayout(schema, selection.SelectedMembers),
                     Solution = solution
                 };
 
-                IParsingSolution ElectAndReportDiagnostic(ISourceValidation syntaxVerify, IEnumerable<IParsingSolution> solutions, SchemaInfo schema) {
+                IParsingSolution ElectAndReportDiagnostic(ISourceValidation syntaxVerify, IEnumerable<IParsingSolution> solutions, TypeMetaSelection selection) {
                     DiagnosticReporterCollection? lastReporter = null;
                     IParsingSolution? finalSolution = null;
                     foreach (var solution in solutions) {
                         finalSolution = solution;
                         lastReporter = new DiagnosticReporterCollection();
-                        syntaxVerify.ValidateExternal(schema.SourceTypeInfo, schema.OrderSelector.IsCandidateMember, solution, lastReporter);
+                        syntaxVerify.ValidateExternal(selection, solution, lastReporter);
                         if (!lastReporter.ContainsError)
                             break;
                     }
@@ -151,8 +160,7 @@ namespace Decuplr.CodeAnalysis.Serialization.Internal {
             _director.ComposeParser(startupSchemas.SelectMany(x => {
                 var (startup, schemas) = x;
                 var services = _genservices.GetStartupScopeService(startup);
-                return schemas.Select(x => (Schema: new SchemaLayout(x.Schema, x.Schema.OrderSelector.GetOrder(x.Schema.SourceTypeInfo)), x.Solution))
-                              .Select(x => _parserHost.CreateBuilder(x.Schema, x.Solution));
+                return schemas.Select(x => _parserHost.CreateBuilder(x.Schema, x.Solution));
             }).ToList());
 
             foreach (var finalizer in _finalizations)

@@ -5,13 +5,10 @@ using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Serialization {
     public interface IOrderSelector : ITypeValidationProvider {
-        
         /// <summary>
-        /// If a member should consider to be verified
+        /// Should the diagnostic continue even an error occurs
         /// </summary>
-        /// <param name="member"></param>
-        /// <returns></returns>
-        bool IsCandidateMember(MemberMetaInfo member);
+        bool ContinueDiagnosticAfterError { get; }
 
         /// <summary>
         /// Generates and reorders the member to the defined order, with error reporting capability
