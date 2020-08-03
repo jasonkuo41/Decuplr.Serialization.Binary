@@ -7,10 +7,10 @@ using Microsoft.CodeAnalysis;
 namespace Decuplr.Serialization.Binary {
     internal class AttributeInspector<TAttribute> where TAttribute : Attribute {
 
-        private readonly AttributeData _attribute;
+        public AttributeData Data { get; }
 
         public AttributeInspector(AttributeData data) {
-            _attribute = data;
+            Data = data;
         }
 
         private static string GetMemberName<T>(Expression<T> expression) => expression.Body switch
@@ -20,15 +20,15 @@ namespace Decuplr.Serialization.Binary {
             _ => throw new NotImplementedException(expression.GetType().ToString())
         };
 
-        public TValue GetSingleValue<TValue>(Expression<Func<TAttribute, TValue>> expression) where TValue : struct {
+        public TValue? GetSingleValue<TValue>(Expression<Func<TAttribute, TValue>> expression) where TValue : struct {
             var propertyName = GetMemberName(expression);
-            var value = _attribute.NamedArguments.FirstOrDefault(x => x.Key == propertyName).Value.Value;
-            return (TValue?)value ?? default;
+            var value = Data.NamedArguments.FirstOrDefault(x => x.Key == propertyName).Value.Value;
+            return (TValue?)value;
         }
 
         public TValue? GetSingleObject<TValue>(Expression<Func<TAttribute, TValue>> expression) where TValue : class {
             var propertyName = GetMemberName(expression);
-            var value = _attribute.NamedArguments.FirstOrDefault(x => x.Key == propertyName).Value.Value;
+            var value = Data.NamedArguments.FirstOrDefault(x => x.Key == propertyName).Value.Value;
             if (value is null)
                 return default;
             return (TValue)value;

@@ -50,7 +50,6 @@ namespace Decuplr.CodeAnalysis.Serialization.Internal {
                             list.Add(schemaInfo);
                         else
                             schemaInfos.Add(startup, new List<SchemaInfo> { schemaInfo });
-                        "Make the SchemaLayout obsolete I think";
                     }
                 }
 

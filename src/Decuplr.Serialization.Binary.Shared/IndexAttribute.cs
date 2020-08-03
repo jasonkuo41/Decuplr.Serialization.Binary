@@ -36,6 +36,7 @@ namespace Decuplr.Serialization.Binary {
 
     }
 
+
     public enum BitAllignment {
         StartSide,
         EndSide

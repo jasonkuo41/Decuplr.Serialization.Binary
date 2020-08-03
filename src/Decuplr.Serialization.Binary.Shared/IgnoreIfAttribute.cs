@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Decuplr.Serialization.Annotations;
 
+// Move to Decuplr.Serialization.Annotations
 namespace Decuplr.Serialization.Binary {
 
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = true, Inherited = true)]

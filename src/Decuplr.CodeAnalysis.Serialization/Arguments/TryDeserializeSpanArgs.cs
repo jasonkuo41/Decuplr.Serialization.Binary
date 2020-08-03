@@ -16,6 +16,7 @@ namespace Decuplr.CodeAnalysis.Serialization.Arguments {
         public OutArgs<int> OutReadBytes { get; set; }
 
         public OutArgs<object> OutResult { get; set; }
+
     }
 
     public struct TryDeserializeSequenceArgs<TSource> {

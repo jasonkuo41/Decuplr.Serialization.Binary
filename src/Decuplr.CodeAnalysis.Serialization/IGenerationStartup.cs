@@ -8,7 +8,6 @@ namespace Decuplr.CodeAnalysis.Serialization {
     /// Dependency Injected services are limited at this scope
     /// </remarks>
     public interface IGenerationStartup {
-        string Name { get; }
         void ConfigureFeatures(IGenerationFeatures provider);
         bool TryGetSchemaInfo(NamedTypeMetaInfo metaInfo, out SchemaInfo schema);
     }

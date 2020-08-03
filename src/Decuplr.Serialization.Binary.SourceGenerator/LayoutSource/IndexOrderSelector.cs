@@ -13,6 +13,8 @@ namespace Decuplr.Serialization.Binary.LayoutService {
         private readonly IDiagnosticReporter _diagnostic;
         private readonly LayoutOrder _declaredOrder;
 
+        public bool ContinueDiagnosticAfterError => false;
+
         public IndexOrderSelector(IDiagnosticReporter diagnostic, LayoutOrder order) {
             _declaredOrder = order;
             _diagnostic = diagnostic;
