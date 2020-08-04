@@ -1,0 +1,139 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Decuplr.CodeAnalysis.Meta;
+using Decuplr.Serialization.Annotations;
+using Microsoft.CodeAnalysis;
+
+namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
+    internal class ConditionAnalyzer : IConditionAnalyzer {
+
+        private readonly Dictionary<NamedTypeMetaInfo, Dictionary<string, MemberMetaInfo>> _typeNameCache = new Dictionary<NamedTypeMetaInfo, Dictionary<string, MemberMetaInfo>>();
+
+        private IReadOnlyDictionary<string, MemberMetaInfo> GetMemberNameDictionary(NamedTypeMetaInfo metaInfo) {
+            if (_typeNameCache.TryGetValue(metaInfo, out var value))
+                return value;
+            _typeNameCache.Add(metaInfo, metaInfo.Members.ToDictionary(x => x.Name));
+            return value;
+        }
+
+        private static void EvaluateOperator(MemberMetaInfo targetMember, Location attributeLocation, Condition conditions, IDiagnosticReporter reporter) {
+            switch (conditions.Operator) {
+                // Since all objects contain Equals(object), this is the least we call back into
+                // TODO : Note we might still want to warn user about that a returning type doesn't contain a correct signature
+                // For example : If we try to evaluate the member equals to true,
+                // even if the member returns a type that is obvious that wouldn't evaluate with true, then it would still evaluate, but just to false
+                case Operator.Equal:
+                case Operator.NotEqual:
+                    break;
+
+                // In these cases we need to check if either the return type implements IComparable or IComparable<T>
+                // We might also want to warn about boxing issue if the given compared type is a valuetype and returning type only has IComparable though
+                case Operator.GreaterThan:
+                case Operator.GreaterThanOrEqual:
+                case Operator.LessThan:
+                case Operator.LessThanOrEqual: {
+                    // Valid compare types
+                    // Value Types : bool, char, byte, sbyte, ushort, short, int, uint, ulong, long, float, double 
+                    // Ref Types : Types (but why), string (but why)
+
+                    // We currently consider 'null' to be not comparable, so there's this
+                    if (conditions.ComparedValue is null) {
+                        reporter.ReportDiagnostic(DiagnosticHelper.CompareValueInvalid(conditions, attributeLocation));
+                        break;
+                    }
+
+                    // Valid implicit conversion for IComparable is matched with C# specification :
+                    // https://docs.microsoft.com/dotnet/csharp/language-reference/builtin-types/numeric-conversions
+                    //
+                    // [Possible Improvement]
+                    // TODO : We also don't support even if IComparation<T>'s T is implicit convertible from the compared type
+                    // We only support when it's primitive is implicitly convertible (supported by C# specification) to another primitive type
+                    // So types that only return IComparable<long> would work well with int numbers
+                    //
+                    // This can be done using a compilation extensions provided out of the box: 
+                    // https://docs.microsoft.com/dotnet/api/microsoft.codeanalysis.csharp.csharpextensions.classifyconversion
+
+                    var returnType = targetMember.ReturnType!;
+                    var comparedType = conditions.ComparedValue.GetType();
+
+                    if (!returnType.Implements(typeof(IComparable)) || !returnType.Implements(typeof(IComparable<>))) {
+                        reporter.ReportDiagnostic(DiagnosticHelper.ReturnTypeNotComparable(targetMember, conditions.Operator, attributeLocation));
+                        break;
+                    }
+                    if (!returnType.Implements(typeof(IComparable<>).MakeGenericType(comparedType)) ||
+                        !returnType.GetInterfaces(typeof(IComparable<>)).Any(x => x.IsImplicitConvertibleFrom(comparedType))) {
+                        reporter.ReportDiagnostic(DiagnosticHelper.ReturnTypeInvalidComparable(targetMember, comparedType, attributeLocation));
+                        break;
+                    }
+                    break;
+                }
+
+                // Since all objects can be evaluated with is operator
+                case Operator.IsTypeOf:
+                case Operator.IsNotTypeOf: {
+                    if (!(conditions.ComparedValue is null) && conditions.ComparedValue.GetType() != typeof(Type))
+                        reporter.ReportDiagnostic(DiagnosticHelper.CompareValueInvalid(conditions, attributeLocation, ", it should be only a kind of Type and none other"));
+                    break;
+                }
+
+                default:
+                    reporter.ReportDiagnostic(DiagnosticHelper.InvalidOperator(conditions.Operator, attributeLocation));
+                    break;
+            }
+        }
+
+        private string GetOperatorEvalString(string targetName, Operator @operator, object comparedValue) => @operator switch
+        {
+            Operator.Equal => $"({targetName}.Equals({comparedValue}))",
+            Operator.NotEqual => $"(!{targetName}.Equals({comparedValue}))",
+            Operator.GreaterThan => $"({targetName}.CompareTo({comparedValue}) > 0)",
+            Operator.GreaterThanOrEqual => $"({targetName}.CompareTo({comparedValue}) >= 0)",
+            Operator.LessThan => $"({targetName}.CompareTo({comparedValue}) < 0)",
+            Operator.LessThanOrEqual => $"({targetName}.CompareTo({comparedValue}) <= 0)",
+            Operator.IsTypeOf => $"({targetName} is {comparedValue})",
+            Operator.IsNotTypeOf => $"(!({targetName} is {comparedValue}))",
+            _ => throw new ArgumentException($"Invalid Operator : {@operator}")
+        };
+
+
+        public void ConditionDiagnostic(MemberMetaInfo annotatedMember, Location attributeLocation, Condition conditions, IDiagnosticReporter reporter) {
+            var full = annotatedMember.ContainingFullType;
+            var members = GetMemberNameDictionary(full);
+
+            // If condition target source cannot be found, we halt
+            // Currently we only support member only evaluation
+            if (!members.TryGetValue(conditions.SourceName, out var targetMember)) {
+                reporter.ReportDiagnostic(DiagnosticHelper.CompareSourceNotFound(conditions.SourceName, full, attributeLocation));
+                return;
+            }
+            // If condition target is not a valid target for returning types
+            if (targetMember.ReturnType is null) {
+                reporter.ReportDiagnostic(DiagnosticHelper.CompareSourceInvalidKind(targetMember, attributeLocation));
+                return;
+            }
+            // Or if the target returns void which is not comparable
+            if (targetMember.ReturnType.IsVoid) {
+                reporter.ReportDiagnostic(DiagnosticHelper.CompareSourceReturnInvalidType(targetMember, "void", attributeLocation));
+                return;
+            }
+            EvaluateOperator(targetMember, attributeLocation, conditions, reporter);
+        }
+
+        public string GetEvalString(string typeArgumentName, NamedTypeMetaInfo type, Condition condition) {
+            // Since we only support member only evaulation right now
+            var member = GetMemberNameDictionary(type);
+            if (!member.TryGetValue(condition.SourceName, out var targetMember))
+                throw new ArgumentException("Condition target source cannot be found");
+            return GetOperatorEvalString(GetTargetName(targetMember), condition.Operator, condition.ComparedValue);
+
+            string GetTargetName(MemberMetaInfo targetMember) {
+                if (targetMember.IsStatic)
+                    return $"{type.Symbol}.{targetMember.Name}";
+                return $"{typeArgumentName}.{targetMember.Name} {condition}";
+            }
+        }
+
+    }
+
+}

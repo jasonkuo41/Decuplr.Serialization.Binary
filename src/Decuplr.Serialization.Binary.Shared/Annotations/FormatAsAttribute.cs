@@ -5,7 +5,6 @@ using Decuplr.Serialization.Annotations;
 
 namespace Decuplr.Serialization.Binary.Annotations {
 
-    // TODO : Maybe hold on to this for future ?
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
     public sealed class FormatAsAttribute : Attribute {
         // Check if type is also BinaryFormat, or BinarySealedFormat

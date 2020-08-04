@@ -8,7 +8,9 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 namespace Decuplr.CodeAnalysis.Diagnostics {
     public static class ValidationExtensions {
         public static IServiceCollection AddSourceValidation(this IServiceCollection services) {
-            services.TryAddSingleton<ISourceValidation, SourceValidation>();
+            services.TryAddScoped<ISourceValidation, SourceValidation>();
+            services.TryAddScoped<ConditionAnalyzer>();
+            services.TryAddScoped<IConditionAnalyzer>(x => x.GetRequiredService<ConditionAnalyzer>());
             return services;
         }
     }

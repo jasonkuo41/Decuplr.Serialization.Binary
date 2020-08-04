@@ -5,6 +5,6 @@ using Decuplr.CodeAnalysis.Diagnostics;
 namespace Decuplr.CodeAnalysis.Serialization {
     public interface IConditionResolverProvider : IGroupValidationProvider {
         bool ShouldFormat(MemberMetaInfo member);
-        IConditionalFormatter GetResolver(MemberMetaInfo member, IThrowCollection throwCollection);
+        IConditionResolver GetResolver(MemberMetaInfo member, IThrowCollection throwCollection);
     }
 }

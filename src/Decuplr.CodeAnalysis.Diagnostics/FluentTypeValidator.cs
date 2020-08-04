@@ -12,11 +12,11 @@ namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
         public IFluentMemberValidator AnyMembers => _anyMembers;
         public IFluentMemberValidator ExcludedMembers => _excludedMembers;
 
-        public FluentTypeValidator(TypeMetaSelection selection) {
+        public FluentTypeValidator(TypeMetaSelection selection, ConditionAnalyzer conditionAnalyzer) {
             var type = selection.Type;
-            _anyMembers = new FluentMemberValidator(TypeMetaSelection.Any(type));
-            _layoutMembers = new FluentMemberValidator(selection);
-            _excludedMembers = new FluentMemberValidator(selection.ReverseSelection());
+            _anyMembers = new FluentMemberValidator(TypeMetaSelection.Any(type), conditionAnalyzer);
+            _layoutMembers = new FluentMemberValidator(selection, conditionAnalyzer);
+            _excludedMembers = new FluentMemberValidator(selection.ReverseSelection(), conditionAnalyzer);
         }
 
         public void Validate(IDiagnosticReporter reporter) {

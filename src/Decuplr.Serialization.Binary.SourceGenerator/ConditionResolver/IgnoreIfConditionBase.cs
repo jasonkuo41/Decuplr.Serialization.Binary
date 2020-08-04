@@ -8,28 +8,37 @@ using Decuplr.CodeAnalysis.Serialization.Arguments;
 using Decuplr.CodeAnalysis.SourceBuilder;
 
 namespace Decuplr.Serialization.Binary.ConditionResolver {
-    internal class IgnoreIfCondition : IConditionalFormatter {
+    internal abstract class IgnoreIfConditionBase : IConditionResolver {
 
         private readonly MemberMetaInfo _member;
         private readonly Condition _condition;
+        private readonly IConditionAnalyzer _analyzer;
+        
+        protected abstract bool IsInverted { get; }
+
+        private NamedTypeMetaInfo Type => _member.ContainingFullType;
 
         public string FormatterName => "IgnoreIf";
 
-        public IgnoreIfCondition(MemberMetaInfo member, Condition condition) {
+        public IgnoreIfConditionBase(MemberMetaInfo member, Condition condition, IConditionAnalyzer analyzer) {
             _member = member;
             _condition = condition;
+            _analyzer = analyzer;
         }
 
-        public string GetMethodBody(string? nextMethodName, TryDeserializeSpanArgs<TypeSourceArgs> args) {
+        private string MethodBase(TypeSourceArgs source, string nextMethodInvoke) {
             var node = new CodeNodeBuilder();
-            
-            node.If($"{args.Source}.{_condition.SourceName}", node => {
-                node.Return($"{nextMethodName}({args.Source}, {args.ReadOnlySpan}, out {args.OutReadBytes}, out {args.OutResult})");
+
+            node.If($"{(IsInverted ? "!" : "")}({_analyzer.GetEvalString(source.ToString(), Type, _condition)})", node => {
+                node.Return(nextMethodInvoke);
             });
             node.Return(DeserializeResult.Success.ToDisplayString());
 
             return node.ToString();
         }
+
+        public string GetMethodBody(string? nextMethodName, TryDeserializeSpanArgs<TypeSourceArgs> args) 
+            => MethodBase(args.Source, $"{nextMethodName}({args.Source}, {args.ReadOnlySpan}, out {args.OutReadBytes}, out {args.OutResult})");
 
         public string GetMethodBody(string? nextMethodName, TryDeserializeSequenceArgs<TypeSourceArgs> args) {
             throw new NotImplementedException();

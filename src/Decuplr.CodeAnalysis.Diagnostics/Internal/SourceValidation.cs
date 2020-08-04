@@ -12,10 +12,12 @@ namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
         private readonly IDiagnosticReporter _diagnostics;
         private readonly IEnumerable<IGroupValidationProvider> _groupProviders;
         private readonly IEnumerable<ITypeValidationProvider> _typeProviders;
+        private readonly ConditionAnalyzer _conditionAnalyzer;
 
-        public SourceValidation(IEnumerable<IGroupValidationProvider> groupValidationProviders, IEnumerable<ITypeValidationProvider> typeValidationProviders, IDiagnosticReporter diagnostics) {
+        public SourceValidation(IEnumerable<IGroupValidationProvider> groupValidationProviders, IEnumerable<ITypeValidationProvider> typeValidationProviders, ConditionAnalyzer conditions, IDiagnosticReporter diagnostics) {
             _groupProviders = groupValidationProviders;
             _typeProviders = typeValidationProviders;
+            _conditionAnalyzer = conditions;
             _diagnostics = diagnostics;
         }
 
@@ -29,13 +31,13 @@ namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
         }
 
         public void ValidateExternal(TypeMetaSelection selection, IGroupValidationProvider groupValidation, IDiagnosticReporter reporter) {
-            var groupValidator = new FluentTypeValidator(selection);
+            var groupValidator = new FluentTypeValidator(selection, _conditionAnalyzer);
             groupValidation.ConfigureValidation(groupValidator);
             groupValidator.Validate(reporter);
         }
 
         public void ValidateExternal(NamedTypeMetaInfo type, ITypeValidationProvider typeValidation, IDiagnosticReporter reporter) {
-            var typeValidator = new FluentMemberValidator(TypeMetaSelection.Any(type));
+            var typeValidator = new FluentMemberValidator(TypeMetaSelection.Any(type), _conditionAnalyzer);
             typeValidation.ConfigureValidation(typeValidator);
             typeValidator.Validate(reporter);
         }

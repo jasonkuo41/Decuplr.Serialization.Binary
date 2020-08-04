@@ -89,7 +89,7 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
 
         private readonly MemberMetaInfo _member;
         private readonly GeneratingTypeName _typeName;
-        private readonly IReadOnlyList<IConditionalFormatter> _conditions;
+        private readonly IReadOnlyList<IConditionResolver> _conditions;
         private readonly IMemberDataFormatter _format;
         private readonly ITypeSymbolProvider _symbols;
         private readonly ComponentCollection _componentCollection = new ComponentCollection();
