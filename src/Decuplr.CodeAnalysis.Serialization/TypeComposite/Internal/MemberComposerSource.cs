@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis;
 namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
 
     // WARN : Don't add this to the DI, use MemberComposerFactory!
-    internal class MemberComposerSource {
+    internal partial class MemberComposerSource {
 
         private class PublicParsingMethodBuilder : ParsingMethodBuilder {
 
@@ -105,7 +105,8 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
             _member = layoutMember;
             _typeName = typeName;
             _symbols = symbolProvider;
-            _conditions = conditions.Select(x => x.GetResolver(layoutMember, _throwCollection)).ToList();
+            // Watch out for order(?
+            _conditions = conditions.SelectMany(x => x.GetResolvers(layoutMember, _throwCollection)).ToList();
             _format = GetFormatResolver();
 
             IMemberDataFormatter GetFormatResolver() {
