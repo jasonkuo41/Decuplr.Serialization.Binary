@@ -60,6 +60,12 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             return $"{modifier.ToString().ToLowerInvariant()} {argName}";
         }
 
+        public MethodSignature Rename(string newName) 
+            => new MethodSignature(Accessibility, newName, ReturnType, Arguments, IsConstructor, ReturnRefKind);
+
+        public MethodSignature Rename(Accessibility accessibility,string newName) 
+            => new MethodSignature(accessibility, newName, ReturnType, Arguments, IsConstructor, ReturnRefKind);
+
         /// <summary>
         /// Gets the invocation string, without target object
         /// </summary>

@@ -2,82 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using Decuplr.CodeAnalysis.Meta;
-using Decuplr.CodeAnalysis.Serialization.Arguments;
 using Decuplr.CodeAnalysis.SourceBuilder;
+using Decuplr.Serialization;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
-
+    
     // WARN : Don't add this to the DI, use MemberComposerFactory!
-    internal partial class MemberComposerSource {
-
-        private class PublicParsingMethodBuilder : ParsingMethodBuilder {
-
-            private const string parent = "parent";
-            private readonly MemberComposerSource _builder;
-
-            public override IReadOnlyList<string> PrependArguments { get; }
-
-            public PublicParsingMethodBuilder(MemberComposerSource builder)
-                : base(builder._member, ComposerMethodNames.DefaultNames) {
-                _builder = builder;
-                PrependArguments = new[] { $"in {_builder._member.ContainingFullType.Symbol} {parent}" };
-            }
-
-            public override void DeserializeSequence(CodeNodeBuilder node, BufferArgs refSequenceCursor)
-                => node.AddPlain($"{Method.TryDeserializeState(0)}({parent}, ref {refSequenceCursor})");
-
-            public override void DeserializeSpan(CodeNodeBuilder node, BufferArgs readOnlySpan, OutArgs<int> outReadBytes)
-                => node.Return($"{Method.TryDeserializeState(0)}({parent}, {readOnlySpan}, out {outReadBytes})");
-
-            public override void GetLength(CodeNodeBuilder node, InArgs<object> target)
-                => node.Return($"{Method.GetLengthState(0)}({parent}, {target} )");
-
-            public override void Serialize(CodeNodeBuilder node, InArgs<object> target, BufferArgs readOnlySpan)
-                => node.Return($"{Method.SerializeState(0)}({parent}, {target}, {readOnlySpan})");
-
-            public override void TryDeserializeSequence(CodeNodeBuilder node, BufferArgs refSequenceCursor, OutArgs<object> outResult)
-                => node.Return($"{Method.TryDeserializeState(0)}({parent}, ref {refSequenceCursor}, out {outResult})");
-
-            public override void TryDeserializeSpan(CodeNodeBuilder node, BufferArgs readOnlySpan, OutArgs<int> outReadBytes, OutArgs<object> outResult)
-                => node.Return($"{Method.TryDeserializeState(0)}({parent}, {readOnlySpan}, out {outReadBytes}, out {outResult})");
-
-            public override void TrySerialize(CodeNodeBuilder node, InArgs<object> target, BufferArgs readOnlySpan, OutArgs<int> outWrittenBytes)
-                => node.Return($"{Method.TrySerializeState(0)} ({parent}, {target}, {readOnlySpan}, out {outWrittenBytes})");
-        }
-
-        private class ComponentCollection : IComponentCollection {
-
-            private readonly List<ITypeSymbol> _symbols = new List<ITypeSymbol>();
-
-            public ComposerMethodNames GetMethodNames(int index)
-                => new ComposerMethodNames {
-                    TryDeserializeSequence = $"TryDeserialize_Component_{index}",
-                    TryDeserializeSpan = $"TryDeserialize_Component_{index}",
-                    DeserializeSequence = $"Deserialize_Component_{index}",
-                    DeserializeSpan = $"Deserialize_Component_{index}",
-                    TrySerialize = $"TrySerialize_Component_{index}",
-                    Serialize = $"Serialize_Component_{index}",
-                    GetLength = $"GetLength_Component_{index}",
-                };
-
-            public IReadOnlyList<ITypeSymbol> Components => _symbols;
-
-            public ComposerMethods AddComponent(ITypeSymbol symbol) {
-                _symbols.Add(symbol);
-                return new ComposerMethods(GetMethodNames(_symbols.Count - 1));
-            }
-        }
-
-        private static class Method {
-            public static string InitializeComponent(int count) => $"{nameof(InitializeComponent)}_{count}";
-            public static string TryInitializeComponent(int count) => $"{nameof(TryInitializeComponent)}_{count}";
-            public static string TryDeserializeState(int index) => $"TryDeserializeState_{index}";
-            public static string DeserializeState(int index) => $"DeserializeState_{index}";
-            public static string TrySerializeState(int index) => $"TrySerializeState_{index}";
-            public static string SerializeState(int index) => $"SerializeState_{index}";
-            public static string GetLengthState(int index) => $"GetLengthState_{index}";
-        }
+    // Note to future : since the method structures are hard coded, you may want to use MethodSignature to represent it in the future
+    internal class MemberComposerSource {
 
         private static class Field {
             public static string Component(int count) => $"component_{count}";
@@ -92,10 +25,9 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
         private readonly IReadOnlyList<IConditionResolver> _conditions;
         private readonly IMemberDataFormatter _format;
         private readonly ITypeSymbolProvider _symbols;
-        private readonly ComponentCollection _componentCollection = new ComponentCollection();
+        private readonly MemberComponentCollection _componentCollection = new MemberComponentCollection();
         private readonly ThrowCollection _throwCollection = new ThrowCollection("ThrowHelper");
 
-        // Maybe we can change use to DI to resolve all this
         public MemberComposerSource(MemberMetaInfo layoutMember, GeneratingTypeName typeName,
                                     IEnumerable<IConditionResolverProvider> conditions,
                                     IEnumerable<IMemberDataFormatterProvider> formatters,
@@ -121,12 +53,12 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
 
         private static ComposerMethodNames GetDefaultNames(int index)
             => new ComposerMethodNames {
-                TryDeserializeSequence = Method.TryDeserializeState(index),
-                TryDeserializeSpan = Method.TryDeserializeState(index),
-                DeserializeSequence = Method.TryDeserializeState(index),
-                DeserializeSpan = Method.TryDeserializeState(index),
-                TrySerialize = Method.TrySerializeState(index),
-                Serialize = Method.SerializeState(index),
+                TryDeserializeSequence = MemberMethod.TryDeserializeState(index),
+                TryDeserializeSpan = MemberMethod.TryDeserializeState(index),
+                DeserializeSequence = MemberMethod.TryDeserializeState(index),
+                DeserializeSpan = MemberMethod.TryDeserializeState(index),
+                TrySerialize = MemberMethod.TrySerializeState(index),
+                Serialize = MemberMethod.SerializeState(index),
             };
 
         private CodeNodeBuilder AddComponents(CodeNodeBuilder builder, IReadOnlyList<IComponentTypeInfo> components) {
@@ -141,11 +73,11 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
                 const string parserName = "parser";
                 const string isSuccess = "isSuccess";
 
-                builder.AddNode($"private {Method.InitializeComponent(i)}({discoveryType} {parserName})", node => {
+                builder.AddNode($"private {components[i].Type} {MemberMethod.InitializeComponent(i)}({discoveryType} {parserName})", node => {
                     components[i].ProvideInitialize(node, parserName);
                 });
 
-                builder.AddNode($"private {Method.TryInitializeComponent(i)}({discoveryType} {parserName}, out bool {isSuccess})", node => {
+                builder.AddNode($"private {components[i].Type} {MemberMethod.TryInitializeComponent(i)}({discoveryType} {parserName}, out bool {isSuccess})", node => {
                     components[i].ProvideTryInitialize(node, parserName, isSuccess);
                 });
             }
@@ -157,7 +89,7 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
             const string parser = "parser";
             return builder.AddNode($"public {_typeName.TypeName}({discoveryType} {parser}) : this()", node => {
                 for (var i = 0; i < components.Count; ++i)
-                    node.State($"{Field.Component(i)} = {Method.InitializeComponent(i)} ( {parser} )");
+                    node.State($"{Field.Component(i)} = {MemberMethod.InitializeComponent(i)} ( {parser} )");
             });
         }
 
@@ -170,7 +102,7 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
             builder.AddNode($"public {_typeName.TypeName}({discoveryType} {parser}, out bool {isSuccess}) : this()", node => {
                 for (var i = 0; i < components.Count; ++i) {
                     // Initialize every component
-                    node.State($"{Field.Component(i)} = {Method.InitializeComponent(i)} ( {parser}, out {isSuccess} )");
+                    node.State($"{Field.Component(i)} = {MemberMethod.InitializeComponent(i)} ( {parser}, out {isSuccess} )");
 
                     // If any fails, we bail out
                     node.If($"!{isSuccess}", node => {
@@ -193,8 +125,6 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
             return string.Empty;
         }
 
-        //private MethodSignature TryConstructor => MethodSignatureBuilder.CreateConstructor(Accessibility.Public, _typeName, )
-
         public IMemberComposer CreateStruct(ITypeComposer typeComposer, IComponentProvider provider, Func<GeneratingTypeName, string, INamedTypeSymbol> symbolProvider) {
             var components = _componentCollection.Components.Select(x => provider.ProvideComponent(x)).ToList();
 
@@ -214,7 +144,7 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
 
                 // Entry Point
                 builder.Comment("Dependency Member Entry Point");
-                builder.AddParsingMethods(new PublicParsingMethodBuilder(this));
+                builder.AddParsingMethods(new ParsingMethodWithTypeBuilder(_member));
 
                 // Data Condition Methods
                 for (int i = 0; i < _conditions.Count; i++)
@@ -234,13 +164,60 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
                 _throwCollection.AddThrowClass(builder);
             });
 
-            var methods = new MethodSignature[] {
-                MethodSignatureBuilder.CreateConstructor(_typeName, (provider.DiscoveryType, "parser")),
-                MethodSignatureBuilder.CreateConstructor(_typeName, (provider.DiscoveryType, "parser"), (RefKind.Out, _symbols.GetSymbol<bool>(), "isSuccess")),
-                MethodSignatureBuilder.CreateMethod(_typeName, Method.TryDeserializeState(0)).AddArgument().WithReturn(_symbols.GetSymbol<bool>())
-            };
+            return new MemberComposer(typeComposer, _member, symbolProvider(_typeName, builder.ToString()), GetMethodSignatures(provider));
+        }
 
-            return new MemberComposer(typeComposer, _member, symbolProvider(_typeName, builder.ToString()), methods);
+        private IReadOnlyList<MethodSignature> GetMethodSignatures(IComponentProvider provider) {
+            var boolSymbol = _symbols.GetSymbol<bool>();
+            var intSymbol = _symbols.GetSymbol<int>();
+            var memberType = _member.ReturnType!.Symbol;
+
+            // Incoming Data type
+            var discovery = new MethodArg(RefKind.In, provider.DiscoveryType, "parent");
+            var sourceType = new MethodArg(RefKind.In, _member.ContainingFullType.Symbol, "source");
+
+            // Buffers
+            var readOnlySpan = new MethodArg(_symbols.GetSymbol(typeof(ReadOnlySpan<byte>)), "readOnlySpan");
+            var span = new MethodArg(_symbols.GetSymbol(typeof(Span<byte>)), "span");
+            var cursor = new MethodArg(RefKind.Ref, _symbols.GetSymbol(typeof(SequenceCursor<byte>)), "cursor");
+
+            // Return Data
+            var readBytes = new MethodArg(RefKind.Out, intSymbol, "readBytes");
+            var writtenBytes = new MethodArg(RefKind.Out, intSymbol, "writtenBytes");
+            var result = new MethodArg(RefKind.Out, memberType, "result");
+
+            return new MethodSignature[] {
+                MethodSignatureBuilder.CreateConstructor(_typeName, (provider.DiscoveryType, "parser")),
+                MethodSignatureBuilder.CreateConstructor(_typeName, (provider.DiscoveryType, "parser"), (RefKind.Out, boolSymbol, "isSuccess")),
+
+                MethodSignatureBuilder.CreateMethod(_typeName, MemberMethod.TryDeserializeState(0))
+                                      .AddArgument(discovery, readOnlySpan, readBytes, result)
+                                      .WithReturn(boolSymbol),
+
+                MethodSignatureBuilder.CreateMethod(_typeName, MemberMethod.TryDeserializeState(0))
+                                      .AddArgument(discovery, cursor, result)
+                                      .WithReturn(boolSymbol),
+
+                MethodSignatureBuilder.CreateMethod(_typeName, MemberMethod.DeserializeState(0))
+                                      .AddArgument(discovery, readOnlySpan, result)
+                                      .WithReturn(memberType),
+
+                MethodSignatureBuilder.CreateMethod(_typeName, MemberMethod.DeserializeState(0))
+                                      .AddArgument(discovery, cursor)
+                                      .WithReturn(memberType),
+
+                MethodSignatureBuilder.CreateMethod(_typeName, MemberMethod.TrySerializeState(0))
+                                      .AddArgument(discovery, sourceType, span, writtenBytes)
+                                      .WithReturn(boolSymbol),
+
+                MethodSignatureBuilder.CreateMethod(_typeName, MemberMethod.SerializeState(0))
+                                      .AddArgument(discovery, sourceType, span)
+                                      .WithReturn(intSymbol),
+
+                MethodSignatureBuilder.CreateMethod(_typeName, MemberMethod.GetLengthState(0))
+                                      .AddArgument(discovery, sourceType)
+                                      .WithReturn(intSymbol)
+            };
         }
     }
 }

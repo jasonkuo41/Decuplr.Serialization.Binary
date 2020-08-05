@@ -29,4 +29,8 @@
     <ProjectReference Include="..\Decuplr.Serialization.Primitives\Decuplr.Serialization.Primitives.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="MemberData\" />
+  </ItemGroup>
+
 </Project>

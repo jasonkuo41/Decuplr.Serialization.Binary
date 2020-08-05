@@ -2,10 +2,9 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 
-namespace Decuplr.Serialization.Binary {
+namespace Decuplr.Serialization {
 
     // Licensed to the .NET Foundation under one or more agreements.
     // The .NET Foundation licenses this file to you under the MIT license.
@@ -14,8 +13,6 @@ namespace Decuplr.Serialization.Binary {
     // This is a dumb down version of SequenceReader<T>, you cannot rewind with cursor, it's one use and should always move on
     // Lots of the surface API is stripped or modified to emphasize the concept of "it's a cursor not a reader"
     // This is passed around the library representing how much we have read from the sequence.
-
-    // TODO : Should we move this Decuplr.Serialization.Primitives under the namespace Decuplr.Serialization?
 
     /// <summary>
     /// Represents a forward reading cursor for <see cref="ReadOnlySequence{T}"/> that cannot be rewinded
@@ -44,12 +41,12 @@ namespace Decuplr.Serialization.Binary {
         /// <summary>
         /// Represents the total length of the source sequence.
         /// </summary>
-        public readonly long Length { 
+        public readonly long Length {
             get {
                 if (_length < 0)
                     Volatile.Write(ref Unsafe.AsRef(_length), Sequence.Length);
                 return _length;
-            } 
+            }
         }
 
         /// <summary>

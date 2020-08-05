@@ -1,9 +1,6 @@
 ﻿using Decuplr.CodeAnalysis.Serialization.TypeComposite;
 using Microsoft.CodeAnalysis;
 
-namespace Decuplr.CodeAnalysis.Serialization.Internal {
-}
-
 namespace Decuplr.CodeAnalysis.Serialization {
     public interface ITypeParserBuilder {
 
