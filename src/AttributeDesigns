@@ -1,0 +1,73 @@
+[Ignore]        Ignore
+[Index]         FieldOrder
+
+[BinaryLength]  FieldLength    
+[BitUnion]      FieldBitLength 
+[ItemCount]     FieldCount
+X TBD           FieldAlignment
+X TBD           FieldScale
+[Namespace]     FieldEndianness
+[Namespace]     FieldEncoding
+-               FieldValue
+[Constant]      FieldChecksum
+-               FieldCrc16
+-               FieldCrc32
+-               FieldOffset
+[FormatAs]      Subtype
+-               SubtypeFactory
+-               SubtypeDefault
+[FormatAs]      SerializeAs
+X               SerializeAsEnum
+[IgnoreIfNot]   SerializeWhen
+[IgnoreIf]      SerializeWhenNot
+-               SerializeUntil
+-               ItemLength
+-               ItemSubtype
+-               ItemSubtypeFactory
+-               ItemSubtypeDefault
+-               ItemSerializeUntil
+
+[BinaryParser]
+[BinaryFormat]
+[BinaryInline]
+[LengthProvider] // Not Completed
+
+// Completed
+[IgnoreIf] / [IgnoreIfNot]
+
+// Planned
+[UseParserspace]
+[BitUnion]
+[Constant]
+[FormatAs]
+
+Length Family :
+[BinaryLength] : Dedicates the field as the position of writing the length data
+[FixedBinaryLength] : Explicitly specify the binary length of the data
+[ItemCount] : Dedicates the field as the count of an item
+
+// In discussion
+[BreakLoopIf] : Breaks the serialization loop until 
+[LoopUntil] : Serialize until a specfic set of data appears after the enumerable
+
+
+// Not Implemented
+[Checksum]
+
+
+public struct LengthProvider<T> where T : IEnumerable, IFormatEnumerable<T> {
+
+    public bool MoveNext(DeserializeContext<T> data) {
+        if (data.NextMatch(stackalloc byte[] { 1, 2 ,3 }))
+            return false;
+        data.Deserialize();
+        return true;
+    }
+
+    public bool Deserialize(SerializeContext<T> data) {
+        foreach(var i in data) {
+            i.Serialize();
+        }
+        i.Append(stackalloc byte[] { 1, 2, 3});
+    }
+}

@@ -103,4 +103,3 @@ public class NestedList<T> {
 	public NestedList(NestedInfo info) {
 	}
 }
-
