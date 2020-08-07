@@ -11,7 +11,7 @@ namespace Decuplr.Serialization.Binary.ConditionResolver {
     internal class IgnoreIfResolver : IConditionResolver {
 
         private readonly MemberMetaInfo _member;
-        private readonly Condition _condition;
+        private readonly ConditionDetail _condition;
         private readonly IConditionAnalyzer _analyzer;
 
         private readonly bool _isInverted;
@@ -20,7 +20,7 @@ namespace Decuplr.Serialization.Binary.ConditionResolver {
 
         public string FormatterName => "IgnoreIf";
 
-        public IgnoreIfResolver(MemberMetaInfo member, Condition condition, IConditionAnalyzer analyzer, bool isInverted) {
+        public IgnoreIfResolver(MemberMetaInfo member, ConditionDetail condition, IConditionAnalyzer analyzer, bool isInverted) {
             _member = member;
             _condition = condition;
             _analyzer = analyzer;

@@ -1,9 +1,9 @@
 ﻿using Decuplr.Serialization.Annotations;
 
 namespace Decuplr.CodeAnalysis.Diagnostics {
-    public struct Condition {
+    public struct ConditionDetail {
 
-        public Condition(string sourceName) : this() {
+        public ConditionDetail(string sourceName) : this() {
             SourceName = sourceName;
         }
 

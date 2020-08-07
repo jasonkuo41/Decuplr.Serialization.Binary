@@ -17,7 +17,7 @@ namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
             return value;
         }
 
-        private static void EvaluateOperator(MemberMetaInfo targetMember, Location attributeLocation, Condition conditions, IDiagnosticReporter reporter) {
+        private static void EvaluateOperator(MemberMetaInfo targetMember, Location attributeLocation, ConditionDetail conditions, IDiagnosticReporter reporter) {
             switch (conditions.Operator) {
                 // Since all objects contain Equals(object), this is the least we call back into
                 // TODO : Note we might still want to warn user about that a returning type doesn't contain a correct signature
@@ -97,7 +97,7 @@ namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
         };
 
 
-        public void ConditionDiagnostic(MemberMetaInfo annotatedMember, Location attributeLocation, Condition conditions, IDiagnosticReporter reporter) {
+        public void ConditionDiagnostic(MemberMetaInfo annotatedMember, Location attributeLocation, ConditionDetail conditions, IDiagnosticReporter reporter) {
             var full = annotatedMember.ContainingFullType;
             var members = GetMemberNameDictionary(full);
 
@@ -120,7 +120,7 @@ namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
             EvaluateOperator(targetMember, attributeLocation, conditions, reporter);
         }
 
-        public string GetEvalString(string typeArgumentName, NamedTypeMetaInfo type, Condition condition) {
+        public string GetEvalString(string typeArgumentName, NamedTypeMetaInfo type, ConditionDetail condition) {
             // Since we only support member only evaulation right now
             var member = GetMemberNameDictionary(type);
             if (!member.TryGetValue(condition.SourceName, out var targetMember))

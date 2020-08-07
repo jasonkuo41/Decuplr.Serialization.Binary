@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Text;
-
-// TODO : Move to Decuplr.Serialization.Primitives assembly and move to namespace Decuplr.Serialization.Annotations
+﻿// TODO : Move to Decuplr.Serialization.Primitives assembly and move to namespace Decuplr.Serialization.Annotations
 namespace Decuplr.Serialization.Annotations {
     public enum Operator {
         Equal,

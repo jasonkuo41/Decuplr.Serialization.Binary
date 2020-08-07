@@ -27,7 +27,7 @@ namespace Decuplr.CodeAnalysis.Diagnostics {
             "Compared value is not a valid type",
             "'{0}' is not a valid type for operand '{1}'{2}."
         )]
-        internal static Diagnostic CompareValueInvalid(Condition condition, Location attributeLocation, string? additionExplanation = null)
+        internal static Diagnostic CompareValueInvalid(ConditionDetail condition, Location attributeLocation, string? additionExplanation = null)
             => CreateDiagnostic(attributeLocation, new object?[] { condition.ComparedValue, condition.Operator, additionExplanation });
 
         [Diagnostic(3, DiagnosticSeverity.Error,

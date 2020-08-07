@@ -19,24 +19,24 @@ namespace Decuplr.Serialization.Binary.ConditionResolver {
             _analyzer = analyzer;
         }
 
-        private static Condition GetAttributeCondition(AttributeData data) {
+        private static ConditionDetail GetAttributeCondition(AttributeData data) {
             // Uses the first constructor (string)
             if (data.ConstructorArguments.Length == 1)
-                return new Condition {
+                return new ConditionDetail {
                     SourceName = (string)data.ConstructorArguments[0].Value!,
                     Operator = Operator.Equal,
                     ComparedValue = true
                 };
             // second constructor (string, object)
             if (data.ConstructorArguments.Length == 2)
-                return new Condition {
+                return new ConditionDetail {
                     SourceName = (string)data.ConstructorArguments[0].Value!,
                     Operator = Operator.Equal,
                     ComparedValue = data.ConstructorArguments[1].Value!
                 };
             // third constructor (string, operator, object)
             if (data.ConstructorArguments.Length == 3)
-                return new Condition {
+                return new ConditionDetail {
                     SourceName = (string)data.ConstructorArguments[0].Value!,
                     Operator = (Operator)data.ConstructorArguments[1].Value!,
                     ComparedValue = data.ConstructorArguments[2].Value!

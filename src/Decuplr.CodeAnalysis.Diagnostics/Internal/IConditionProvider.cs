@@ -2,7 +2,7 @@
 
 namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
     internal interface IConditionProvider : IConditionRules {
-        Condition ProvideCondition(AttributeData data);
+        ConditionDetail ProvideCondition(AttributeData data);
     }
 
 }

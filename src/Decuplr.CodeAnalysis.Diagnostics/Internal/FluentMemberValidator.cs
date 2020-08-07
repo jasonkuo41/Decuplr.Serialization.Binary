@@ -10,9 +10,9 @@ namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
 
         private class ConditionProvider : IConditionProvider {
 
-            private readonly Func<AttributeData, Condition> _attribute;
-            public ConditionProvider(Func<AttributeData, Condition> attribute) => _attribute = attribute;
-            public Condition ProvideCondition(AttributeData data) => _attribute.Invoke(data);
+            private readonly Func<AttributeData, ConditionDetail> _attribute;
+            public ConditionProvider(Func<AttributeData, ConditionDetail> attribute) => _attribute = attribute;
+            public ConditionDetail ProvideCondition(AttributeData data) => _attribute.Invoke(data);
         }
 
         private class InvalidDiagnosticCondtions : IInvalidDiagnosticConditions {
@@ -51,7 +51,7 @@ namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
                 return this;
             }
 
-            public IAttributeRule<MemberMetaInfo> VerifyCondition(Func<AttributeData, Condition> conditionProvider) {
+            public IAttributeRule<MemberMetaInfo> VerifyCondition(Func<AttributeData, ConditionDetail> conditionProvider) {
                 _parent.Add(_attributeType, new ConditionProvider(conditionProvider));
                 return new AttributeRules(_parent, _attributeType);
             }
