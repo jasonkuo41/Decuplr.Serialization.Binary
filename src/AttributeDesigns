@@ -10,8 +10,8 @@ X TBD           FieldScale
 [Namespace]     FieldEncoding
 -               FieldValue
 [Constant]      FieldChecksum
--               FieldCrc16
--               FieldCrc32
+X [Checksum]    FieldCrc16
+X [Checksum]    FieldCrc32
 -               FieldOffset
 [FormatAs]      Subtype
 -               SubtypeFactory
@@ -27,47 +27,107 @@ X               SerializeAsEnum
 -               ItemSubtypeDefault
 -               ItemSerializeUntil
 
+{Internal}
+[SerializationBinaryAssemblyEntryPoint]
+[DefaultSerializationBinaryAssemblyEntryPoint]
+
+[AssemblyDefinedParser(ParserKind.Binary, typeof(DateTime_0x5dfA), "MyType.Data.Namespace")]
+
 [BinaryParser]
 [BinaryFormat]
 [BinaryInline]
-[LengthProvider] // Not Completed
+
 
 // Completed
+{Decuplr.Serialization}
 [IgnoreIf] / [IgnoreIfNot]
 
 // Planned
-[UseParserspace]
-[BitUnion]
-[Constant]
-[FormatAs]
+{Decuplr.Serialization.Binary}
+[UseParserspace] : Allows user to determinate what parserspace to use
+[BitUnion] : Allows a bit union
 
-Length Family :
+{Decuplr.Serialization}
+[Constant] : Allows a field to be verified
+[FormatAs] : 
+[ParserspaceAssemblyAlias] : An assembly alias for the assembly
+
+{Length Family (Decuplr.Serialization.Binary)}
 [BinaryLength] : Dedicates the field as the position of writing the length data
 [FixedBinaryLength] : Explicitly specify the binary length of the data
 [ItemCount] : Dedicates the field as the count of an item
 
+class TypeStub<T> { } this only contains the type info and are not meant for serialization
+
+{Alias}
+[ByteOrder]
+[DefaultFormat]
+[ExportPublicComposer]
+
+[NullRule(NullAction.Throw / NullAction.AppendFixedBool / NullAction.DefaultValue)]
+    Note to self : AppendFixedBool will always a append a bool to the data structure!
+
+// Planned (Future)
+
+{Decuplr.Serialization.Binary.Collections}
+[CollectionLayout]
+[YieldIf]
+[YieldIfMatch]
+
+{Decuplr.Serialization.Meta}
+[ApplyParserspace]
+[ApplyParserspaceWhen]
+
 // In discussion
-[BreakLoopIf] : Breaks the serialization loop until 
-[LoopUntil] : Serialize until a specfic set of data appears after the enumerable
+[Parserspace]
+
 
 
 // Not Implemented
-[Checksum]
+[CheckSum(0, 1)]
 
 
-public struct LengthProvider<T> where T : IEnumerable, IFormatEnumerable<T> {
+[CollectionLayout]
+public struct BoolIterator<T> {
+    [Index(0)]
+    public T Data { get; }
 
-    public bool MoveNext(DeserializeContext<T> data) {
-        if (data.NextMatch(stackalloc byte[] { 1, 2 ,3 }))
-            return false;
-        data.Deserialize();
-        return true;
+    [Index(1), YieldIf(EvalMode.Consume, true)]
+    public bool End { get; }
+}
+
+[CollectionLayout]
+public struct NullTerminated<T> {
+    [Index(0)]
+    public T Data { get; }
+
+    [Index(1), YieldIfMatch(EvalMode.Peek, 1, 2, 3)]
+    private byte[] CheckTrailing { get; }
+
+    [FixedBinaryLength(16, TrailingPattern = 0)]
+    public TypeStub<byte> Zeros { get; }
+}
+
+[MemberChecksum(0, 3)]
+public struct CheckSumProvider : ICheckSumProvider {
+    public void CheckSum(ReadOnlySpan<byte> span) {
+
     }
 
-    public bool Deserialize(SerializeContext<T> data) {
-        foreach(var i in data) {
-            i.Serialize();
-        }
-        i.Append(stackalloc byte[] { 1, 2, 3});
+    public void WriteSum(ReadOnlySpan<byte> source, Span<byte> target) {
+
     }
+}
+
+internal struct NullTerminated_Iterator<T> where T : IEnumerable, ILengthProvider<T> {
+    public NullTerminated_Iterator(T item) {
+
+    }
+
+
+}
+
+
+public enum EvalMode {
+    Peek,
 }
