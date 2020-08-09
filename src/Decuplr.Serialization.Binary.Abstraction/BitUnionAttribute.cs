@@ -16,9 +16,9 @@ namespace Decuplr.Serialization.Binary {
         }
 
         /// <summary>
-        /// When the bit-union is not octet-aligned and needs to be filled, the aligment rule it should follow. When set to <see cref="BitAlign.None"/>, the occupying bits must be a octet-aligned.
+        /// When the bit-union is not octet-aligned and needs to be filled, the aligment rule it should follow. When set to <see cref="MemoryAlign.None"/>, the occupying bits must be a octet-aligned.
         /// </summary>
-        public BitAlign Alignment { get; set; }
+        public MemoryAlign Alignment { get; set; }
 
         /// <summary>
         /// When the bit-union is not octet-aligned, the value it should fill in with. Either true flag (1) or false flag (0).

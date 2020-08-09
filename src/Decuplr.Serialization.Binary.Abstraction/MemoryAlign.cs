@@ -3,7 +3,7 @@
     /// <summary>
     /// Describes where the memory should align to
     /// </summary>
-    public enum BitAlign {
+    public enum MemoryAlign {
         /// <summary>
         /// The data should not or is not obligated for alignment
         /// </summary>
