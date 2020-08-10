@@ -1,8 +1,9 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Decuplr.Serialization;
+using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
     internal interface IConditionProvider : IConditionRules {
-        ConditionDetail ProvideCondition(AttributeData data);
+        ConditionExpression ProvideCondition(AttributeData data);
     }
 
 }

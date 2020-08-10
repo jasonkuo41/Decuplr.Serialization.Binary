@@ -1,18 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Decuplr.CodeAnalysis.Diagnostics;
+﻿using Decuplr.CodeAnalysis.Diagnostics;
 using Decuplr.CodeAnalysis.Meta;
 using Decuplr.CodeAnalysis.Serialization;
 using Decuplr.CodeAnalysis.Serialization.Arguments;
+using Decuplr.CodeAnalysis.Serialization.TypeComposite;
 using Decuplr.CodeAnalysis.SourceBuilder;
 
 namespace Decuplr.Serialization.Binary.ConditionResolver {
     internal class IgnoreIfResolver : IConditionResolver {
 
         private readonly MemberMetaInfo _member;
-        private readonly ConditionDetail _condition;
-        private readonly IConditionAnalyzer _analyzer;
+        private readonly ConditionExpression _expression;
+        private readonly IConditionAnalyzer _condition;
 
         private readonly bool _isInverted;
 
@@ -20,17 +18,19 @@ namespace Decuplr.Serialization.Binary.ConditionResolver {
 
         public string FormatterName => "IgnoreIf";
 
-        public IgnoreIfResolver(MemberMetaInfo member, ConditionDetail condition, IConditionAnalyzer analyzer, bool isInverted) {
+        public IgnoreIfResolver(MemberMetaInfo member, ConditionExpression condition, IConditionAnalyzer analyzer, bool isInverted) {
             _member = member;
-            _condition = condition;
-            _analyzer = analyzer;
+            _expression = condition;
+            _condition = analyzer;
             _isInverted = isInverted;
         }
+
+        private string GetConditionString(IChainMethodArgsProvider provider) => _condition.GetEvalString(provider[typeof(TypeSourceArgs)], Type, _expression);
 
         private string MethodBase(TypeSourceArgs source, string nextMethodInvoke) {
             var node = new CodeNodeBuilder();
 
-            node.If($"{(_isInverted ? "!" : "")}({_analyzer.GetEvalString(source.ToString(), Type, _condition)})", node => {
+            node.If($"{(_isInverted ? "!" : "")}({_condition.GetEvalString(source.ToString(), Type, _expression)})", node => {
                 node.Return(nextMethodInvoke);
             });
             node.Return(DeserializeResult.Success.ToDisplayString());
@@ -38,7 +38,20 @@ namespace Decuplr.Serialization.Binary.ConditionResolver {
             return node.ToString();
         }
 
-        public string GetMethodBody(string? nextMethodName, TryDeserializeSpanArgs<TypeSourceArgs> args) 
+        public string GetMethodBody(string methodId, IChainMethodArgsProvider provider, IComponentProvider components, IThrowCollection throwCollection) {
+            var node = new CodeNodeBuilder();
+
+            node.If($"{IsInvert()}({GetConditionString(provider)})", node => {
+                node.Return(provider.InvokeNextMethod());
+            });
+            node.Return(DeserializeResult.Success.ToDisplayString());
+
+            return node.ToString();
+
+            string IsInvert() => _isInverted ? "!" : "";
+        }
+
+        public string GetMethodBody(string? nextMethodName, TryDeserializeSpanArgs<TypeSourceArgs> args)
             => MethodBase(args.Source, $"{nextMethodName}({args.Source}, {args.ReadOnlySpan}, out {args.OutReadBytes}, out {args.OutResult})");
 
         public string GetMethodBody(string? nextMethodName, TryDeserializeSequenceArgs<TypeSourceArgs> args)

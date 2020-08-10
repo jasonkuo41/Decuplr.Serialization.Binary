@@ -22,16 +22,15 @@ namespace Decuplr.Serialization {
         }
 
         /// <param name="member">The property, field or method to be evaulated</param>
-        /// <param name="operand">The operand to decide the comparsion type</param>
+        /// <param name="condition">The operand to decide the comparsion type</param>
         /// <param name="value">The value to be evaulated with</param>
-        protected ConditionalBaseAttribute(string member, Condition operand, object value) {
-            ComparedMember = member;
-            Operator = operand;
-            ComparedValue = value;
+        protected ConditionalBaseAttribute(string member, Condition condition, object value) {
+            Expression = new ConditionExpression(member) {
+                Condition = condition,
+                ComparedValue = value
+            };
         }
 
-        public string ComparedMember { get; }
-        public Condition Operator { get; }
-        public object ComparedValue { get; }
+        public ConditionExpression Expression { get; }
     }
 }

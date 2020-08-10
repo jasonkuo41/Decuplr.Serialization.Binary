@@ -1,4 +1,5 @@
 ﻿using System;
+using Decuplr.Serialization;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Diagnostics {
@@ -6,6 +7,6 @@ namespace Decuplr.CodeAnalysis.Diagnostics {
         /// <summary>
         /// Verify if the conditions that a attribute contains is correctly contained
         /// </summary>
-        IAttributeRule<TMeta> VerifyCondition(Func<AttributeData, ConditionDetail> conditionProvider);
+        IAttributeRule<TMeta> VerifyCondition(Func<AttributeData, ConditionExpression> conditionProvider);
     }
 }

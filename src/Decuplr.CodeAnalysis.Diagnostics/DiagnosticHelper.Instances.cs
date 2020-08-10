@@ -1,6 +1,6 @@
 ﻿using System;
 using Decuplr.CodeAnalysis.Meta;
-using Decuplr.Serialization.Annotations;
+using Decuplr.Serialization;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Diagnostics {
@@ -27,8 +27,8 @@ namespace Decuplr.CodeAnalysis.Diagnostics {
             "Compared value is not a valid type",
             "'{0}' is not a valid type for operand '{1}'{2}."
         )]
-        internal static Diagnostic CompareValueInvalid(ConditionDetail condition, Location attributeLocation, string? additionExplanation = null)
-            => CreateDiagnostic(attributeLocation, new object?[] { condition.ComparedValue, condition.Operator, additionExplanation });
+        internal static Diagnostic CompareValueInvalid(ConditionExpression condition, Location attributeLocation, string? additionExplanation = null)
+            => CreateDiagnostic(attributeLocation, new object?[] { condition.ComparedValue, condition.Condition, additionExplanation });
 
         [Diagnostic(3, DiagnosticSeverity.Error,
             "Unable to locate the member for comparsion",
@@ -41,7 +41,7 @@ namespace Decuplr.CodeAnalysis.Diagnostics {
             "Invalid operator for comparsion",
             "Operand '{0}' is not valid operator for comparsion"
         )]
-        internal static Diagnostic InvalidOperator(Operator operand, Location attributeLocation) => CreateDiagnostic(attributeLocation, new object[] { operand });
+        internal static Diagnostic InvalidCondition(Condition operand, Location attributeLocation) => CreateDiagnostic(attributeLocation, new object[] { operand });
 
         [Diagnostic(5, DiagnosticSeverity.Error,
             "Target member has invalid return type for comparsion",
@@ -52,9 +52,9 @@ namespace Decuplr.CodeAnalysis.Diagnostics {
 
         [Diagnostic(6, DiagnosticSeverity.Error,
             "Target member's return type doesn't implement IComparable for comparation",
-            "Target member '{0}' has a return type '{1}' that doesn't implement IComparable which is required for 'Operator.{2}'."
+            "Target member '{0}' has a return type '{1}' that doesn't implement IComparable which is required for 'Condition.{2}'."
         )]
-        internal static Diagnostic ReturnTypeNotComparable(MemberMetaInfo targetMember, Operator @operator, Location attributeLocation)
+        internal static Diagnostic ReturnTypeNotComparable(MemberMetaInfo targetMember, Condition @operator, Location attributeLocation)
             => CreateDiagnostic(attributeLocation, new Location[] { targetMember.Location }, new object?[] { targetMember.Symbol, targetMember.ReturnType, @operator });
 
         [Diagnostic(7, DiagnosticSeverity.Error,

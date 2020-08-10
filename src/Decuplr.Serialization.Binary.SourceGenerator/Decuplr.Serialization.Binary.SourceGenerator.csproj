@@ -25,8 +25,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Decuplr.CodeAnalysis.Serialization\Decuplr.CodeAnalysis.Serialization.csproj" />
-    <ProjectReference Include="..\Decuplr.Serialization.Binary.Shared\Decuplr.Serialization.Binary.Shared.csproj" />
-    <ProjectReference Include="..\Decuplr.Serialization.Primitives\Decuplr.Serialization.Primitives.csproj" />
+    <ProjectReference Include="..\Decuplr.Serialization.Binary.Abstraction\Decuplr.Serialization.Binary.Abstraction.csproj" />
+    <ProjectReference Include="..\Decuplr.Serialization\Decuplr.Serialization.csproj" />
   </ItemGroup>
 
   <ItemGroup>

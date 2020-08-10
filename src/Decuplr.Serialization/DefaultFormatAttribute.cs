@@ -1,7 +1,7 @@
 ﻿using System;
 using Decuplr.Serialization.Namespaces;
 
-namespace Decuplr.Serialization.Binary {
+namespace Decuplr.Serialization {
     /// <summary>
     /// Marks the underlying data should use default formatting and will not be overriden 
     /// </summary>

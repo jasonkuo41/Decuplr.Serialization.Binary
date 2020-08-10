@@ -12,7 +12,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Decuplr.Serialization.Primitives\Decuplr.Serialization.Primitives.csproj" />
 		<ProjectReference Include="..\Decuplr.Serialization\Decuplr.Serialization.csproj" />
 	</ItemGroup>
 

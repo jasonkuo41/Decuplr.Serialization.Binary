@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Decuplr.CodeAnalysis.Meta;
+using Decuplr.Serialization;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
@@ -10,9 +11,9 @@ namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
 
         private class ConditionProvider : IConditionProvider {
 
-            private readonly Func<AttributeData, ConditionDetail> _attribute;
-            public ConditionProvider(Func<AttributeData, ConditionDetail> attribute) => _attribute = attribute;
-            public ConditionDetail ProvideCondition(AttributeData data) => _attribute.Invoke(data);
+            private readonly Func<AttributeData, ConditionExpression> _attribute;
+            public ConditionProvider(Func<AttributeData, ConditionExpression> attribute) => _attribute = attribute;
+            public ConditionExpression ProvideCondition(AttributeData data) => _attribute.Invoke(data);
         }
 
         private class InvalidDiagnosticCondtions : IInvalidDiagnosticConditions {
@@ -51,7 +52,7 @@ namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
                 return this;
             }
 
-            public IAttributeRule<MemberMetaInfo> VerifyCondition(Func<AttributeData, ConditionDetail> conditionProvider) {
+            public IAttributeRule<MemberMetaInfo> VerifyCondition(Func<AttributeData, ConditionExpression> conditionProvider) {
                 _parent.Add(_attributeType, new ConditionProvider(conditionProvider));
                 return new AttributeRules(_parent, _attributeType);
             }

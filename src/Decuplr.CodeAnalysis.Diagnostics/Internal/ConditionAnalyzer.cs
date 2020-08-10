@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Decuplr.CodeAnalysis.Meta;
-using Decuplr.Serialization.Annotations;
+using Decuplr.Serialization;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
@@ -17,22 +17,22 @@ namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
             return value;
         }
 
-        private static void EvaluateOperator(MemberMetaInfo targetMember, Location attributeLocation, ConditionDetail conditions, IDiagnosticReporter reporter) {
-            switch (conditions.Operator) {
+        private static void EvaluateCondition(MemberMetaInfo targetMember, Location attributeLocation, ConditionExpression conditions, IDiagnosticReporter reporter) {
+            switch (conditions.Condition) {
                 // Since all objects contain Equals(object), this is the least we call back into
                 // TODO : Note we might still want to warn user about that a returning type doesn't contain a correct signature
                 // For example : If we try to evaluate the member equals to true,
                 // even if the member returns a type that is obvious that wouldn't evaluate with true, then it would still evaluate, but just to false
-                case Operator.Equal:
-                case Operator.NotEqual:
+                case Condition.Equal:
+                case Condition.NotEqual:
                     break;
 
                 // In these cases we need to check if either the return type implements IComparable or IComparable<T>
                 // We might also want to warn about boxing issue if the given compared type is a valuetype and returning type only has IComparable though
-                case Operator.GreaterThan:
-                case Operator.GreaterThanOrEqual:
-                case Operator.LessThan:
-                case Operator.LessThanOrEqual: {
+                case Condition.GreaterThan:
+                case Condition.GreaterThanOrEqual:
+                case Condition.LessThan:
+                case Condition.LessThanOrEqual: {
                     // Valid compare types
                     // Value Types : bool, char, byte, sbyte, ushort, short, int, uint, ulong, long, float, double 
                     // Ref Types : Types (but why), string (but why)
@@ -58,7 +58,7 @@ namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
                     var comparedType = conditions.ComparedValue.GetType();
 
                     if (!returnType.Implements(typeof(IComparable)) || !returnType.Implements(typeof(IComparable<>))) {
-                        reporter.ReportDiagnostic(DiagnosticHelper.ReturnTypeNotComparable(targetMember, conditions.Operator, attributeLocation));
+                        reporter.ReportDiagnostic(DiagnosticHelper.ReturnTypeNotComparable(targetMember, conditions.Condition, attributeLocation));
                         break;
                     }
                     if (!returnType.Implements(typeof(IComparable<>).MakeGenericType(comparedType)) ||
@@ -70,34 +70,34 @@ namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
                 }
 
                 // Since all objects can be evaluated with is operator
-                case Operator.IsTypeOf:
-                case Operator.IsNotTypeOf: {
+                case Condition.IsTypeOf:
+                case Condition.IsNotTypeOf: {
                     if (!(conditions.ComparedValue is null) && conditions.ComparedValue.GetType() != typeof(Type))
                         reporter.ReportDiagnostic(DiagnosticHelper.CompareValueInvalid(conditions, attributeLocation, ", it should be only a kind of Type and none other"));
                     break;
                 }
 
                 default:
-                    reporter.ReportDiagnostic(DiagnosticHelper.InvalidOperator(conditions.Operator, attributeLocation));
+                    reporter.ReportDiagnostic(DiagnosticHelper.InvalidCondition(conditions.Condition, attributeLocation));
                     break;
             }
         }
 
-        private string GetOperatorEvalString(string targetName, Operator @operator, object comparedValue) => @operator switch
+        private string GetConditionEvalString(string targetName, Condition condition, object comparedValue) => condition switch
         {
-            Operator.Equal => $"({targetName}.Equals({comparedValue}))",
-            Operator.NotEqual => $"(!{targetName}.Equals({comparedValue}))",
-            Operator.GreaterThan => $"({targetName}.CompareTo({comparedValue}) > 0)",
-            Operator.GreaterThanOrEqual => $"({targetName}.CompareTo({comparedValue}) >= 0)",
-            Operator.LessThan => $"({targetName}.CompareTo({comparedValue}) < 0)",
-            Operator.LessThanOrEqual => $"({targetName}.CompareTo({comparedValue}) <= 0)",
-            Operator.IsTypeOf => $"({targetName} is {comparedValue})",
-            Operator.IsNotTypeOf => $"(!({targetName} is {comparedValue}))",
-            _ => throw new ArgumentException($"Invalid Operator : {@operator}")
+            Condition.Equal => $"({targetName}.Equals({comparedValue}))",
+            Condition.NotEqual => $"(!{targetName}.Equals({comparedValue}))",
+            Condition.GreaterThan => $"({targetName}.CompareTo({comparedValue}) > 0)",
+            Condition.GreaterThanOrEqual => $"({targetName}.CompareTo({comparedValue}) >= 0)",
+            Condition.LessThan => $"({targetName}.CompareTo({comparedValue}) < 0)",
+            Condition.LessThanOrEqual => $"({targetName}.CompareTo({comparedValue}) <= 0)",
+            Condition.IsTypeOf => $"({targetName} is {comparedValue})",
+            Condition.IsNotTypeOf => $"(!({targetName} is {comparedValue}))",
+            _ => throw new ArgumentException($"Invalid Condition : {condition}")
         };
 
 
-        public void ConditionDiagnostic(MemberMetaInfo annotatedMember, Location attributeLocation, ConditionDetail conditions, IDiagnosticReporter reporter) {
+        public void ConditionDiagnostic(MemberMetaInfo annotatedMember, Location attributeLocation, ConditionExpression conditions, IDiagnosticReporter reporter) {
             var full = annotatedMember.ContainingFullType;
             var members = GetMemberNameDictionary(full);
 
@@ -117,15 +117,15 @@ namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
                 reporter.ReportDiagnostic(DiagnosticHelper.CompareSourceReturnInvalidType(targetMember, "void", attributeLocation));
                 return;
             }
-            EvaluateOperator(targetMember, attributeLocation, conditions, reporter);
+            EvaluateCondition(targetMember, attributeLocation, conditions, reporter);
         }
 
-        public string GetEvalString(string typeArgumentName, NamedTypeMetaInfo type, ConditionDetail condition) {
+        public string GetEvalString(string typeArgumentName, NamedTypeMetaInfo type, ConditionExpression condition) {
             // Since we only support member only evaulation right now
             var member = GetMemberNameDictionary(type);
             if (!member.TryGetValue(condition.SourceName, out var targetMember))
                 throw new ArgumentException("Condition target source cannot be found");
-            return GetOperatorEvalString(GetTargetName(targetMember), condition.Operator, condition.ComparedValue);
+            return GetConditionEvalString(GetTargetName(targetMember), condition.Condition, condition.ComparedValue);
 
             string GetTargetName(MemberMetaInfo targetMember) {
                 if (targetMember.IsStatic)

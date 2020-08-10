@@ -5,40 +5,37 @@ using Decuplr.CodeAnalysis.Diagnostics;
 using Decuplr.CodeAnalysis.Meta;
 using Decuplr.CodeAnalysis.Serialization;
 using Decuplr.CodeAnalysis.Serialization.TypeComposite;
-using Decuplr.Serialization.Annotations;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.ConditionResolver {
 
     // Handles both IgnoreIf and IgnoreIfNot
     internal class IgnoreIfConditionProvider : IConditionResolverProvider {
-        
+
         private readonly IConditionAnalyzer _analyzer;
 
         public IgnoreIfConditionProvider(IConditionAnalyzer analyzer) {
             _analyzer = analyzer;
         }
 
-        private static ConditionDetail GetAttributeCondition(AttributeData data) {
+        private static ConditionExpression GetAttributeCondition(AttributeData data) {
             // Uses the first constructor (string)
+            var sourceName = (string)data.ConstructorArguments[0].Value!;
             if (data.ConstructorArguments.Length == 1)
-                return new ConditionDetail {
-                    SourceName = (string)data.ConstructorArguments[0].Value!,
-                    Operator = Operator.Equal,
+                return new ConditionExpression(sourceName) {
+                    Condition = Condition.Equal,
                     ComparedValue = true
                 };
             // second constructor (string, object)
             if (data.ConstructorArguments.Length == 2)
-                return new ConditionDetail {
-                    SourceName = (string)data.ConstructorArguments[0].Value!,
-                    Operator = Operator.Equal,
+                return new ConditionExpression(sourceName) {
+                    Condition = Condition.Equal,
                     ComparedValue = data.ConstructorArguments[1].Value!
                 };
             // third constructor (string, operator, object)
             if (data.ConstructorArguments.Length == 3)
-                return new ConditionDetail {
-                    SourceName = (string)data.ConstructorArguments[0].Value!,
-                    Operator = (Operator)data.ConstructorArguments[1].Value!,
+                return new ConditionExpression(sourceName) {
+                    Condition = (Condition)data.ConstructorArguments[1].Value!,
                     ComparedValue = data.ConstructorArguments[2].Value!
                 };
             throw new ArgumentException("Invalid attribute data (too much constructor args", nameof(data));
