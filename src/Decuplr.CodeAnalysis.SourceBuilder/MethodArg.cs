@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
 namespace Decuplr.CodeAnalysis.SourceBuilder {
     public class MethodArg {
+
+        private string? _paramString;
 
         public ITypeSymbol? BackingSymbol { get; }
 
@@ -42,6 +45,21 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         public static implicit operator MethodArg((ITypeSymbol, string, RefKind) tuple) => new MethodArg(tuple.Item3, tuple.Item1, tuple.Item2);
 
         public override string ToString() => Name;
+        public string ToParamString() {
+            return _paramString ??= CreateParamString();
+
+            string CreateParamString() {
+                var str = new StringBuilder();
+                if (RefKind != RefKind.None) {
+                    str.Append(RefKind.ToString().ToLowerInvariant());
+                    str.Append(' ');
+                }
+                str.Append(TypeName);
+                str.Append(' ');
+                str.Append(Name);
+                return str.ToString();
+            }
+        }
     }
 
 }

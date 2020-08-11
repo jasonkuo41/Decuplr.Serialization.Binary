@@ -6,7 +6,7 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite {
     /// <summary>
     /// Represents the info of each component, how to generate the initialization method and it's type name
     /// </summary>
-    public interface IComponentTypeInfo : IComposerMethodBodyBuilder {
+    public interface IComponentTypeInfo : IMemberComposingMethod {
         /// <summary>
         /// The full name of the component, for example "TypeParser`T" or "ByteOrder"
         /// </summary>
@@ -14,6 +14,6 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite {
 
         void ProvideInitialize(CodeNodeBuilder builder, string discoveryName);
 
-        void ProvideTryInitialize(CodeNodeBuilder builder, string discoveryName, OutArgs<bool> isSuccess);
+        void ProvideTryInitialize(CodeNodeBuilder builder, string discoveryName, string isSuccessName);
     }
 }

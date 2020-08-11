@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace Decuplr.CodeAnalysis.SourceBuilder {
 
     public class MethodSignature {
-        
+
+        private string? _declaration;
+
         /// <summary>
         /// The reference kind this method returns
         /// </summary>
@@ -65,6 +68,27 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
 
         public MethodSignature Rename(Accessibility accessibility,string newName) 
             => new MethodSignature(accessibility, newName, ReturnType, Arguments, IsConstructor, ReturnRefKind);
+
+        /// <summary>
+        /// The declartion part of the method, e.g. 'private int MyMethod(in MyType type, out ThatType that)'
+        /// </summary>
+        public string GetDeclarationString() {
+            return _declaration ??= BuildString();
+
+            string BuildString() {
+                var str = new StringBuilder();
+                str.Append(Accessibility.ToCodeString());
+                str.Append(' ');
+                if (ReturnType != null) {
+                    str.Append(ReturnType);
+                    str.Append(' ');
+                }
+                str.Append("(");
+                str.Append(string.Join(", ", Arguments.Select(x => x.ToParamString())));
+                str.Append(")");
+                return str.ToString();
+            }
+        }
 
         /// <summary>
         /// Gets the invocation string, without target object

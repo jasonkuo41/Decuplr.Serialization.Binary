@@ -33,6 +33,9 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             return this;
         }
 
+        public CodeNodeBuilder AddMethod(MethodSignature signature, Action<CodeNodeBuilder> builder)
+            => AddNode(signature.GetDeclarationString(), builder);
+
         public CodeNodeBuilder AddNode(Action<CodeNodeBuilder> builder) {
             AddNode("", builder);
             return this;
