@@ -5,6 +5,8 @@ using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Serialization {
     public interface IChainMethodArgsProvider {
+        bool HasChainedMethod { get; }
+
         string this [Type type] { get; }
         string this [Type type, int index] { get; }
         string this [ITypeSymbol symbol] { get; }

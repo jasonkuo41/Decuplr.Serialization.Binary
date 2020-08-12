@@ -6,40 +6,10 @@ using Decuplr.CodeAnalysis.SourceBuilder;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
-     
+
     internal class MemberComposerInfo {
         public GeneratingTypeName Name { get; }
         public IReadOnlyList<MethodSignature> ChainingMethods { get; }
-    }
-
-    internal class ChainingMethodProvider : IChainMethodArgsProvider {
-
-        private readonly IReadOnlyList<MethodArg> _args;
-        private readonly ITypeSymbolProvider _provider;
-
-        public ChainingMethodProvider(ITypeSymbolProvider provider, IEnumerable<MethodArg> args) {
-            _provider = provider;
-            _args = args.ToList();
-        }
-
-        public string this[Type type] => this[_provider.GetSymbol(type)];
-        public string this[ITypeSymbol symbol] {
-            get {
-
-            }
-        }
-
-        public string this[Type type, int index] => throw new NotImplementedException();
-
-        public string this[ITypeSymbol symbol, int index] => throw new NotImplementedException();
-
-        public string InvokeNextMethod() {
-            throw new NotImplementedException();
-        }
-
-        public string InvokeNextMethod(Action<IChainMethodInvokeAction> action) {
-            throw new NotImplementedException();
-        }
     }
 
     internal class MemberComposerSourceProto {
@@ -123,7 +93,7 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
                 for (var i = 0; i < methodBodies.Count; ++i) {
                     var currentMethod = method;
                     if (i != 0)
-                        currentMethod = method.Rename(Accessibility.Private, $"{method.MethodName}_State{i - 1}");
+                        currentMethod = method.Rename(Accessibility.Private, GetNextMethodName(method, i));
                     builder.AddMethod(currentMethod, node => node.AddPlain(methodBodies[i]));
                 }
             }
@@ -133,15 +103,17 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
 
                 for (var i = 0; i < _features.Count; i++) {
                     var feature = _features[i];
-                    var methodProvider = new ChainingMethodProvider(_symbols, method.Arguments);
+                    var isLast = i == _features.Count - 1;
+                    var methodProvider = new ChainingMethodProvider(method.Arguments, isLast ? null : GetNextMethodName(method, i) );
                     // We need to evaluate it first
                     list.Add(feature.GetMethodBody(method.MethodName, methodProvider));
-                    if (!methodProvider.InvokedNextMethod)
+                    if (!methodProvider.HasInvokedNextMethod)
                         break;
                 }
                 return list;
             }
 
+            static string GetNextMethodName(MethodSignature method, int stateCount) => $"{method.MethodName}_State{stateCount - 1}";
         }
 
         public IMemberComposer CreateStruct(ITypeComposer typeComposer, IComponentProvider provider) {
@@ -165,7 +137,7 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
                 AddComponentInitializers(node, provider.DiscoveryType, components).NewLine();
 
                 AddFeaturingMethods(node);
-
+                "AddComponentComposer";
             });
 
             _sourceAddition.AddSource($"{_typeName}.generated.cs", builder.ToString());
