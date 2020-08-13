@@ -22,9 +22,4 @@
     <PackageReference Include="MessagePack" Version="2.1.115" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Decuplr.Serialization.Binary.Shared\Decuplr.Serialization.Binary.Shared.csproj" />
-    <ProjectReference Include="..\..\src\Decuplr.Serialization.Binary\Decuplr.Serialization.Binary.csproj" />
-  </ItemGroup>
-
 </Project>

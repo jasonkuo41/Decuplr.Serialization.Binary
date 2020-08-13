@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 
 namespace Decuplr.Serialization {
+    [Obsolete]
     public readonly struct DeserializeResult {
 
         public DeserializeResult(DeserializeConclusion conculsion, string faultedReason) {
