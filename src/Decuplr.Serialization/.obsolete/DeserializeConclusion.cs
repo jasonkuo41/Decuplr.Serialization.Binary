@@ -1,7 +1,10 @@
-﻿namespace Decuplr.Serialization {
+﻿using System;
+
+namespace Decuplr.Serialization {
     /// <summary>
     /// Describes the conclusion of the deserialization result
     /// </summary>
+    [Obsolete]
     public enum DeserializeConclusion : byte {
         /// <summary>
         /// There was insufficient data to deserialize, receive more and retry

@@ -8,6 +8,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Include=".obsolete\TypeParser.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="System.Memory" Version="4.5.4" />
 	</ItemGroup>
 

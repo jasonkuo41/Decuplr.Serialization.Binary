@@ -3,6 +3,7 @@ using System.Buffers;
 using System.ComponentModel;
 
 namespace Decuplr.Serialization.Binary {
+
     // 
     // TODO : Rename to BinaryParser<T>
     //
@@ -10,6 +11,7 @@ namespace Decuplr.Serialization.Binary {
     /// Provides the base class for serializing and deserializing objects into it's binary counterpart
     /// </summary>
     /// <typeparam name="T">The target type for serialization and deserialization</typeparam>
+    [Obsolete]
     public abstract class TypeParser<T> : TypeParser {
 
         // Should we provide a ITypeParser<T> for people who would like to create a serializer and deserializer manually?

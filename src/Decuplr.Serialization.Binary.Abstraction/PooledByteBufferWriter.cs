@@ -1,7 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
-using System;
+﻿using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -10,8 +7,8 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Decuplr.Serialization.Binary {
 
+namespace Decuplr.Serialization.Binary {
     internal sealed class PooledByteBufferWriter : IBufferWriter<byte>, IDisposable {
         private byte[] _rentedBuffer;
         private int _index;
@@ -148,7 +145,7 @@ namespace Decuplr.Serialization.Binary {
     }
 
     internal static partial class ThrowHelper {
-        [DoesNotReturn]
+        //[DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowOutOfMemoryException_BufferMaximumSizeExceeded(uint capacity) {
             throw new OutOfMemoryException($"Cannot allocate a buffer of size {capacity}");

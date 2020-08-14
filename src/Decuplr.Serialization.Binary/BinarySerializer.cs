@@ -14,25 +14,25 @@ namespace Decuplr.Serialization.Binary {
         public static void Serialize<T>(in T item, IBufferWriter<byte> data, BinarySerializerOptions? options = null) {
             var length = GetSpanLength(item, options);
             var span = data.GetSpan(length);
-            var writtenBytes = Serialize(item, span, ref length);
+            var writtenBytes = Serialize(item, span);
             data.Advance(writtenBytes);
         }
 
-        public static int Serialize<T>(in T item, Span<byte> data, ref BinaryLength length) {
+        public static int Serialize<T>(in T item, Span<byte> data, BinarySerializerOptions? options = null) {
 
         }
 
-        public static BinaryLength GetSpanLength<T>(in T item, BinarySerializerOptions? options = null) {
+        public static int GetSpanLength<T>(in T item, BinarySerializerOptions? options = null) {
             options ??= BinarySerializerOptions.Default;
 
         }
 
-        public static ReadResult<T> Deserialize<T>(ReadOnlySpan<byte> data, BinarySerializerOptions? options = null) {
+        public static SpanReadResult<T> Deserialize<T>(ReadOnlySpan<byte> data, BinarySerializerOptions? options = null) {
             options ??= BinarySerializerOptions.Default;
 
         }
 
-        public static ReadResult<T> Deserialize<T>(ReadOnlySequence<byte> data, BinarySerializerOptions? options = null) {
+        public static SequenceReadResult<T> Deserialize<T>(ReadOnlySequence<byte> data, BinarySerializerOptions? options = null) {
             options ??= BinarySerializerOptions.Default;
 
         }
@@ -41,7 +41,7 @@ namespace Decuplr.Serialization.Binary {
         /// Inspects the binary data and determinates the binary length this type occupies without actually deserializing.
         /// Returns -1 if the data is insufficient to deteminate 
         /// </summary>
-        /// <returns>The length of the binary blob that this </returns>
+        /// <returns>The length of the binary structure that represents this type</returns>
         public static int GetBlockLength<T>(ReadOnlySpan<byte> data, BinarySerializerOptions? options = null) {
             options ??= BinarySerializerOptions.Default;
 

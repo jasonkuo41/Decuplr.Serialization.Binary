@@ -1,13 +1,21 @@
-﻿namespace Decuplr.Serialization {
+﻿using System;
+using System.Buffers;
+
+namespace Decuplr.Serialization {
     /// <summary>
-    /// Represents a generic deserialization result
+    /// Represents a generic deserialization result for <see cref="ReadOnlySequence{T}"/>
     /// </summary>
     /// <typeparam name="T">The deserialized type</typeparam>
-    public struct ReadResult<T> {
+    public readonly struct SequenceReadResult<T> {
         /// <summary>
         /// The total bytes that was consumed, -1 if there is insufficient data
         /// </summary>
-        public int Consumed { get; }
+        public long Consumed { get; }
+
+        /// <summary>
+        /// Gets the current <see cref="SequencePosition"/> of consumed data
+        /// </summary>
+        public SequencePosition Position { get; }
 
         /// <summary>
         /// If there should be more data in place before the deserialization can success
@@ -24,10 +32,10 @@
         /// </summary>
         /// <param name="result">The result object</param>
         /// <param name="consumed">The bytes consumed, -1 if there is insufficient data</param>
-        public ReadResult(T result, int consumed) {
+        public SequenceReadResult(T result, long consumed, SequencePosition position) {
             Result = result;
             Consumed = consumed;
+            Position = position;
         }
     }
-
 }
