@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text;
+using Decuplr.Serialization.Namespaces;
 
 namespace Decuplr.Serialization.Binary {
     public static class BinarySerializer {
@@ -50,6 +52,7 @@ namespace Decuplr.Serialization.Binary {
         public static int GetBlockLength<T>(ReadOnlySequence<byte> data, BinarySerializerOptions? options = null) {
 
         }
+
     }
 
 }

@@ -8,10 +8,6 @@ namespace Decuplr.Serialization.Namespaces {
     /// Represents a standalone containers that allow different features for the same type to coexist using the namespace concept
     /// </summary>
     public interface INamespaceContainer : IEnumerable<KeyValuePair<TypeEntryInfo, object>> {
-        /// <summary>
-        /// Indicates if the collection can be modified.
-        /// </summary>
-        bool IsReadOnly { get; }
 
         /// <summary>
         /// Incremented for each modification and can be used to verify cached results.
@@ -60,5 +56,36 @@ namespace Decuplr.Serialization.Namespaces {
         /// <param name="namespaceName"></param>
         /// <returns></returns>
         INamespaceContainer GetChildNamespace(string namespaceName);
+    }
+
+    public interface IReadOnlyNamespaceContainer {
+
+    }
+
+    public interface INamespaceTree : INamespaceNode {
+        int Revision { get; }
+
+
+    }
+
+    public interface INamespaceNode {
+        INamespaceTree FullTree { get; }
+        INamespaceNode? Parent { get; }
+        IReadOnlyDictionary<string, INamespaceNode> ChildNodes { get; }
+
+    }
+
+    public interface IReadOnlyNamespaceTree {
+
+    }
+
+    public interface IReadOnlyNamespaceNode {
+
+    }
+
+    public static class NamespaceExtensions {
+        public static INamespaceTree Clone(this IReadOnlyNamespaceTree tree) {
+
+        }
     }
 }
