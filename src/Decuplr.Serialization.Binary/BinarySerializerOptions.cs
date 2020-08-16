@@ -1,4 +1,6 @@
-﻿using Decuplr.Serialization.Namespaces;
+﻿using System.Linq;
+using System.Reflection;
+using Decuplr.Serialization.Namespaces;
 
 namespace Decuplr.Serialization.Binary {
     public class BinarySerializerOptions {
@@ -15,8 +17,11 @@ namespace Decuplr.Serialization.Binary {
             Performance = new BinarySerializerOptions(CircularReferenceMode.NeverDetect, DefaultNamespaces.CreateBinaryDiscovery());
         }
 
-        public static INamespaceTree SetupDefaultNamespaces() {
-
+        private static INamespaceTree SetupDefaultNamespaces() {
+            var tree = NamespaceTree.Create();
+            foreach(var assembly in Assembly.GetEntryAssembly().GetReferencedAssemblies().Where(x => x))
+                tree.AddBinarySerializers(assembly);
+            return tree;
         }
 
         public CircularReferenceMode CircularReferenceMode { get; }
