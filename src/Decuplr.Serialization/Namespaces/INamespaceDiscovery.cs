@@ -5,13 +5,13 @@ using System.Text;
 namespace Decuplr.Serialization.Namespaces {
 
     /// <summary>
-    /// A discovery service that is able to traverse through various namespaces with priority and order in mind to fetch the requested item
+    /// An immutable discovery service that is able to traverse through various namespaces with priority and order in mind to fetch the requested item
     /// </summary>
     public interface INamespaceDiscovery {
         /// <summary>
         /// The namespaces the discovery service would traverse through
         /// </summary>
-        IEnumerable<INamespaceContainer> TraversingNamespaces { get; }
+        IEnumerable<INamespaceNode> TraversingNamespaces { get; }
 
         /// <summary>
         /// Makes a copy of the discovery, and adds the given namespace for traversing

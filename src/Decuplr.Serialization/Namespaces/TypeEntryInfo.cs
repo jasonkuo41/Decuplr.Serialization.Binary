@@ -16,6 +16,11 @@ namespace Decuplr.Serialization.Namespaces {
         /// </summary>
         public Assembly SourceAssembly { get; }
 
+        public TypeEntryInfo(Assembly sourceAssembly, Type type) {
+            SourceAssembly = sourceAssembly;
+            Type = type;
+        }
+
         /// <inheritdoc/>
         public bool Equals(TypeEntryInfo other) => Type.Equals(other.Type) && SourceAssembly.Equals(other.SourceAssembly);
 
@@ -24,5 +29,12 @@ namespace Decuplr.Serialization.Namespaces {
 
         /// <inheritdoc/>
         public override int GetHashCode() => HashCode.Combine(Type, SourceAssembly);
+
+        public static implicit operator TypeEntryInfo((Assembly, Type) type) => new TypeEntryInfo(type.Item1, type.Item2);
+
+        public void Deconstruct(out Assembly assembly, out Type type) {
+            assembly = SourceAssembly;
+            type = Type;
+        }
     }
 }

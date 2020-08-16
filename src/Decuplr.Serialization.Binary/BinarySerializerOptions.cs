@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Decuplr.Serialization.Namespaces;
+﻿using Decuplr.Serialization.Namespaces;
 
 namespace Decuplr.Serialization.Binary {
     public class BinarySerializerOptions {
@@ -9,16 +7,31 @@ namespace Decuplr.Serialization.Binary {
 
         public static BinarySerializerOptions Performance { get; }
 
-        public static IReadOnlyNamespaceContainer DefaultContainer { get; }
+        public static IReadOnlyNamespaceTree DefaultNamespaces { get; }
 
         static BinarySerializerOptions() {
+            DefaultNamespaces = SetupDefaultNamespaces();
+            Default = new BinarySerializerOptions(CircularReferenceMode.DetectAndThrow, DefaultNamespaces.CreateBinaryDiscovery());
+            Performance = new BinarySerializerOptions(CircularReferenceMode.NeverDetect, DefaultNamespaces.CreateBinaryDiscovery());
+        }
+
+        public static INamespaceTree SetupDefaultNamespaces() {
 
         }
 
-        public CircularReferenceMode CircularReferenceMode { get; set; }
+        public CircularReferenceMode CircularReferenceMode { get; }
 
-        public IReadOnlyNamespaceContainer CurrentContainer { get; set; }
+        public IBinaryNamespaceDiscovery InitialDiscovery { get; }
 
+        public BinarySerializerOptions(CircularReferenceMode referenceMode, IBinaryNamespaceDiscovery discovery) {
+            CircularReferenceMode = referenceMode;
+            InitialDiscovery = discovery;
+        }
+    }
 
+    public static class NamespaceDiscoveryExtensions {
+        public static IBinaryNamespaceDiscovery CreateBinaryDiscovery(this IReadOnlyNamespaceTree tree) {
+
+        }
     }
 }
