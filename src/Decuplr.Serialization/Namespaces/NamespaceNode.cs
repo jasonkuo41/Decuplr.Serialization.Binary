@@ -2,18 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading;
 
 namespace Decuplr.Serialization.Namespaces {
-
-    public static class NamespaceExtensions {
-        public static INamespaceTree Clone(this IReadOnlyNamespaceTree tree) => new NamespaceTree(tree);
-    }
-
     internal class NamespaceNode : INamespaceNode {
 
         private class ReadOnlyNamespaceDictionary : IReadOnlyDictionary<string, IReadOnlyNamespaceNode>, IReadOnlyDictionary<string, INamespaceNode> {
@@ -57,7 +49,7 @@ namespace Decuplr.Serialization.Namespaces {
         private readonly Dictionary<TypeEntryInfo, object> _container = new Dictionary<TypeEntryInfo, object>();
         private readonly Dictionary<string, NamespaceNode> _childNodes = new Dictionary<string, NamespaceNode>();
         private readonly ReadOnlyNamespaceDictionary _readonlyNodes;
-        private readonly NamespaceTree _root;
+        private readonly NamespaceTreeSource _root;
 
         public INamespaceNode? Parent { get; }
 
@@ -65,7 +57,7 @@ namespace Decuplr.Serialization.Namespaces {
 
         public string FullName { get; }
 
-        internal NamespaceNode(INamespaceNode? parent, NamespaceTree root, string identifier) {
+        internal NamespaceNode(INamespaceNode? parent, NamespaceTreeSource root, string identifier) {
             _readonlyNodes = new ReadOnlyNamespaceDictionary(this);
             Parent = parent;
             _root = root;
@@ -74,12 +66,12 @@ namespace Decuplr.Serialization.Namespaces {
         }
 
         private protected NamespaceNode(string identifier) {
-            Debug.Assert(this is NamespaceTree);
+            Debug.Assert(this is NamespaceTreeSource);
             _readonlyNodes = new ReadOnlyNamespaceDictionary(this);
             Parent = null;
             Identifier = identifier;
             FullName = identifier;
-            _root = (NamespaceTree)this;
+            _root = (NamespaceTreeSource)this;
         }
 
         public INamespaceTree Root => _root;
@@ -136,22 +128,5 @@ namespace Decuplr.Serialization.Namespaces {
         public IEnumerator<KeyValuePair<TypeEntryInfo, object>> GetEnumerator() => _container.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-    }
-
-    internal class NamespaceTree : NamespaceNode, INamespaceTree {
-
-        private readonly static ThreadLocal<Random> RevisionInitiate = new ThreadLocal<Random>(() => new Random(), false);
-
-        public int Revision { get; private set; }
-
-        public NamespaceTree() : base ("default") {
-            Revision = RevisionInitiate.Value.Next();
-        }
-
-        public NamespaceTree(IReadOnlyNamespaceTree tree) : this() {
-            foreach()
-        }
-
-        internal void Modified() => Revision++;
     }
 }
