@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace Decuplr.Serialization.Namespaces {
@@ -20,14 +21,14 @@ namespace Decuplr.Serialization.Namespaces {
         /// <typeparam name="TItem">The item key.</typeparam>
         /// <param name="assembly">The calling assembly.</param>
         /// <returns>The requested item, or null if it is not present.</returns>
-        new object this[Assembly assembly, Type type] { get; set; }
+        new object? this[Assembly assembly, Type type] { get; set; }
 
         /// <summary>
         /// Sets the given item along with the assembly to the namespace.
         /// </summary>
         /// <typeparam name="TItem">The item key.</typeparam>
         /// <param name="instance">The item value.</param>
-        void Set<TKind>(Assembly assembly, TKind item);
+        void Set<TKind>(Assembly assembly, [MaybeNull] TKind item);
 
         /// <summary>
         /// Get's the children namespace, creates a new <see cref="INamespaceNode"/> if doesn't exist.

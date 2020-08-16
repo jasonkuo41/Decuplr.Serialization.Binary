@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 
@@ -78,17 +79,21 @@ namespace Decuplr.Serialization.Namespaces {
 
         public IReadOnlyDictionary<string, INamespaceNode> ChildNodes => _readonlyNodes;
 
-        object IReadOnlyNamespaceNode.this[Assembly assembly, Type type] => this[assembly, type];
+        object? IReadOnlyNamespaceNode.this[Assembly assembly, Type type] => this[assembly, type];
 
         IReadOnlyNamespaceNode? IReadOnlyNamespaceNode.Parent => Parent;
 
         IReadOnlyDictionary<string, IReadOnlyNamespaceNode> IReadOnlyNamespaceNode.ChildNodes => _readonlyNodes;
 
-        public object this[Assembly assembly, Type type] {
-            get => _container[(assembly, type)];
+        public object? this[Assembly assembly, Type type] {
+            get => _container.TryGetValue((assembly, type), out var value) ? value : null;
             set {
-                _container[(assembly, type)] = value;
                 _root.Modified();
+                if (value is null) {
+                    _container.Remove((assembly, type));
+                    return;
+                }
+                _container[(assembly, type)] = value;
             }
         }
 
@@ -118,12 +123,13 @@ namespace Decuplr.Serialization.Namespaces {
 
         public INamespaceNode GetChildNamespace(string namespaceName) => GetChildNamespace(namespaceName.Split('.'));
 
-        public TKind Get<TKind>(Assembly assembly) => (TKind)_container[(assembly, typeof(TKind))];
-
-        public void Set<TKind>(Assembly assembly, TKind item) {
-            _container[(assembly, typeof(TKind))] = item ?? throw new ArgumentNullException(nameof(item));
-            _root.Modified();
+        [return: MaybeNull]
+        public TKind Get<TKind>(Assembly assembly) {
+            var value = this[assembly, typeof(TKind)];
+            return value is null ? default : (TKind)value;
         }
+
+        public void Set<TKind>(Assembly assembly, TKind item) => this[assembly, typeof(TKind)] = item;
 
         public IEnumerator<KeyValuePair<TypeEntryInfo, object>> GetEnumerator() => _container.GetEnumerator();
 
