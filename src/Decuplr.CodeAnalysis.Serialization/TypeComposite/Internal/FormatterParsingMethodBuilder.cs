@@ -5,6 +5,8 @@ using Decuplr.CodeAnalysis.Serialization.Arguments;
 using Decuplr.CodeAnalysis.SourceBuilder;
 
 namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
+
+    [Obsolete]
     internal class FormatterParsingMethodBuilder : ParsingMethodBuilder {
 
         private const string parent = "parent";

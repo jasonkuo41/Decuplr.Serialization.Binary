@@ -17,13 +17,6 @@ namespace Decuplr.Serialization.Binary {
             Performance = new BinarySerializerOptions(CircularReferenceMode.NeverDetect, DefaultNamespaces.CreateBinaryDiscovery());
         }
 
-        private static INamespaceTree SetupDefaultNamespaces() {
-            var tree = NamespaceTree.Create();
-            foreach(var assembly in Assembly.GetEntryAssembly().GetReferencedAssemblies().Where(x => x))
-                tree.AddBinarySerializers(assembly);
-            return tree;
-        }
-
         public CircularReferenceMode CircularReferenceMode { get; }
 
         public IBinaryNamespaceDiscovery InitialDiscovery { get; }
@@ -32,11 +25,13 @@ namespace Decuplr.Serialization.Binary {
             CircularReferenceMode = referenceMode;
             InitialDiscovery = discovery;
         }
-    }
 
-    public static class NamespaceDiscoveryExtensions {
-        public static IBinaryNamespaceDiscovery CreateBinaryDiscovery(this IReadOnlyNamespaceTree tree) {
-
+        private static INamespaceTree SetupDefaultNamespaces() {
+            var tree = NamespaceTree.Create();
+            foreach (var assembly in Assembly.GetEntryAssembly().GetReferencedAssemblies().Where(x => x))
+                tree.AddBinarySerializers(assembly);
+            return tree;
         }
+
     }
 }

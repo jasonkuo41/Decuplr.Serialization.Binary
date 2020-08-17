@@ -1,4 +1,10 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+//
+// File Modified From : https://source.dot.net/#System.Text.Json/PooledByteBufferWriter.cs,d0112696348c0f6d
+//
+
+using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -142,13 +148,14 @@ namespace Decuplr.Serialization.Binary {
             Debug.Assert(_rentedBuffer.Length - _index > 0);
             Debug.Assert(_rentedBuffer.Length - _index >= sizeHint);
         }
-    }
 
-    internal static partial class ThrowHelper {
-        //[DoesNotReturn]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowOutOfMemoryException_BufferMaximumSizeExceeded(uint capacity) {
-            throw new OutOfMemoryException($"Cannot allocate a buffer of size {capacity}");
+        private static class ThrowHelper {
+            [DoesNotReturn]
+            public static void ThrowOutOfMemoryException_BufferMaximumSizeExceeded(uint capacity) => throw CreateOutOfMemoryException_BufferMaximumSizeExceeded(capacity);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private static Exception CreateOutOfMemoryException_BufferMaximumSizeExceeded(uint capacity) => new OutOfMemoryException($"Cannot allocate a buffer of size {capacity}");
         }
     }
+
 }
