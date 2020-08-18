@@ -6,8 +6,8 @@ using System.Runtime.CompilerServices;
 
 namespace Decuplr.Serialization.Binary {
 
-    public interface IBinaryWriteState<TRef, TKind> where TRef : IBinaryWriteState<TRef, TKind> {
-        bool Write(in TKind item, out TRef state);
+    public interface IBinaryWriteState<TRef> where TRef : IBinaryWriteState<TRef> {
+        bool Write<TKind>(in TKind item, out TRef state);
     }
 
     public struct BinaryWriteState : IBinaryWriteState<BinaryWriteState> {
