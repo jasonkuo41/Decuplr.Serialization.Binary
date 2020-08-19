@@ -35,7 +35,7 @@ namespace Decuplr.Serialization.Binary {
         /// <param name="item">The item being serialized.</param>
         /// <param name="bufferWriter">The struct based buffer writer.</param>
         public void Serialize<TWriter>(in T item, ref TWriter bufferWriter) where TWriter : struct, IBufferWriter<byte>
-            => Serialize(item, new NoopWriteState<T>(), ref bufferWriter);
+            => Serialize(item, new NoopWriteState(), ref bufferWriter);
 
         /// <summary>
         /// Serialize the <paramref name="item"/> to it's binary from and write to a buffer via <paramref name="bufferWriter"/> (struct based). 
@@ -46,7 +46,7 @@ namespace Decuplr.Serialization.Binary {
         /// <param name="item">The item being serialized</param>
         /// <param name="writeState">The state object.</param>
         /// <param name="bufferWriter">The struct based buffer writer.</param>
-        public virtual void Serialize<TState, TWriter>(in T item, in TState writeState, ref TWriter bufferWriter)
+        public virtual void Serialize<TState, TWriter>(in T item, TState writeState, ref TWriter bufferWriter)
             where TState : struct, IBinaryWriteState<TState>
             where TWriter : struct, IBufferWriter<byte> {
             var length = GetSpanLength(item);
@@ -67,28 +67,29 @@ namespace Decuplr.Serialization.Binary {
         /// </summary>
         /// <param name="item">The object to retrieve it's binary form's length</param>
         /// <returns>The binary forms length</returns>
-        public abstract int GetSpanLength<TState>(in T item, in TState writeState) where TState : struct, IBinaryWriteState<TState>;
+        public abstract int GetSpanLength<TState>(in T item, TState writeState) where TState : struct, IBinaryWriteState<TState>;
 
         /// <summary>
         /// Serialize the <paramref name="item"/> to it's binary form and write to the span '<paramref name="data"/>'.
         /// </summary>
-        /// <param name="item">The item being serialized</param>
-        /// <param name="data">The span that will receive the data</param>
-        /// <returns>How many bytes were written to the span, returns -1 if there are insufficent data</returns>
+        /// <param name="item">The item being serialized.</param>
+        /// <param name="data">The span that will receive the data.</param>
+        /// <returns>How many bytes were written to the span, returns -1 if there are insufficent data.</returns>
         public int Serialize(in T item, Span<byte> data) => Serialize(item, new NoopWriteState(), data);
 
-        public abstract int Serialize<TState>(in T item, in TState writeState, Span<byte> data) where TState : struct, IBinaryWriteState<TState>;
+        public abstract int Serialize<TState>(in T item, TState writeState, Span<byte> data) where TState : struct, IBinaryWriteState<TState>;
 
-        public abstract SpanReadResult<T> Deserialize(ReadOnlySpan<byte> data);
+        public abstract int Deserialize(ReadOnlySpan<byte> data, out T result);
 
         public SequenceReadResult<T> Deserialize(ReadOnlySequence<byte> sequence) {
             // Create cursor for this sequence
             var cursor = new SequenceCursor<byte>(in sequence);
-            var result = Deserialize(ref cursor);
+            if (!Deserialize(ref cursor, out var result))
+                return SequenceReadResult<T>.InsufficientData;
             return new SequenceReadResult<T>(result, cursor.Consumed, cursor.Position);
         }
 
-        public abstract T Deserialize(ref SequenceCursor<byte> cursor);
+        public abstract bool Deserialize(ref SequenceCursor<byte> cursor, out T result);
 
         public int GetBlockLength(ReadOnlySequence<byte> sequence) {
             var cursor = new SequenceCursor<byte>(in sequence);
@@ -115,4 +116,17 @@ namespace Decuplr.Serialization.Binary {
     *  int GetBlockLength(ref SequenceCursor<byte> cursor);
     *  
     */
+
+    internal interface ISourceGenStub<TSource, TMember> {
+        void Serialize<TState, TWriter>(in TMember member, in TSource item, TState state, ref TWriter writer);
+        int Serialize<TState>(in TMember member, in TSource item, TState writeState, Span<byte> data);
+
+        int GetSpanLength<TState>(in TMember member, in TSource item, TState writeState);
+
+        SpanReadResult<TMember> Deserialize(ReadOnlySpan<byte> data);
+        TMember Deserialize(ref SequenceCursor<byte> cursor);
+
+        int GetBlockLength(ReadOnlySpan<byte> data);
+        int GetBlockLength(ref SequenceCursor<byte> cursor);
+    }
 }

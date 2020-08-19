@@ -3,39 +3,44 @@ using System.Buffers;
 
 namespace Decuplr.Serialization {
     /// <summary>
-    /// Represents a generic deserialization result for <see cref="ReadOnlySequence{T}"/>
+    /// Represents a generic deserialization result for <see cref="ReadOnlySequence{T}"/>.
     /// </summary>
-    /// <typeparam name="T">The deserialized type</typeparam>
+    /// <typeparam name="T">The deserialized type.</typeparam>
     public readonly struct SequenceReadResult<T> {
         /// <summary>
-        /// The total bytes that was consumed, -1 if there is insufficient data
+        /// The total bytes that was consumed, -1 if there is insufficient data.
         /// </summary>
         public long Consumed { get; }
 
         /// <summary>
-        /// Gets the current <see cref="SequencePosition"/> of consumed data
+        /// Gets the current <see cref="SequencePosition"/> of consumed data.
         /// </summary>
         public SequencePosition Position { get; }
 
         /// <summary>
-        /// If there should be more data in place before the deserialization can success
+        /// If there should be more data in place before the deserialization can success.
         /// </summary>
         public bool HasInsufficientData => Consumed < 0;
 
         /// <summary>
-        /// The result of the deserialization
+        /// The result of the deserialization.
         /// </summary>
         public T Result { get; }
 
         /// <summary>
-        /// Creates the result of the deserialization
+        /// Creates the result of the deserialization.
         /// </summary>
-        /// <param name="result">The result object</param>
-        /// <param name="consumed">The bytes consumed, -1 if there is insufficient data</param>
+        /// <param name="result">The result object.</param>
+        /// <param name="consumed">The bytes consumed, -1 if there is insufficient data.</param>
         public SequenceReadResult(T result, long consumed, SequencePosition position) {
             Result = result;
             Consumed = consumed;
             Position = position;
         }
+
+        /// <summary>
+        /// Creates a <see cref="SequenceReadResult{T}"/> that indicates insufficient data.
+        /// </summary>
+        public static SequenceReadResult<T> InsufficientData { get; } = new SequenceReadResult<T>(default, -1, default);
     }
 }

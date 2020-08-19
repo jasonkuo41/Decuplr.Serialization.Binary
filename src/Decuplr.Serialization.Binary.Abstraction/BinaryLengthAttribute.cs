@@ -2,14 +2,17 @@
 
 namespace Decuplr.Serialization.Binary {
     /// <summary>
-    /// Uses the member as a reference for how many bytes a certain member should occupy, may fill remainders with zeros if <see cref="Alignment"/> is not set to <see cref="MemoryAlign.None"/>
+    /// Uses the member as a reference for how many bytes a certain member should occupy, may fill remainders with zeros if <see cref="Alignment"/> is not set to <see cref="MemoryAlign.None"/>.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
     public sealed class BinaryLengthAttribute : Attribute {
         
         /// <summary>
         /// Uses a member as a reference for the binary length
         /// </summary>
+        /// <remarks>
+        /// The constructor is unavailable when applying to struct or class
+        /// </remarks>
         /// <param name="lengthProvider">The referencing member</param>
         public BinaryLengthAttribute(string lengthProvider) {
             LengthProvider = lengthProvider;
@@ -31,7 +34,7 @@ namespace Decuplr.Serialization.Binary {
         /// <summary>
         /// The reference member providing the binary length, null if not defined
         /// </summary>
-        public string LengthProvider { get; }
+        public string? LengthProvider { get; }
 
         /// <summary>
         /// The memory aligment mode when there are remain empty spaces, <see cref="MemoryAlign.None"/> if it should always fill.
