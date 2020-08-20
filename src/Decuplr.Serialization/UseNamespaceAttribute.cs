@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Decuplr.Serialization.Binary.Annotations {
+namespace Decuplr.Serialization {
 
     /// <summary>
     /// Applies namespace to the whole type or a specific member

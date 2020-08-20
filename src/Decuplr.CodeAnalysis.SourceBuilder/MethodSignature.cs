@@ -7,6 +7,12 @@ using Microsoft.CodeAnalysis.CSharp;
 
 namespace Decuplr.CodeAnalysis.SourceBuilder {
 
+    public struct MethodGenericInfo {
+        public string GenericName { get; }
+        public TypeKind? ConstrainedKind { get; }
+        public IReadOnlyList<ITypeSymbol> ConstrainedTypes { get; }
+    }
+
     public class MethodSignature {
 
         private string? _declaration;

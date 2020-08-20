@@ -27,6 +27,18 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             return sliced;
         }
 
+        public TypeQualifyName(ITypeSymbol symbol) {
+            _typeName = symbol.Name;
+            _parentNames = parentNames(symbol).ToArray();
+            _namespace = symbol.ContainingNamespace.ToString();
+
+            static IEnumerable<string> parentNames(ITypeSymbol symbol) {
+                if (symbol.ContainingType is null)
+                    yield break;
+                yield return symbol.ContainingType.Name;
+            }
+        }
+
         internal TypeQualifyName(GeneratingTypeName typeName) {
             _namespace = typeName.Namespace;
             _typeName = typeName.TypeName;

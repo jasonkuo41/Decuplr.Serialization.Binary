@@ -37,6 +37,20 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         public static MethodSignature CreateConstructor(Accessibility accessibility, TypeQualifyName typeName, IEnumerable<MethodArg> args)
             => new MethodSignature(accessibility, typeName.ToString(), null, args, isConstructor: true, RefKind.None);
 
+        public MethodSignatureBuilder AddGenerics(string genericName) {
+
+        }
+
+        public MethodSignatureBuilder AddGenerics(string genericName, params TypeQualifyName[] constrainedType) {
+
+        }
+
+        public MethodSignatureBuilder AddGenerics(string genericName, TypeKind constrainedKind, params TypeQualifyName[] constrainedType) {
+            if (constrainedKind != TypeKind.Class && constrainedKind != TypeKind.Struct)
+                throw new ArgumentException("Constrained Type can only be class or struct");
+
+        }
+
         public MethodSignatureBuilder AddArgument(MethodArg arg) {
             _arguments.Add(arg);
             return this;

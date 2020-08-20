@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Decuplr.Serialization.Binary {
+namespace Decuplr.Serialization {
     /// <summary>
     /// Annotate this member to be ignored when order or the member to be serialized are not explicitly stated
     /// </summary>
