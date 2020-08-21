@@ -4,15 +4,13 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
 namespace Decuplr.CodeAnalysis.SourceBuilder {
+    // ref     System.IO.Stream stream
+    // RefKind TypeName         Name
     public class MethodArg {
 
         private string? _paramString;
 
-        public ITypeSymbol? BackingSymbol { get; }
-
-        public TypeQualifyName BackingQualifyName { get; }
-
-        public string TypeName { get; }
+        public TypeQualifyName TypeName { get; }
 
         public string Name { get; }
 
@@ -22,13 +20,8 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             : this(RefKind.None, type, argName) {
         }
 
-        public MethodArg(RefKind refKind, ITypeSymbol type, string name) {
-            if (!SyntaxFacts.IsValidIdentifier(name))
-                throw new ArgumentException("Invalid method name", nameof(name));
-            Name = name;
-            RefKind = refKind;
-            TypeName = type.ToString();
-            BackingSymbol = type;
+        public MethodArg(RefKind refKind, ITypeSymbol type, string name)
+            : this(refKind, new TypeQualifyName(type), name) {
         }
 
         public MethodArg(RefKind refKind, TypeQualifyName typeName, string name) {
@@ -36,15 +29,15 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
                 throw new ArgumentException("Invalid method name", nameof(name));
             Name = name;
             RefKind = refKind;
-            TypeName = typeName.ToString();
-            BackingQualifyName = typeName;
+            TypeName = typeName;
         }
 
-        public MethodArg Rename(string name) {
-            if (BackingSymbol is null)
-                return new MethodArg(RefKind, BackingQualifyName, name);
-            return new MethodArg(RefKind, BackingSymbol, name);
-        }
+        /// <summary>
+        /// Creates a clone of this instance and rename it to <paramref name="name"/>
+        /// </summary>
+        /// <param name="name">The new renaming name</param>
+        /// <returns>A new clone for the instance</returns>
+        public MethodArg Rename(string name) => new MethodArg(RefKind, TypeName, name);
 
         public static implicit operator MethodArg((ITypeSymbol, string) tuple) => new MethodArg(tuple.Item1, tuple.Item2);
         public static implicit operator MethodArg((RefKind, ITypeSymbol, string) tuple) => new MethodArg(tuple.Item1, tuple.Item2, tuple.Item3);

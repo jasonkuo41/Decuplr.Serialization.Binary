@@ -10,7 +10,27 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
     public struct MethodGenericInfo {
         public string GenericName { get; }
         public TypeKind? ConstrainedKind { get; }
-        public IReadOnlyList<ITypeSymbol> ConstrainedTypes { get; }
+        public IReadOnlyList<TypeQualifyName> ConstrainedTypes { get; }
+
+        public MethodGenericInfo(string genericName) {
+            GenericName = genericName;
+            ConstrainedKind = null;
+            ConstrainedTypes = Array.Empty<TypeQualifyName>();
+        }
+
+        public MethodGenericInfo(string genericName, IEnumerable<TypeQualifyName> constrainedTypes) {
+            GenericName = genericName;
+            ConstrainedKind = null;
+            ConstrainedTypes = constrainedTypes.ToList();
+        }
+
+        public MethodGenericInfo(string genericName, TypeKind constrainedKind, IEnumerable<TypeQualifyName> constrainedTypes) {
+            if (constrainedKind != TypeKind.Class && constrainedKind != TypeKind.Struct)
+                throw new ArgumentException("Constrained Type can only be class or struct");
+            GenericName = genericName;
+            ConstrainedKind = constrainedKind;
+            ConstrainedTypes = constrainedTypes.ToList();
+        }
     }
 
     public class MethodSignature {

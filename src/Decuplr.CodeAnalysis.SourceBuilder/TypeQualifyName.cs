@@ -20,6 +20,8 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
 
         public string TypeName => _typeName ?? string.Empty;
 
+        public bool IsGeneric { get; }
+
         internal static string[] VerifyChainedIndentifier(string fullTypeName, string argName) {
             var sliced = fullTypeName.Split('.');
             if (sliced.Any(x => !SyntaxFacts.IsValidIdentifier(x)))
@@ -31,6 +33,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             _typeName = symbol.Name;
             _parentNames = parentNames(symbol).ToArray();
             _namespace = symbol.ContainingNamespace.ToString();
+            IsGeneric = false;
 
             static IEnumerable<string> parentNames(ITypeSymbol symbol) {
                 if (symbol.ContainingType is null)
@@ -43,6 +46,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             _namespace = typeName.Namespace;
             _typeName = typeName.TypeName;
             _parentNames = typeName.Parents.Select(x => x.ParentName).ToArray();
+            IsGeneric = false;
         }
 
         public TypeQualifyName(string namespaceName, string typeName) {
@@ -53,6 +57,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
 
             Array.Resize(ref slicedTypeName, slicedTypeName.Length - 1);
             _parentNames = slicedTypeName;
+            IsGeneric = false;
         }
 
         public TypeQualifyName(string namespaceName, string parentNames, string typeName)
@@ -74,5 +79,10 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         }
 
         public override string ToString() => GetFullName();
+        public static implicit operator string(TypeQualifyName name) => name.ToString();
+
+        public static TypeQualifyName FromGeneric(string genericName) {
+
+        }
     }
 }
