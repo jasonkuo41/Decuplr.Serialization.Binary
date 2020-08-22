@@ -10,21 +10,21 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
     public struct MethodGenericInfo {
         public string GenericName { get; }
         public TypeKind? ConstrainedKind { get; }
-        public IReadOnlyList<TypeQualifyName> ConstrainedTypes { get; }
+        public IReadOnlyList<TypeName> ConstrainedTypes { get; }
 
         public MethodGenericInfo(string genericName) {
             GenericName = genericName;
             ConstrainedKind = null;
-            ConstrainedTypes = Array.Empty<TypeQualifyName>();
+            ConstrainedTypes = Array.Empty<TypeName>();
         }
 
-        public MethodGenericInfo(string genericName, IEnumerable<TypeQualifyName> constrainedTypes) {
+        public MethodGenericInfo(string genericName, IEnumerable<TypeName> constrainedTypes) {
             GenericName = genericName;
             ConstrainedKind = null;
             ConstrainedTypes = constrainedTypes.ToList();
         }
 
-        public MethodGenericInfo(string genericName, TypeKind constrainedKind, IEnumerable<TypeQualifyName> constrainedTypes) {
+        public MethodGenericInfo(string genericName, TypeKind constrainedKind, IEnumerable<TypeName> constrainedTypes) {
             if (constrainedKind != TypeKind.Class && constrainedKind != TypeKind.Struct)
                 throw new ArgumentException("Constrained Type can only be class or struct");
             GenericName = genericName;
@@ -63,11 +63,16 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         public ITypeSymbol? ReturnType { get; }
 
         /// <summary>
+        /// Contains all the generics of this method
+        /// </summary>
+        public IReadOnlyList<MethodGenericInfo> Generics { get; }
+
+        /// <summary>
         /// The arguments this method contains
         /// </summary>
         public IReadOnlyList<MethodArg> Arguments { get; }
 
-        internal MethodSignature(Accessibility accessibility, string methodName, ITypeSymbol? returnType, IEnumerable<MethodArg> args, bool isConstructor, RefKind returnRefKind) {
+        internal MethodSignature(Accessibility accessibility, string methodName, ITypeSymbol? returnType, IEnumerable<MethodGenericInfo> generics, IEnumerable<MethodArg> args, bool isConstructor, RefKind returnRefKind) {
             if (returnRefKind != RefKind.None && returnRefKind != RefKind.Ref)
                 throw new ArgumentException($"Invalid returning ref kind {returnRefKind}");
             Accessibility = accessibility;
@@ -75,6 +80,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             ReturnType = returnType;
             IsConstructor = isConstructor;
             ReturnRefKind = returnRefKind;
+            Generics = generics.ToList();
             Arguments = args.ToList();
         }
 
@@ -90,10 +96,10 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         }
 
         public MethodSignature Rename(string newName) 
-            => new MethodSignature(Accessibility, newName, ReturnType, Arguments, IsConstructor, ReturnRefKind);
+            => new MethodSignature(Accessibility, newName, ReturnType, Generics, Arguments, IsConstructor, ReturnRefKind);
 
         public MethodSignature Rename(Accessibility accessibility,string newName) 
-            => new MethodSignature(accessibility, newName, ReturnType, Arguments, IsConstructor, ReturnRefKind);
+            => new MethodSignature(accessibility, newName, ReturnType, Generics, Arguments, IsConstructor, ReturnRefKind);
 
         /// <summary>
         /// The declartion part of the method, e.g. 'private int MyMethod(in MyType type, out ThatType that)'

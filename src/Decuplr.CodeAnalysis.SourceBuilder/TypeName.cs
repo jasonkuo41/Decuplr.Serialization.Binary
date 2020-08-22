@@ -6,19 +6,19 @@ using Microsoft.CodeAnalysis.CSharp;
 
 namespace Decuplr.CodeAnalysis.SourceBuilder {
 
-    public readonly struct TypeQualifyName {
+    public readonly struct TypeName {
 
-        private readonly string _typeName;
+        private readonly string _name;
         private readonly string _namespace;
         private readonly string[] _parentNames;
 
-        public bool IsEmpty => _typeName is null;
+        public bool IsEmpty => _name is null;
 
         public string Namespace => _namespace ?? string.Empty;
 
         public IReadOnlyList<string> ParentNames => _parentNames ?? Array.Empty<string>();
 
-        public string TypeName => _typeName ?? string.Empty;
+        public string Name => _name ?? string.Empty;
 
         public bool IsGeneric { get; }
 
@@ -29,8 +29,8 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             return sliced;
         }
 
-        public TypeQualifyName(ITypeSymbol symbol) {
-            _typeName = symbol.Name;
+        public TypeName(ITypeSymbol symbol) {
+            _name = symbol.Name;
             _parentNames = parentNames(symbol).ToArray();
             _namespace = symbol.ContainingNamespace.ToString();
             IsGeneric = false;
@@ -42,47 +42,57 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             }
         }
 
-        internal TypeQualifyName(GeneratingTypeName typeName) {
+        internal TypeName(GeneratingTypeName typeName) {
             _namespace = typeName.Namespace;
-            _typeName = typeName.TypeName;
+            _name = typeName.TypeName;
             _parentNames = typeName.Parents.Select(x => x.ParentName).ToArray();
             IsGeneric = false;
         }
 
-        public TypeQualifyName(string namespaceName, string typeName) {
+        private TypeName(bool isGeneric, string namespaceName, IEnumerable<string> parentNames, string typeName) {
+            IsGeneric = isGeneric;
+            _namespace = namespaceName;
+            _name = typeName;
+            _parentNames = parentNames.ToArray();
+        }
+
+        public TypeName(string namespaceName, string typeName) {
             VerifyChainedIndentifier(namespaceName, nameof(namespaceName));
             var slicedTypeName = VerifyChainedIndentifier(typeName, nameof(typeName));
             _namespace = namespaceName;
-            _typeName = slicedTypeName[slicedTypeName.Length - 1];
+            _name = slicedTypeName[slicedTypeName.Length - 1];
 
             Array.Resize(ref slicedTypeName, slicedTypeName.Length - 1);
             _parentNames = slicedTypeName;
             IsGeneric = false;
         }
 
-        public TypeQualifyName(string namespaceName, string parentNames, string typeName)
+        public TypeName(string namespaceName, string parentNames, string typeName)
             : this(namespaceName, typeName) {
             _parentNames = VerifyChainedIndentifier(parentNames, nameof(parentNames));
         }
 
-        public TypeQualifyName(string namespaceName, string[] parentNames, string typeName)
+        public TypeName(string namespaceName, IEnumerable<string> parentNames, string typeName)
             : this(namespaceName, typeName) {
-            _parentNames = parentNames;
+            _parentNames = parentNames.ToArray();
             if (_parentNames.Any(x => !SyntaxFacts.IsValidIdentifier(x)))
                 throw new ArgumentException("Invalid parent type name", nameof(parentNames));
         }
 
         public string GetFullName() {
             if (ParentNames.Count == 0)
-                return $"{Namespace}.{TypeName}";
-            return $"{Namespace}.{string.Join(".", ParentNames)}.{TypeName}";
+                return $"{Namespace}.{Name}";
+            return $"{Namespace}.{string.Join(".", ParentNames)}.{Name}";
         }
 
         public override string ToString() => GetFullName();
-        public static implicit operator string(TypeQualifyName name) => name.ToString();
+        public static implicit operator string(TypeName name) => name.ToString();
 
-        public static TypeQualifyName FromGeneric(string genericName) {
-
+        public static TypeName FromGeneric(string genericName) => new TypeName(true, string.Empty, Enumerable.Empty<string>(), genericName);
+        public static TypeName FromType(ITypeSymbol symbol) {
+            if (symbol is ITypeParameterSymbol paramSybol)
+                return new TypeName(true, string.Empty, Enumerable.Empty<string>(), paramSybol.Name);
+            return new TypeName(symbol);
         }
     }
 }

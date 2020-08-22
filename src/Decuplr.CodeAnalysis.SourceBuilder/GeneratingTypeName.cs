@@ -21,7 +21,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         public GeneratingTypeName(string namespaceName, string typeName) {
             if (!SyntaxFacts.IsValidIdentifier(typeName))
                 throw new ArgumentException($"Invalid type name '{typeName}'");
-            TypeQualifyName.VerifyChainedIndentifier(namespaceName, nameof(namespaceName));
+            SourceBuilder.TypeName.VerifyChainedIndentifier(namespaceName, nameof(namespaceName));
             _namespace = namespaceName;
             _typeName = typeName;
             _parents = null;
@@ -34,9 +34,9 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             _parents = parentName;
         }
 
-        public TypeQualifyName GetQualifyName() => new TypeQualifyName(this);
+        public TypeName GetQualifyName() => new TypeName(this);
 
-        public static implicit operator TypeQualifyName(GeneratingTypeName typeName) => typeName.GetQualifyName();
+        public static implicit operator TypeName(GeneratingTypeName typeName) => typeName.GetQualifyName();
 
         public override string ToString() {
             if (Empty)

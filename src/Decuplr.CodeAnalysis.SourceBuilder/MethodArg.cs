@@ -10,7 +10,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
 
         private string? _paramString;
 
-        public TypeQualifyName TypeName { get; }
+        public TypeName TypeName { get; }
 
         public string Name { get; }
 
@@ -21,10 +21,10 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         }
 
         public MethodArg(RefKind refKind, ITypeSymbol type, string name)
-            : this(refKind, new TypeQualifyName(type), name) {
+            : this(refKind, new TypeName(type), name) {
         }
 
-        public MethodArg(RefKind refKind, TypeQualifyName typeName, string name) {
+        public MethodArg(RefKind refKind, TypeName typeName, string name) {
             if (!SyntaxFacts.IsValidIdentifier(name))
                 throw new ArgumentException("Invalid method name", nameof(name));
             Name = name;

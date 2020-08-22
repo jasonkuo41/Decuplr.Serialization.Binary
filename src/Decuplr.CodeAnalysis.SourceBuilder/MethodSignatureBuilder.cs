@@ -24,31 +24,34 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         public static MethodSignatureBuilder CreateMethod(INamedTypeSymbol type, string methodName)
             => new MethodSignatureBuilder(type.ToString(), methodName);
 
-        public static MethodSignatureBuilder CreateMethod(TypeQualifyName typeName, string methodName)
+        public static MethodSignatureBuilder CreateMethod(TypeName typeName, string methodName)
             => new MethodSignatureBuilder(typeName.ToString(), methodName);
 
-        public static MethodSignature CreateConstructor(TypeQualifyName typeName, IEnumerable<MethodArg> args)
+        public static MethodSignature CreateConstructor(TypeName typeName, IEnumerable<MethodArg> args)
             => CreateConstructor(Accessibility.Public, typeName, args.AsEnumerable());
-        public static MethodSignature CreateConstructor(TypeQualifyName typeName, params MethodArg[] args)
+        public static MethodSignature CreateConstructor(TypeName typeName, params MethodArg[] args)
             => CreateConstructor(Accessibility.Public, typeName, args.AsEnumerable());
 
-        public static MethodSignature CreateConstructor(Accessibility accessibility, TypeQualifyName typeName, params MethodArg[] args)
+        public static MethodSignature CreateConstructor(Accessibility accessibility, TypeName typeName, params MethodArg[] args)
             => CreateConstructor(accessibility, typeName, args.AsEnumerable());
 
-        public static MethodSignature CreateConstructor(Accessibility accessibility, TypeQualifyName typeName, IEnumerable<MethodArg> args)
-            => new MethodSignature(accessibility, typeName.ToString(), null, args, isConstructor: true, RefKind.None);
+        public static MethodSignature CreateConstructor(Accessibility accessibility, TypeName typeName, IEnumerable<MethodArg> args) {
+            if (args.Any(x => x.TypeName.IsGeneric))
+                throw new ArgumentException("Arguments should not contain any generic arguments for constructors", nameof(args));
+            return new MethodSignature(accessibility, typeName.ToString(), null, Enumerable.Empty<MethodGenericInfo>(), args, isConstructor: true, RefKind.None);
+        }
 
         public MethodSignatureBuilder AddGenerics(string genericName) {
             _generics.Add(new MethodGenericInfo(genericName));
             return this;
         }
 
-        public MethodSignatureBuilder AddGenerics(string genericName, params TypeQualifyName[] constrainedType) {
+        public MethodSignatureBuilder AddGenerics(string genericName, params TypeName[] constrainedType) {
             _generics.Add(new MethodGenericInfo(genericName, constrainedType));
             return this;
         }
 
-        public MethodSignatureBuilder AddGenerics(string genericName, TypeKind constrainedKind, params TypeQualifyName[] constrainedType) {
+        public MethodSignatureBuilder AddGenerics(string genericName, TypeKind constrainedKind, params TypeName[] constrainedType) {
             if (constrainedKind != TypeKind.Class && constrainedKind != TypeKind.Struct)
                 throw new ArgumentException("Constrained Type can only be class or struct");
             _generics.Add(new MethodGenericInfo(genericName, constrainedKind, constrainedType));
@@ -73,7 +76,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             var notContainedGeneric = _arguments.Where(x => x.TypeName.IsGeneric).Where(arg => !genericSet.Contains(arg.TypeName));
             if (notContainedGeneric.Any())
                 throw new ArgumentException($"Arguments contain generic that is not in the generic list : '{string.Join(",", notContainedGeneric)}'");
-            return new MethodSignature(_accessibility, _methodName, symbol, _arguments, false, refKind);
+            return new MethodSignature(_accessibility, _methodName, symbol, _generics, _arguments, false, refKind);
         }
     }
 
