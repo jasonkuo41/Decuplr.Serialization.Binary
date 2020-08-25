@@ -9,23 +9,40 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
 
         private readonly Accessibility _accessibility;
         private readonly string _methodName;
-        private readonly string _fullTypeName;
+        private readonly TypeName _containingTypeName;
         private readonly List<MethodGenericInfo> _generics = new List<MethodGenericInfo>();
         private readonly List<MethodArg> _arguments = new List<MethodArg>();
 
-        private MethodSignatureBuilder(string fullTypeName, string methodName) {
+        private MethodSignatureBuilder(TypeName fullTypeName, string methodName) {
             if (!SyntaxFacts.IsValidIdentifier(methodName))
                 throw new ArgumentException($"Invalid method name '{methodName}'.", nameof(methodName));
             _methodName = methodName;
-            _fullTypeName = fullTypeName;
+            _containingTypeName = fullTypeName;
             _accessibility = Accessibility.Public;
         }
 
+        private void EnsureNoDuplicateArgName(string argName) {
+            var duplicateName = _arguments.Where(x => x.Name.Equals(argName)).FirstOrDefault();
+            if (duplicateName is { })
+                throw new ArgumentException($"Method has already included a argument name : '{duplicateName}'", nameof(argName));
+        }
+
+        private void EnsureNoDuplicateGenericName(string genericName, string passedName) {
+            var duplicateName = _generics.Where(x => x.GenericName.Equals(genericName)).Select(x => (MethodGenericInfo?)x).FirstOrDefault();
+            if (duplicateName is { })
+                throw new ArgumentException($"Method has already include a generic name : '{duplicateName}'", passedName);
+        }
+
+        private void EnsureValidName(string name, string namesrc) {
+            if (!SyntaxFacts.IsValidIdentifier(name))
+                throw new ArgumentException($"'{name}' is not a valid identifier.", namesrc);
+        }
+
         public static MethodSignatureBuilder CreateMethod(INamedTypeSymbol type, string methodName)
-            => new MethodSignatureBuilder(type.ToString(), methodName);
+            => new MethodSignatureBuilder(new TypeName(type), methodName);
 
         public static MethodSignatureBuilder CreateMethod(TypeName typeName, string methodName)
-            => new MethodSignatureBuilder(typeName.ToString(), methodName);
+            => new MethodSignatureBuilder(typeName, methodName);
 
         public static MethodSignature CreateConstructor(TypeName typeName, IEnumerable<MethodArg> args)
             => CreateConstructor(Accessibility.Public, typeName, args.AsEnumerable());
@@ -38,33 +55,45 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         public static MethodSignature CreateConstructor(Accessibility accessibility, TypeName typeName, IEnumerable<MethodArg> args) {
             if (args.Any(x => x.TypeName.IsGeneric))
                 throw new ArgumentException("Arguments should not contain any generic arguments for constructors", nameof(args));
-            return new MethodSignature(accessibility, typeName.ToString(), null, Enumerable.Empty<MethodGenericInfo>(), args, isConstructor: true, RefKind.None);
+            // Ensure no duplicates
+            var duplicateArgs = args.GroupBy(x => x.Name).Where(x => x.Count() > 1).Select(x => x.Key);
+            if (duplicateArgs.Any())
+                throw new ArgumentException($"Constructor has duplicate argument names : '{string.Join(",", duplicateArgs)}'", nameof(args));
+            return new MethodSignature(accessibility, RefKind.None, null, Enumerable.Empty<MethodGenericInfo>(), typeName.ToString(), args, isConstructor: true);
         }
 
         public MethodSignatureBuilder AddGenerics(string genericName) {
+            EnsureNoDuplicateGenericName(genericName, nameof(genericName));
+            EnsureValidName(genericName, nameof(genericName));
             _generics.Add(new MethodGenericInfo(genericName));
             return this;
         }
 
         public MethodSignatureBuilder AddGenerics(string genericName, params TypeName[] constrainedType) {
-            _generics.Add(new MethodGenericInfo(genericName, constrainedType));
+            EnsureNoDuplicateGenericName(genericName, nameof(genericName));
+            EnsureValidName(genericName, nameof(genericName));
+            _generics.Add(new MethodGenericInfo(genericName, constrainedType.Distinct()));
             return this;
         }
 
         public MethodSignatureBuilder AddGenerics(string genericName, TypeKind constrainedKind, params TypeName[] constrainedType) {
+            EnsureNoDuplicateGenericName(genericName, nameof(genericName));
+            EnsureValidName(genericName, nameof(genericName));
             if (constrainedKind != TypeKind.Class && constrainedKind != TypeKind.Struct)
                 throw new ArgumentException("Constrained Type can only be class or struct");
-            _generics.Add(new MethodGenericInfo(genericName, constrainedKind, constrainedType));
+            _generics.Add(new MethodGenericInfo(genericName, constrainedKind, constrainedType.Distinct()));
             return this;
         }
 
         public MethodSignatureBuilder AddArgument(MethodArg arg) {
+            EnsureNoDuplicateArgName(arg.Name);
             _arguments.Add(arg);
             return this;
         }
 
         public MethodSignatureBuilder AddArgument(params MethodArg[] args) {
-            _arguments.AddRange(args);
+            foreach (var arg in args)
+                AddArgument(arg);
             return this;
         }
 
@@ -76,7 +105,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             var notContainedGeneric = _arguments.Where(x => x.TypeName.IsGeneric).Where(arg => !genericSet.Contains(arg.TypeName));
             if (notContainedGeneric.Any())
                 throw new ArgumentException($"Arguments contain generic that is not in the generic list : '{string.Join(",", notContainedGeneric)}'");
-            return new MethodSignature(_accessibility, _methodName, symbol, _generics, _arguments, false, refKind);
+            return new MethodSignature(_accessibility, refKind, symbol, _generics, _methodName, _arguments, false);
         }
     }
 

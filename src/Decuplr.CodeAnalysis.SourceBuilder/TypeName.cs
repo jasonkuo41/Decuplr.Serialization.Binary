@@ -6,13 +6,11 @@ using Microsoft.CodeAnalysis.CSharp;
 
 namespace Decuplr.CodeAnalysis.SourceBuilder {
 
-    public readonly struct TypeName {
+    public readonly struct TypeName : IEquatable<TypeName> {
 
         private readonly string _name;
         private readonly string _namespace;
         private readonly string[] _parentNames;
-
-        public bool IsEmpty => _name is null;
 
         public string Namespace => _namespace ?? string.Empty;
 
@@ -86,6 +84,9 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         }
 
         public override string ToString() => GetFullName();
+        public override bool Equals(object obj) => obj is TypeName otherName && Equals(otherName);
+        public override int GetHashCode() => HashCode.Combine(Name, Namespace, ParentNames);
+
         public static implicit operator string(TypeName name) => name.ToString();
 
         public static TypeName FromGeneric(string genericName) => new TypeName(true, string.Empty, Enumerable.Empty<string>(), genericName);
@@ -94,5 +95,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
                 return new TypeName(true, string.Empty, Enumerable.Empty<string>(), paramSybol.Name);
             return new TypeName(symbol);
         }
+
+        public bool Equals(TypeName other) => other.Name.Equals(Name) && other.Namespace.Equals(Namespace) && other.ParentNames.Equals(ParentNames);
     }
 }

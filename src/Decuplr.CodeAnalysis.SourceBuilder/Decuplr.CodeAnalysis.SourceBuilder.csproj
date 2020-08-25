@@ -9,6 +9,7 @@
 
 
 	<ItemGroup>
+		<PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1.0" />
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.6.0" PrivateAssets="all" />
 		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.0.0" PrivateAssets="all" />
 	</ItemGroup>
