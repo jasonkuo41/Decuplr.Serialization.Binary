@@ -7,9 +7,9 @@ using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis.SourceBuilder {
 
-    public class MethodSignature {
+    public class MethodSignature : IEquatable<MethodSignature> {
 
-        private string? _declaration;
+        private string? _declarationCache;
 
         /// <summary>
         /// The reference kind this method returns
@@ -86,10 +86,10 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             Arguments = args.ToList();
         }
 
-        internal MethodSignature CreateConstructor(Accessibility accessibility, TypeName constructingType, IEnumerable<MethodArg> args)
+        internal static MethodSignature CreateConstructor(Accessibility accessibility, TypeName constructingType, IEnumerable<MethodArg> args)
             => new MethodSignature(accessibility, constructingType, args);
 
-        internal MethodSignature CreateMethod(TypeName containingType, Accessibility accessibility, RefKind returnRefKind, TypeName returnType, IEnumerable<MethodGenericInfo> generics, string methodName, IEnumerable<MethodArg> args)
+        internal static MethodSignature CreateMethod(TypeName containingType, Accessibility accessibility, RefKind returnRefKind, TypeName returnType, IEnumerable<MethodGenericInfo> generics, string methodName, IEnumerable<MethodArg> args)
             => new MethodSignature(containingType, accessibility, returnRefKind, returnType, generics, methodName, args);
 
         private string ApplyModifier(string argName, int i) {
@@ -139,7 +139,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         /// The declartion part of the method, e.g. 'private int MyMethod(in MyType type, out ThatType that)'
         /// </summary>
         public string GetDeclarationString() {
-            return _declaration ??= BuildString();
+            return _declarationCache ??= BuildString();
 
             string BuildString() {
                 var str = new StringBuilder();
@@ -176,8 +176,10 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
                 if (info.ConstrainedKind != null) {
                     yield return info.ConstrainedKind switch
                     {
-                        TypeKind.Struct => "struct",
-                        TypeKind.Class => "class",
+                        GenericConstrainKind.NotNull => "not null",
+                        GenericConstrainKind.Reference => "class",
+                        GenericConstrainKind.Struct => "struct",
+                        GenericConstrainKind.Unmanaged => "unmanaged",
                         _ => throw new ArgumentException($"Invalid type kind '{info.ConstrainedKind}'")
                     };
                 }
@@ -208,11 +210,40 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         public string GetInvocationString(IEnumerable<string> genericArguments, params string[] argumentNames) => GetInvocationString(genericArguments.ToArray(), argumentNames);
 
         public string GetInvocationString(IEnumerable<string> genericArguments, IEnumerable<string> argumentNames) => GetInvocationString(genericArguments.ToArray(), argumentNames.ToArray());
+
         public MethodSignature Rename(string newName)
             => new MethodSignature(ContainingType, Accessibility, ReturnRefKind, ReturnType, Generics, newName, Arguments, IsConstructor);
 
         public MethodSignature Rename(Accessibility accessibility, string newName)
             => new MethodSignature(ContainingType, accessibility, ReturnRefKind, ReturnType, Generics, newName, Arguments, IsConstructor);
 
+        public override int GetHashCode() {
+            var hashCode = new HashCode();
+            hashCode.Add(Accessibility);
+            hashCode.Add(IsConstructor);
+            hashCode.Add(MethodName);
+            hashCode.Add(ReturnType);
+            hashCode.Add(ContainingType);
+            hashCode.Add(Generics);
+
+            for (int i = 0; i < Generics.Count; i++)
+                hashCode.Add(Generics[i]);
+
+            for (int i = 0; i < Arguments.Count; i++)
+                hashCode.Add(Arguments[i]);
+
+            return hashCode.ToHashCode();
+        }
+
+        public override bool Equals(object obj) => obj is MethodSignature signature && Equals(signature);
+
+        public bool Equals(MethodSignature other) =>
+            Accessibility == other.Accessibility &&
+            IsConstructor == other.IsConstructor &&
+            MethodName == other.MethodName &&
+            ReturnType.Equals(other.ReturnType) &&
+            ContainingType.Equals(other.ContainingType) &&
+            Generics.SequenceEqual(other.Generics) &&
+            Arguments.SequenceEqual(other.Arguments);
     }
 }

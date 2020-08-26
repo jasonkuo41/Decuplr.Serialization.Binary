@@ -8,7 +8,7 @@ namespace Decuplr.Serialization.Binary {
     /// A factory interface that is capable of creating <see cref="BinaryConverter{T}"/> instances with <see cref="IBinaryNamespaceDiscovery"/>.
     /// </summary>
     /// <typeparam name="T">The type that would be converted to binary</typeparam>
-    public interface IBinaryConverterSource<T> {
+    public interface IBinaryConverterProvider<T> {
         /// <summary>
         /// Creates a converter instance with the designated discovery instance.
         /// </summary>
@@ -23,9 +23,11 @@ namespace Decuplr.Serialization.Binary {
         bool TryGetConverter<T>(out BinaryConverter<T> converter);
     }
 
+    /* Move this to none abstraction I think
     public static class NamespaceNodeExtensions {
         public static BinaryConverter<T>? GetBinaryConverter<T>(this INamespaceNode node) {
             node.Get<BinaryConverter<T>>(Assembly.GetEntryAssembly());
         }
     }
+    */
 }

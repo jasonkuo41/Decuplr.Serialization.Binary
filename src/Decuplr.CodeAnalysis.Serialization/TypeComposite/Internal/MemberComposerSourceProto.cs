@@ -137,7 +137,7 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
                 AddComponentInitializers(node, provider.DiscoveryType, components).NewLine();
 
                 AddFeaturingMethods(node);
-                "AddComponentComposerMethod(node, provider, components)";
+                AddComponentComposerMethod(node, provider, components);
             });
 
             _sourceAddition.AddSource($"{_typeName}.generated.cs", builder.ToString());

@@ -53,13 +53,13 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             => CreateConstructor(accessibility, typeName, args.AsEnumerable());
 
         public static MethodSignature CreateConstructor(Accessibility accessibility, TypeName typeName, IEnumerable<MethodArg> args) {
-            if (args.Any(x => x.TypeName.IsGeneric))
+            if (args.Any(x => x.TypeName.IsGenericArgument))
                 throw new ArgumentException("Arguments should not contain any generic arguments for constructors", nameof(args));
             // Ensure no duplicates
             var duplicateArgs = args.GroupBy(x => x.Name).Where(x => x.Count() > 1).Select(x => x.Key);
             if (duplicateArgs.Any())
                 throw new ArgumentException($"Constructor has duplicate argument names : '{string.Join(",", duplicateArgs)}'", nameof(args));
-            return new MethodSignature(accessibility, RefKind.None, null, Enumerable.Empty<MethodGenericInfo>(), typeName.ToString(), args, isConstructor: true);
+            return MethodSignature.CreateConstructor(accessibility, typeName, args);
         }
 
         public MethodSignatureBuilder AddGenerics(string genericName) {
@@ -97,15 +97,19 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             return this;
         }
 
-        public MethodSignature WithReturn(ITypeSymbol symbol) => WithReturn(RefKind.None, symbol);
+        public MethodSignature WithReturn<T>() => WithReturn(RefKind.None, typeof(T));
+        public MethodSignature WithReturn<T>(RefKind refKind) => WithReturn(refKind, typeof(T));
+        public MethodSignature WithReturn(TypeName typeName) => WithReturn(RefKind.None, typeName);
 
-        public MethodSignature WithReturn(RefKind refKind, ITypeSymbol symbol) {
+        public MethodSignature WithReturn(RefKind refKind, TypeName typeName) {
             // Ensure arguments are correct
             var genericSet = new HashSet<string>(_generics.Select(x => x.GenericName));
-            var notContainedGeneric = _arguments.Where(x => x.TypeName.IsGeneric).Where(arg => !genericSet.Contains(arg.TypeName));
-            if (notContainedGeneric.Any())
-                throw new ArgumentException($"Arguments contain generic that is not in the generic list : '{string.Join(",", notContainedGeneric)}'");
-            return new MethodSignature(_accessibility, refKind, symbol, _generics, _methodName, _arguments, false);
+
+            _arguments.Where(x => x.TypeName.IsGenericArgument)
+                      .Where(arg => !genericSet.Contains(arg.TypeName))
+                      .ThrowAny(notContained => new ArgumentException($"Arguments contain generic that is not in the generic list : '{string.Join(",", notContained)}'"));
+
+            return MethodSignature.CreateMethod(_containingTypeName, _accessibility, refKind, typeName, _generics, _methodName, _arguments);
         }
     }
 

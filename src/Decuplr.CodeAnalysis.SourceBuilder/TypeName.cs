@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Decuplr.CodeAnalysis.SourceBuilder {
 
@@ -18,7 +19,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
 
         public string Name => _name ?? string.Empty;
 
-        public bool IsGeneric { get; }
+        public bool IsGenericArgument { get; }
 
         internal static string[] VerifyChainedIndentifier(string fullTypeName, string argName) {
             var sliced = fullTypeName.Split('.');
@@ -29,14 +30,31 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
 
         public TypeName(ITypeSymbol symbol) {
             _name = symbol.Name;
-            _parentNames = parentNames(symbol).ToArray();
+            _parentNames = parentNames(symbol).Reverse().ToArray();
             _namespace = symbol.ContainingNamespace.ToString();
-            IsGeneric = false;
+            IsGenericArgument = false;
 
             static IEnumerable<string> parentNames(ITypeSymbol symbol) {
-                if (symbol.ContainingType is null)
-                    yield break;
-                yield return symbol.ContainingType.Name;
+                var currentSymbol = symbol;
+                while(currentSymbol.ContainingType is { }) {
+                    yield return currentSymbol.Name;
+                    currentSymbol = currentSymbol.ContainingType;
+                }
+            }
+        }
+
+        internal TypeName(Type type) {
+            _name = type.Name;
+            _parentNames = parentNames(type).Reverse().ToArray();
+            _namespace = type.Namespace;
+            IsGenericArgument = false;
+
+            static IEnumerable<string> parentNames(Type type) {
+                var currentType = type;
+                while(currentType.DeclaringType is { }) {
+                    yield return currentType.Name;
+                    currentType = currentType.DeclaringType;
+                }
             }
         }
 
@@ -44,11 +62,11 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             _namespace = typeName.Namespace;
             _name = typeName.TypeName;
             _parentNames = typeName.Parents.Select(x => x.ParentName).ToArray();
-            IsGeneric = false;
+            IsGenericArgument = false;
         }
 
         private TypeName(bool isGeneric, string namespaceName, IEnumerable<string> parentNames, string typeName) {
-            IsGeneric = isGeneric;
+            IsGenericArgument = isGeneric;
             _namespace = namespaceName;
             _name = typeName;
             _parentNames = parentNames.ToArray();
@@ -62,7 +80,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
 
             Array.Resize(ref slicedTypeName, slicedTypeName.Length - 1);
             _parentNames = slicedTypeName;
-            IsGeneric = false;
+            IsGenericArgument = false;
         }
 
         public TypeName(string namespaceName, string parentNames, string typeName)
@@ -88,8 +106,10 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         public override int GetHashCode() => HashCode.Combine(Name, Namespace, ParentNames);
 
         public static implicit operator string(TypeName name) => name.ToString();
+        public static implicit operator TypeName(Type type) => FromType(type);
 
-        public static TypeName FromGeneric(string genericName) => new TypeName(true, string.Empty, Enumerable.Empty<string>(), genericName);
+        public static TypeName FromGenericArgument(string genericName) => new TypeName(true, string.Empty, Enumerable.Empty<string>(), genericName);
+        public static TypeName FromType(Type type) => new TypeName(type);
         public static TypeName FromType(ITypeSymbol symbol) {
             if (symbol is ITypeParameterSymbol paramSybol)
                 return new TypeName(true, string.Empty, Enumerable.Empty<string>(), paramSybol.Name);

@@ -20,31 +20,25 @@ namespace Decuplr.Serialization.Binary.LayoutService {
             _diagnostic = diagnostic;
         }
 
-        private bool HasUnsupportedReturnType(ReturnTypeMetaInfo? returnType) {
-            switch (returnType?.Symbol.TypeKind ?? TypeKind.Error) {
-                case TypeKind.Class:
-                case TypeKind.Struct:
-                case TypeKind.Array:
-                case TypeKind.Enum:
-                case TypeKind.Interface:
-                    return false;
-                default:
-                    return true;
-            }
-        }
+        private bool HasUnsupportedReturnType(ReturnTypeMetaInfo? returnType)
+            => (returnType?.Symbol.TypeKind ?? TypeKind.Error) switch
+            {
+                TypeKind.Class or TypeKind.Struct or TypeKind.Array or TypeKind.Enum or TypeKind.Interface => false,
+                _ => true,
+            };
 
         public void ConfigureValidation(IFluentMemberValidator filter) {
             filter.WhereAttribute<IndexAttribute>()
-                  .InvalidOn(member => member.ContainsAttribute<IgnoreAttribute>())
+                  .When(member => member.ContainsAttribute<IgnoreAttribute>())
                   .ReportDiagnostic(member => OrderDiagnostic.ConflictingAttributes(member, member.GetAttribute<IgnoreAttribute>()!, member.GetAttribute<IndexAttribute>()!))
 
-                  .InvalidOn(member => member.IsStatic)
+                  .When(member => member.IsStatic)
                   .ReportDiagnostic(member => OrderDiagnostic.InvalidKeyword("static", member))
 
-                  .InvalidOn(member => member.IsConst)
+                  .When(member => member.IsConst)
                   .ReportDiagnostic(member => OrderDiagnostic.InvalidKeyword("const", member))
 
-                  .InvalidOn(member => HasUnsupportedReturnType(member.ReturnType))
+                  .When(member => HasUnsupportedReturnType(member.ReturnType))
                   .ReportDiagnostic(member => OrderDiagnostic.UnsupportedType(member));
         }
 

@@ -6,7 +6,7 @@ namespace Decuplr.CodeAnalysis.Diagnostics {
         /// <summary>
         /// Invalid on targets that matches the conditions
         /// </summary>
-        ISymbolCondition<TMeta, TSource> InvalidOn(Func<TMeta, bool> predicate);
+        ISymbolCondition<TMeta, TSource> When(Func<TMeta, bool> predicate);
         /// <summary>
         /// Report Diagnostic 
         /// </summary>

@@ -47,7 +47,7 @@ namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
                 _attributeType = attribute;
             }
 
-            public ISymbolCondition<MemberMetaInfo, IAttributeRule<MemberMetaInfo>> InvalidOn(Func<MemberMetaInfo, bool> predicate) {
+            public ISymbolCondition<MemberMetaInfo, IAttributeRule<MemberMetaInfo>> When(Func<MemberMetaInfo, bool> predicate) {
                 _invalidOn += predicate;
                 return this;
             }
@@ -75,7 +75,7 @@ namespace Decuplr.CodeAnalysis.Diagnostics.Internal {
                 _predicate = predicate;
             }
 
-            public ISymbolCondition<MemberMetaInfo, ISymbolRule<MemberMetaInfo>> InvalidOn(Func<MemberMetaInfo, bool> predicate) {
+            public ISymbolCondition<MemberMetaInfo, ISymbolRule<MemberMetaInfo>> When(Func<MemberMetaInfo, bool> predicate) {
                 _invalidOn += predicate;
                 return this;
             }

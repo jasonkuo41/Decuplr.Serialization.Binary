@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.CSharp;
 namespace Decuplr.CodeAnalysis.SourceBuilder {
     // ref     System.IO.Stream stream
     // RefKind TypeName         Name
-    public class MethodArg {
+    public class MethodArg : IEquatable<MethodArg> {
 
         private string? _paramString;
 
@@ -62,6 +62,8 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
                 return str.ToString();
             }
         }
+
+        public bool Equals(MethodArg other) => TypeName.Equals(other.TypeName) && Name.Equals(other.Name) && RefKind == other.RefKind;
     }
 
 }

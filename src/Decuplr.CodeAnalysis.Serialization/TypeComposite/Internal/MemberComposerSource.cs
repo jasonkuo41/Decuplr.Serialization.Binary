@@ -192,11 +192,11 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
 
                 MethodSignatureBuilder.CreateMethod(_typeName, MemberMethod.TryDeserializeState(0))
                                       .AddArgument(discovery, readOnlySpan, readBytes, result)
-                                      .WithReturn(boolSymbol),
+                                      .WithReturn<bool>(),
 
                 MethodSignatureBuilder.CreateMethod(_typeName, MemberMethod.TryDeserializeState(0))
                                       .AddArgument(discovery, cursor, result)
-                                      .WithReturn(boolSymbol),
+                                      .WithReturn<bool>(),
 
                 MethodSignatureBuilder.CreateMethod(_typeName, MemberMethod.DeserializeState(0))
                                       .AddArgument(discovery, readOnlySpan, result)
