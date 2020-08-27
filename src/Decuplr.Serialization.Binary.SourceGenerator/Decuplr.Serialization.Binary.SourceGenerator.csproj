@@ -31,6 +31,7 @@
 
   <ItemGroup>
     <Folder Include="MemberData\" />
+    <Folder Include="TypeComposite\" />
   </ItemGroup>
 
 </Project>

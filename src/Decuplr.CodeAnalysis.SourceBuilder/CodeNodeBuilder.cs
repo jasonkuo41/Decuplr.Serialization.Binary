@@ -7,6 +7,7 @@ using System.IO;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.ComponentModel;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace Decuplr.CodeAnalysis.SourceBuilder {
     public class CodeNodeBuilder {
@@ -66,6 +67,10 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             return this;
         }
 
+        public CodeNodeBuilder Attribute<TAttribute>() where TAttribute : Attribute, new() {
+            return Attribute(typeof(TAttribute).FullName);
+        }
+
         public CodeNodeBuilder State(string statement) {
             if (string.IsNullOrWhiteSpace(statement))
                 return this;
@@ -121,7 +126,15 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
     }
 
     public static class CodeNodeExtensions {
-        public static CodeNodeBuilder DenoteHideEditor(this CodeNodeBuilder builder) => builder.Attribute("[EditorBrowsable(EditorBrowsableState.Never)]");
-        public static CodeNodeBuilder DenoteGenerated(this CodeNodeBuilder builder, Assembly assebmly) => builder.Attribute($"[GeneratedCode({assebmly.GetName().Name}, {assebmly.GetName().Version})]");
+        
+        public static CodeNodeBuilder AttributeHideEditor(this CodeNodeBuilder builder) => builder.Attribute("[System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]");
+        
+        public static CodeNodeBuilder AttributeGenerated(this CodeNodeBuilder builder, Assembly assebmly) => builder.Attribute($"[System.CodeDom.Compiler.GeneratedCode({assebmly.GetName().Name}, {assebmly.GetName().Version})]");
+        
+        public static CodeNodeBuilder AttributeMethodImpl(this CodeNodeBuilder builder, MethodImplOptions options) {
+            var flags = Enum.GetValues(typeof(MethodImplOptions)).Cast<Enum>().Where(options.HasFlag);
+            var fullFlagName = flags.Select(x => $"System.Runtime.CompilerServices.MethodImplOptions.{x}");
+            return builder.Attribute($"[System.Runtime.CompilerServices.MethodImpl({string.Join(", ", fullFlagName)})]");
+        }
     }
 }

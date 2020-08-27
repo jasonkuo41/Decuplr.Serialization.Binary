@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+		<LangVersion>latest</LangVersion>
+		<Nullable>enable</Nullable>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.6.0" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.0.0" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.5" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Decuplr.CodeAnalysis.Serialization\Decuplr.CodeAnalysis.Serialization.csproj" />
+	  <ProjectReference Include="..\Decuplr.CodeAnalysis.SourceBuilder\Decuplr.CodeAnalysis.SourceBuilder.csproj" />
+	  <ProjectReference Include="..\Decuplr.CodeAnalysis\Decuplr.CodeAnalysis.csproj" />
+	  <ProjectReference Include="..\Decuplr.Serialization.Binary.Abstraction\Decuplr.Serialization.Binary.Abstraction.csproj" />
+	</ItemGroup>
+
+	<!--  disables the nullable warnings when compiling for .NET Standard 2.0 -->
+	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+		<NoWarn>$(NoWarn);8600;8601;8602;8603;8604</NoWarn>
+	</PropertyGroup>
+
+</Project>

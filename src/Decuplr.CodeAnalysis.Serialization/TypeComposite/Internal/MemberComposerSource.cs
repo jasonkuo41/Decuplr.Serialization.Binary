@@ -131,7 +131,7 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
             var builder = new CodeSourceFileBuilder(_typeName.Namespace);
             builder.Using("System");
 
-            builder.DenoteHideEditor().DenoteGenerated(typeof(MemberComposerSource).Assembly);
+            builder.AttributeHideEditor().AttributeGenerated(typeof(MemberComposerSource).Assembly);
             builder.NestType(_typeName, $"internal readonly struct {_typeName.TypeName} {GetGenericArgs()}", node => {
 
                 // Fields & Field Initialization

@@ -42,8 +42,8 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
             var builder = new CodeSourceFileBuilder(typeName.Namespace);
             builder.Using("System");
 
-            builder.DenoteHideEditor();
-            builder.DenoteGenerated(typeof(TypeComposerBuilder).Assembly);
+            builder.AttributeHideEditor();
+            builder.AttributeGenerated(typeof(TypeComposerBuilder).Assembly);
 
             builder.NestType(typeName, $"internal readonly struct {typeName.TypeName}", node => {
                 for (var i = 0; i < mCompName.Count; ++i) {

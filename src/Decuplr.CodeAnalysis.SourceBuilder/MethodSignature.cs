@@ -10,6 +10,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
     public class MethodSignature : IEquatable<MethodSignature> {
 
         private string? _declarationCache;
+        private int? _hashCodeCache;
 
         /// <summary>
         /// The reference kind this method returns
@@ -218,21 +219,25 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             => new MethodSignature(ContainingType, accessibility, ReturnRefKind, ReturnType, Generics, newName, Arguments, IsConstructor);
 
         public override int GetHashCode() {
-            var hashCode = new HashCode();
-            hashCode.Add(Accessibility);
-            hashCode.Add(IsConstructor);
-            hashCode.Add(MethodName);
-            hashCode.Add(ReturnType);
-            hashCode.Add(ContainingType);
-            hashCode.Add(Generics);
+            return _hashCodeCache ??= CaculateHashCode();
 
-            for (int i = 0; i < Generics.Count; i++)
-                hashCode.Add(Generics[i]);
+            int CaculateHashCode() {
+                var hashCode = new HashCode();
+                hashCode.Add(Accessibility);
+                hashCode.Add(IsConstructor);
+                hashCode.Add(MethodName);
+                hashCode.Add(ReturnType);
+                hashCode.Add(ContainingType);
+                hashCode.Add(Generics);
 
-            for (int i = 0; i < Arguments.Count; i++)
-                hashCode.Add(Arguments[i]);
+                for (int i = 0; i < Generics.Count; i++)
+                    hashCode.Add(Generics[i]);
 
-            return hashCode.ToHashCode();
+                for (int i = 0; i < Arguments.Count; i++)
+                    hashCode.Add(Arguments[i]);
+
+                return hashCode.ToHashCode();
+            }
         }
 
         public override bool Equals(object obj) => obj is MethodSignature signature && Equals(signature);

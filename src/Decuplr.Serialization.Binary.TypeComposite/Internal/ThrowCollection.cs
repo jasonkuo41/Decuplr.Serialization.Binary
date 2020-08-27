@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
-using Decuplr.CodeAnalysis.Serialization.TypeComposite;
+using System.Runtime.CompilerServices;
+using Decuplr.CodeAnalysis;
 using Decuplr.CodeAnalysis.SourceBuilder;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
-namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
+namespace Decuplr.Serialization.Binary.TypeComposite {
     class ThrowCollection : IThrowCollection {
 
         private readonly List<string> exceptions = new List<string>();
@@ -27,10 +30,10 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
                     // Maybe we can refer to these
                     // https://source.dot.net/#System.Memory/System/ThrowHelper.cs,73669ffe9b1ee4f4
                     // https://gist.github.com/benaadams/216ed9516dc4e67728fdef1a77574f96
-                    //
-                    // node.Attribute("MethodImpl(MethodImplOptions.NoInlining)");
-                    //
-                    node.State($"public static {ThrowExceptionName(i)}() => throw {exceptions[i]}");
+                    var methodName = ThrowExceptionName(i);
+                    node.State($"public static void {methodName}() => throw Create{methodName}").NewLine();
+                    node.AttributeMethodImpl(MethodImplOptions.NoInlining);
+                    node.State($"public static System.Exception Create{ThrowExceptionName(i)}() => {exceptions[i]}");
                 }
             });
         }
