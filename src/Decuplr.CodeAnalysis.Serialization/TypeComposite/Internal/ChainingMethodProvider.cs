@@ -21,7 +21,7 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
             public string this[ITypeSymbol symbol, int index] { get => this[symbol.ToString(), index]; set => this[symbol.ToString(), index] = value; }
 
             private string this[string typeName, int index] {
-                get => _methods[typeName][index].Args.Name;
+                get => _methods[typeName][index].Args.ArgName;
                 set {
                     var (args, argIndex) = _methods[typeName][index];
                     args = args.Rename(value);
@@ -37,8 +37,8 @@ namespace Decuplr.CodeAnalysis.Serialization.TypeComposite.Internal {
 
         public string this[Type type] => this[type, 0];
         public string this[ITypeSymbol symbol] => this[symbol, 0];
-        public string this[Type type, int index] => _args[type.FullName][index].Arg.Name;
-        public string this[ITypeSymbol symbol, int index] => _args[symbol.ToString()][index].Arg.Name;
+        public string this[Type type, int index] => _args[type.FullName][index].Arg.ArgName;
+        public string this[ITypeSymbol symbol, int index] => _args[symbol.ToString()][index].Arg.ArgName;
 
         public bool HasChainedMethod => !(_nextMethodName is null);
         public bool HasInvokedNextMethod { get; private set; }

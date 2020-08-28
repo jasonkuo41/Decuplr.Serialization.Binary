@@ -45,7 +45,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         /// <summary>
         /// Contains all the generics of this method
         /// </summary>
-        public IReadOnlyList<MethodGenericInfo> Generics { get; }
+        public IReadOnlyList<MethodTypeParams> TypeParameters { get; }
 
         /// <summary>
         /// The arguments this method contains
@@ -59,11 +59,11 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             ContainingType = constructingType;
             IsConstructor = true;
             ReturnRefKind = RefKind.None;
-            Generics = Array.Empty<MethodGenericInfo>();
+            TypeParameters = Array.Empty<MethodTypeParams>();
             Arguments = args.ToList();
         }
 
-        private MethodSignature(TypeName containingType, Accessibility accessibility, RefKind returnRefKind, TypeName returnType, IEnumerable<MethodGenericInfo> generics, string methodName, IEnumerable<MethodArg> args) {
+        private MethodSignature(TypeName containingType, Accessibility accessibility, RefKind returnRefKind, TypeName returnType, IEnumerable<MethodTypeParams> generics, string methodName, IEnumerable<MethodArg> args) {
             if (returnRefKind != RefKind.None && returnRefKind != RefKind.Ref)
                 throw new ArgumentException($"Invalid returning ref kind {returnRefKind}");
             Accessibility = accessibility;
@@ -72,25 +72,25 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             ContainingType = containingType;
             IsConstructor = false;
             ReturnRefKind = returnRefKind;
-            Generics = generics.ToList();
+            TypeParameters = generics.ToList();
             Arguments = args.ToList();
         }
 
-        private MethodSignature(TypeName containingType, Accessibility accessibility, RefKind returnRefKind, TypeName returnType, IEnumerable<MethodGenericInfo> generics, string methodName, IEnumerable<MethodArg> args, bool isConstructor)  {
+        private MethodSignature(TypeName containingType, Accessibility accessibility, RefKind returnRefKind, TypeName returnType, IEnumerable<MethodTypeParams> generics, string methodName, IEnumerable<MethodArg> args, bool isConstructor)  {
             Accessibility = accessibility;
             MethodName = methodName;
             ReturnType = returnType;
             ContainingType = containingType;
             IsConstructor = isConstructor;
             ReturnRefKind = returnRefKind;
-            Generics = generics.ToList();
+            TypeParameters = generics.ToList();
             Arguments = args.ToList();
         }
 
         internal static MethodSignature CreateConstructor(Accessibility accessibility, TypeName constructingType, IEnumerable<MethodArg> args)
             => new MethodSignature(accessibility, constructingType, args);
 
-        internal static MethodSignature CreateMethod(TypeName containingType, Accessibility accessibility, RefKind returnRefKind, TypeName returnType, IEnumerable<MethodGenericInfo> generics, string methodName, IEnumerable<MethodArg> args)
+        internal static MethodSignature CreateMethod(TypeName containingType, Accessibility accessibility, RefKind returnRefKind, TypeName returnType, IEnumerable<MethodTypeParams> generics, string methodName, IEnumerable<MethodArg> args)
             => new MethodSignature(containingType, accessibility, returnRefKind, returnType, generics, methodName, args);
 
         private string ApplyModifier(string argName, int i) {
@@ -128,7 +128,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         }
 
         private string GetInvocationString(string[] genericArguments, string[] argumentNames) {
-            CheckCountMatch(genericArguments.Length, Generics.Count, nameof(genericArguments));
+            CheckCountMatch(genericArguments.Length, TypeParameters.Count, nameof(genericArguments));
             CheckCountMatch(argumentNames.Length, Arguments.Count, nameof(argumentNames));
             genericArguments.EnsureValidIdentifiers();
             argumentNames.EnsureValidIdentifiers();
@@ -150,17 +150,17 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
                 str.Append(' ');
                 if (!IsConstructor)
                     str.Append(MethodName); // MyMethod
-                if (Generics.Count > 0) {
+                if (TypeParameters.Count > 0) {
                     str.Append('<');
-                    str.Append(string.Join(",", Generics.Select(x => x.GenericName)));
+                    str.Append(string.Join(",", TypeParameters.Select(x => x.GenericName)));
                     str.Append('>');
                 }
                 str.Append("(");
                 str.Append(string.Join(", ", Arguments.Select(x => x.ToParamString())));
                 str.Append(")");
-                if (Generics.All(x => !x.HasConstrain))
+                if (TypeParameters.All(x => !x.HasConstrain))
                     return str.ToString();
-                foreach(var generic in Generics) {
+                foreach(var generic in TypeParameters) {
                     if (!generic.HasConstrain)
                         continue;
                     str.Append("where");
@@ -173,7 +173,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
                 return str.ToString();
             }
 
-            static IEnumerable<string> GetGenericsArgs(MethodGenericInfo info) {
+            static IEnumerable<string> GetGenericsArgs(MethodTypeParams info) {
                 if (info.ConstrainedKind != null) {
                     yield return info.ConstrainedKind switch
                     {
@@ -213,10 +213,10 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         public string GetInvocationString(IEnumerable<string> genericArguments, IEnumerable<string> argumentNames) => GetInvocationString(genericArguments.ToArray(), argumentNames.ToArray());
 
         public MethodSignature Rename(string newName)
-            => new MethodSignature(ContainingType, Accessibility, ReturnRefKind, ReturnType, Generics, newName, Arguments, IsConstructor);
+            => new MethodSignature(ContainingType, Accessibility, ReturnRefKind, ReturnType, TypeParameters, newName, Arguments, IsConstructor);
 
         public MethodSignature Rename(Accessibility accessibility, string newName)
-            => new MethodSignature(ContainingType, accessibility, ReturnRefKind, ReturnType, Generics, newName, Arguments, IsConstructor);
+            => new MethodSignature(ContainingType, accessibility, ReturnRefKind, ReturnType, TypeParameters, newName, Arguments, IsConstructor);
 
         public override int GetHashCode() {
             return _hashCodeCache ??= CaculateHashCode();
@@ -228,10 +228,10 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
                 hashCode.Add(MethodName);
                 hashCode.Add(ReturnType);
                 hashCode.Add(ContainingType);
-                hashCode.Add(Generics);
+                hashCode.Add(TypeParameters);
 
-                for (int i = 0; i < Generics.Count; i++)
-                    hashCode.Add(Generics[i]);
+                for (int i = 0; i < TypeParameters.Count; i++)
+                    hashCode.Add(TypeParameters[i]);
 
                 for (int i = 0; i < Arguments.Count; i++)
                     hashCode.Add(Arguments[i]);
@@ -248,7 +248,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             MethodName == other.MethodName &&
             ReturnType.Equals(other.ReturnType) &&
             ContainingType.Equals(other.ContainingType) &&
-            Generics.SequenceEqual(other.Generics) &&
+            TypeParameters.SequenceEqual(other.TypeParameters) &&
             Arguments.SequenceEqual(other.Arguments);
     }
 }

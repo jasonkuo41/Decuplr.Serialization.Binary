@@ -13,6 +13,8 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         private readonly string _namespace;
         private readonly string[] _parentNames;
 
+        public bool IsEmpty => _name is null && _namespace is null && _parentNames is null;
+
         public string Namespace => _namespace ?? string.Empty;
 
         public IReadOnlyList<string> ParentNames => _parentNames ?? Array.Empty<string>();
@@ -21,11 +23,38 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
 
         public bool IsGenericArgument { get; }
 
-        internal static string[] VerifyChainedIndentifier(string fullTypeName, string argName) {
+        internal static string[] VerifyNamespaces(string fullTypeName, string argName) {
             var sliced = fullTypeName.Split('.');
-            if (sliced.Any(x => !SyntaxFacts.IsValidIdentifier(x)))
+            if (sliced.Any(x => !SyntaxFacts.IsValidIdentifier(x.Trim())))
                 throw new ArgumentException($"Invalid type identification name : {fullTypeName}", argName);
             return sliced;
+        }
+
+        internal static string[] VerifyTypeNames(string fullTypeNames, string argName) {
+            var slicedType = fullTypeNames.Split('.');
+            if (slicedType.Any(x => TypeWithClampedString(x).Any(x => !SyntaxFacts.IsValidIdentifier(x))))
+                throw ThrowArgException();
+            return slicedType;
+
+            IEnumerable<string> TypeWithClampedString(string source) {
+                var startBracket = source.IndexOf('<');
+                yield return startBracket < 0 ? source.Trim() : source.Substring(0, startBracket).Trim();
+                foreach (var clamped in GetClampedStrings(source))
+                    yield return clamped;
+            }
+
+            IEnumerable<string> GetClampedStrings(string source) {
+                var startBracket = source.IndexOf('<');
+                var endBracket = source.LastIndexOf('>');
+                if (startBracket < 0 ^ endBracket < 0)
+                    throw ThrowArgException();
+                if (startBracket < 0 || endBracket < 0)
+                    return Enumerable.Empty<string>();
+                var clampedString = source.Substring(startBracket + 1, endBracket - startBracket - 1);
+                return clampedString.Split(',').Select(x => x.Trim());
+            }
+
+            Exception ThrowArgException() => new ArgumentException($"Invalid type identification name : {fullTypeNames}", argName);
         }
 
         public TypeName(ITypeSymbol symbol) {
@@ -44,6 +73,9 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         }
 
         internal TypeName(Type type) {
+            // Throw if type contains generic args, we don't support them for now, since it is not used
+            if (type.IsGenericType)
+                throw GenericNotSupported();
             _name = type.Name;
             _parentNames = parentNames(type).Reverse().ToArray();
             _namespace = type.Namespace;
@@ -52,10 +84,14 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             static IEnumerable<string> parentNames(Type type) {
                 var currentType = type;
                 while(currentType.DeclaringType is { }) {
+                    if (currentType.DeclaringType.IsGenericType)
+                        throw GenericNotSupported();
                     yield return currentType.Name;
                     currentType = currentType.DeclaringType;
                 }
             }
+
+            static Exception GenericNotSupported() => new NotSupportedException("Generic type is not supported");
         }
 
         internal TypeName(GeneratingTypeName typeName) {
@@ -73,8 +109,8 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         }
 
         public TypeName(string namespaceName, string typeName) {
-            VerifyChainedIndentifier(namespaceName, nameof(namespaceName));
-            var slicedTypeName = VerifyChainedIndentifier(typeName, nameof(typeName));
+            VerifyNamespaces(namespaceName, nameof(namespaceName));
+            var slicedTypeName = VerifyTypeNames(typeName, nameof(typeName));
             _namespace = namespaceName;
             _name = slicedTypeName[slicedTypeName.Length - 1];
 
@@ -85,7 +121,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
 
         public TypeName(string namespaceName, string parentNames, string typeName)
             : this(namespaceName, typeName) {
-            _parentNames = VerifyChainedIndentifier(parentNames, nameof(parentNames));
+            _parentNames = VerifyTypeNames(parentNames, nameof(parentNames));
         }
 
         public TypeName(string namespaceName, IEnumerable<string> parentNames, string typeName)
@@ -110,11 +146,14 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
 
         public static TypeName FromGenericArgument(string genericName) => new TypeName(true, string.Empty, Enumerable.Empty<string>(), genericName);
         public static TypeName FromType(Type type) => new TypeName(type);
+        public static TypeName FromType<T>() => new TypeName(typeof(T));
         public static TypeName FromType(ITypeSymbol symbol) {
             if (symbol is ITypeParameterSymbol paramSybol)
                 return new TypeName(true, string.Empty, Enumerable.Empty<string>(), paramSybol.Name);
             return new TypeName(symbol);
         }
+
+        public static TypeName Void { get; } = new TypeName(typeof(void));
 
         public bool Equals(TypeName other) => other.Name.Equals(Name) && other.Namespace.Equals(Namespace) && other.ParentNames.Equals(ParentNames);
     }

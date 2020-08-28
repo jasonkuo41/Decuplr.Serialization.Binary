@@ -10,7 +10,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         private readonly Accessibility _accessibility;
         private readonly string _methodName;
         private readonly TypeName _containingTypeName;
-        private readonly List<MethodGenericInfo> _generics = new List<MethodGenericInfo>();
+        private readonly List<MethodTypeParams> _generics = new List<MethodTypeParams>();
         private readonly List<MethodArg> _arguments = new List<MethodArg>();
 
         private MethodSignatureBuilder(TypeName fullTypeName, string methodName) {
@@ -22,13 +22,13 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         }
 
         private void EnsureNoDuplicateArgName(string argName) {
-            var duplicateName = _arguments.Where(x => x.Name.Equals(argName)).FirstOrDefault();
+            var duplicateName = _arguments.Where(x => x.ArgName.Equals(argName)).FirstOrDefault();
             if (duplicateName is { })
                 throw new ArgumentException($"Method has already included a argument name : '{duplicateName}'", nameof(argName));
         }
 
         private void EnsureNoDuplicateGenericName(string genericName, string passedName) {
-            var duplicateName = _generics.Where(x => x.GenericName.Equals(genericName)).Select(x => (MethodGenericInfo?)x).FirstOrDefault();
+            var duplicateName = _generics.Where(x => x.GenericName.Equals(genericName)).Select(x => (MethodTypeParams?)x).FirstOrDefault();
             if (duplicateName is { })
                 throw new ArgumentException($"Method has already include a generic name : '{duplicateName}'", passedName);
         }
@@ -56,7 +56,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             if (args.Any(x => x.TypeName.IsGenericArgument))
                 throw new ArgumentException("Arguments should not contain any generic arguments for constructors", nameof(args));
             // Ensure no duplicates
-            var duplicateArgs = args.GroupBy(x => x.Name).Where(x => x.Count() > 1).Select(x => x.Key);
+            var duplicateArgs = args.GroupBy(x => x.ArgName).Where(x => x.Count() > 1).Select(x => x.Key);
             if (duplicateArgs.Any())
                 throw new ArgumentException($"Constructor has duplicate argument names : '{string.Join(",", duplicateArgs)}'", nameof(args));
             return MethodSignature.CreateConstructor(accessibility, typeName, args);
@@ -65,28 +65,26 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         public MethodSignatureBuilder AddGenerics(string genericName) {
             EnsureNoDuplicateGenericName(genericName, nameof(genericName));
             EnsureValidName(genericName, nameof(genericName));
-            _generics.Add(new MethodGenericInfo(genericName));
+            _generics.Add(new MethodTypeParams(genericName));
             return this;
         }
 
         public MethodSignatureBuilder AddGenerics(string genericName, params TypeName[] constrainedType) {
             EnsureNoDuplicateGenericName(genericName, nameof(genericName));
             EnsureValidName(genericName, nameof(genericName));
-            _generics.Add(new MethodGenericInfo(genericName, constrainedType.Distinct()));
+            _generics.Add(new MethodTypeParams(genericName, constrainedType.Distinct()));
             return this;
         }
 
-        public MethodSignatureBuilder AddGenerics(string genericName, TypeKind constrainedKind, params TypeName[] constrainedType) {
+        public MethodSignatureBuilder AddGenerics(string genericName, GenericConstrainKind constrainedKind, params TypeName[] constrainedType) {
             EnsureNoDuplicateGenericName(genericName, nameof(genericName));
             EnsureValidName(genericName, nameof(genericName));
-            if (constrainedKind != TypeKind.Class && constrainedKind != TypeKind.Struct)
-                throw new ArgumentException("Constrained Type can only be class or struct");
-            _generics.Add(new MethodGenericInfo(genericName, constrainedKind, constrainedType.Distinct()));
+            _generics.Add(new MethodTypeParams(genericName, constrainedKind, constrainedType.Distinct()));
             return this;
         }
 
         public MethodSignatureBuilder AddArgument(MethodArg arg) {
-            EnsureNoDuplicateArgName(arg.Name);
+            EnsureNoDuplicateArgName(arg.ArgName);
             _arguments.Add(arg);
             return this;
         }

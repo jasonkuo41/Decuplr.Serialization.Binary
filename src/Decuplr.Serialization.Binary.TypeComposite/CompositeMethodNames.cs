@@ -20,7 +20,7 @@ namespace Decuplr.Serialization.Binary.TypeComposite {
                 GetSpanLength        = "GetSpanLength"
             };
 
-        public static CompositeMethodNames AppendDefault(string appendingString)
+        internal static CompositeMethodNames AppendDefault(string appendingString)
             => new CompositeMethodNames {
                 DeserializeCursor    = DefaultNames.DeserializeCursor    + appendingString,
                 DeserializeSpan      = DefaultNames.DeserializeSpan      + appendingString,

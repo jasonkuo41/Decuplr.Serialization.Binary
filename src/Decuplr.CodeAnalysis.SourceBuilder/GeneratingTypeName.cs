@@ -21,7 +21,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         public GeneratingTypeName(string namespaceName, string typeName) {
             if (!SyntaxFacts.IsValidIdentifier(typeName))
                 throw new ArgumentException($"Invalid type name '{typeName}'");
-            SourceBuilder.TypeName.VerifyChainedIndentifier(namespaceName, nameof(namespaceName));
+            SourceBuilder.TypeName.VerifyNamespaces(namespaceName, nameof(namespaceName));
             _namespace = namespaceName;
             _typeName = typeName;
             _parents = null;
