@@ -13,6 +13,6 @@ namespace Decuplr.Serialization.Binary.TypeComposite {
         MethodArg this[TypeName typeName, int index] { get; }
 
         string InvokeNextMethod();
-        string InvokeNextMethod(Action<IChainMethodInvokeAction> action);
+        string InvokeNextMethod(Action<IChainedMethodsModifier> action);
     }
 }

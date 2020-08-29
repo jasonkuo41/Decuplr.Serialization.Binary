@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Buffers;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -8,17 +6,30 @@ using System.Runtime.CompilerServices;
 using Decuplr.CodeAnalysis;
 using Decuplr.CodeAnalysis.Meta;
 using Decuplr.CodeAnalysis.SourceBuilder;
+using Decuplr.Serialization.Binary.TypeComposite.Internal.ChainedMethods;
 using Decuplr.Serialization.Namespaces;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.TypeComposite.Internal {
+
+
+    internal interface IBinaryMemberCompositeStruct {
+        public IReadOnlyList<int> RelyingMembers { get; }
+        public IReadOnlyList<MethodSignature> EntryMethods { get; }
+    }
+
     internal class BinaryMemberComposite {
 
         private static class MemberName {
             public static string ComponentField(int i) => $"_component{i}";
             public static string InitializeComponentMethod(int i) => $"InitializeComponent{i}";
             public static string Serialize(int? i) => i.HasValue ? $"SerializeState{i.Value}" : $"Serialize";
+            public static string Deserialize(int? i) => i.HasValue ? $"DeserializeState{i.Value}" : $"Deserialize";
+            public static string GetSpanLength(int? i) => i.HasValue ? $"GetSpanLengthState{i.Value}" : $"GetSpanLength";
+            public static string GetBlockLength(int? i) => i.HasValue ? $"GetBlockLengthState{i.Value}" : $"GetBlockLength";
         }
+
+        private static readonly TypeName TStateTypeName = TypeName.FromGenericArgument(SerializeWriterChainedMethods.T_STATE);
 
         private readonly MemberMetaInfo _member;
         private readonly GeneratingTypeName _typeName;
@@ -51,7 +62,40 @@ namespace Decuplr.Serialization.Binary.TypeComposite.Internal {
             Debug.Assert(_member.ReturnType != null);
         }
 
-        public void CreateStruct() {
+        private CodeNodeBuilder UseChainedMethods<TChainedMethod>(CodeNodeBuilder builder, TChainedMethod chainedMethod, Action<CodeNodeBuilder> node) where TChainedMethod : MemberChainedMethods<TChainedMethod> {
+
+            builder.AttributeMethodImpl(MethodImplOptions.AggressiveInlining);
+            builder.AddMethod(chainedMethod.MethodSignature, node);
+
+            // Maybe we don't need to generate these methods when it's constant length
+            for (var i = 0; i < _features.Count; ++i) {
+                if (!chainedMethod.HasChainedMethodInvoked)
+                    return builder;
+                var shouldMoveNext = i == _features.Count - 1; // Check if it's the last feature available
+                chainedMethod = chainedMethod.MoveNext(shouldMoveNext);
+
+                builder.AttributeMethodImpl(MethodImplOptions.AggressiveInlining);
+                builder.AddMethod(chainedMethod.MethodSignature, node => _features[i].SerializeWriter(node, chainedMethod));
+            }
+            return builder;
+        }
+
+        /// <returns>Next state arg name</returns>
+        private string LoadNextWriteState<TChainedMethod>(CodeNodeBuilder node, TChainedMethod chainedMethod) where TChainedMethod : MemberChainedMethods<TChainedMethod> {
+            const string nextState = "nextState";
+
+            var tstateTypeName = TypeName.FromGenericArgument(SerializeWriterChainedMethods.T_STATE);
+            var state = chainedMethod[tstateTypeName];
+            var tsource = chainedMethod[TypeName.FromType(_member.ContainingFullType.Symbol)];
+
+            node.If($"!{state}.Write({tsource}, out var {nextState})", node => {
+                node.Return();
+            });
+
+            return nextState;
+        }
+
+        public void CreateStruct(IComponentResolver resolver) {
             var builder = new CodeSourceFileBuilder(_typeName.Namespace);
             var genericArgs = _member.ReturnType!.Symbol is ITypeParameterSymbol symbol ? $"<{symbol}>" : "";
             var components = _memberComponents.Components;
@@ -59,14 +103,14 @@ namespace Decuplr.Serialization.Binary.TypeComposite.Internal {
             builder.AttributeHideEditor().AttributeGenerated(typeof(BinaryMemberComposite).Assembly);
             builder.NestType(_typeName, $"internal readonly struct {_typeName.TypeName} {genericArgs}", node => {
 
-                builder.NewLine().Comment("Component Fields");
+                node.NewLine().Comment("Component Fields");
                 for (var i = 0; i < components.Count; ++i)
-                    builder.State($"private {components[i]} {MemberName.ComponentField(i)}");
+                    node.State($"private {components[i]} {MemberName.ComponentField(i)}");
 
-                builder.NewLine().Comment("Member Composer Constructor");
+                node.Comment("Member Composer Constructor");
                 {
                     const string parser = "parser";
-                    builder.AddNode($"internal {_typeName.TypeName} ({typeof(IBinaryNamespaceDiscovery).FullName} {parser})", node => {
+                    node.AddNode($"internal {_typeName.TypeName} ({typeof(IBinaryNamespaceDiscovery).FullName} {parser})", node => {
                         // Get's the namespace for us
                         node.State($"{parser} = {parser}.{nameof(INamespaceDiscovery.WithNamespace)}({JoinedNamespaces(_normalNamespaces)})" +
                                                       $".{nameof(INamespaceDiscovery.WithPrioritizedNamespace)}({JoinedNamespaces(_prioritizedNamespaces)})" +
@@ -74,148 +118,97 @@ namespace Decuplr.Serialization.Binary.TypeComposite.Internal {
                         for (var i = 0; i < components.Count; ++i) {
                             node.State($"{MemberName.ComponentField(i)} = {parser}.{nameof(IBinaryNamespaceDiscovery.GetConverter)}<{components[i]}>()");
                         }
-                    });
+                    }).NewLine();
 
                     static string JoinedNamespaces(IEnumerable<string> namespaces) => $"new string[] {{ { string.Join(", ", namespaces.Select(n => $@"""{n}""")) } }}";
                 }
 
-
                 // void Serialize<TState, TWriter>(in T item, in TState state, ref TWriter writer);
                 // Optimization point : If it's anything smaller then 8 bytes, we don't pass the member value as `in`
-                builder.NewLine().Comment($"Serialize Buffer Writer");
+                node.Comment($"Serialize Buffer Writer");
                 {
-                    var serializeWriter = new SerializeWriterChainedMethods(_typeName, _member, true);
-
-                    builder.AttributeMethodImpl(MethodImplOptions.AggressiveInlining);
-                    builder.AddNode(serializeWriter.MethodSignature.GetDeclarationString(), node => {
-                        const string nextState = "nextState";
-
-                        var tstateTypeName = TypeName.FromGenericArgument(SerializeWriterChainedMethods.T_STATE);
-                        var state = serializeWriter[tstateTypeName];
-                        var tsource = serializeWriter[TypeName.FromType(_member.ContainingFullType.Symbol)];
-
-                        node.If($"!{state}.Write({tsource}, out var {nextState})", node => {
-                            node.Return();
-                        });
+                    var serializeWriter = new SerializeWriterChainedMethods(_typeName, _member, MemberName.Serialize);
+                    UseChainedMethods(builder, serializeWriter, node => {
+                        var nextState = LoadNextWriteState(node, serializeWriter);
 
                         if (!isConstant) {
-                            var nextMethod = serializeWriter.InvokeNextMethod(args => {
-                                args[tstateTypeName] = nextState;
-                            });
-                            node.State(nextMethod);
+                            node.State(serializeWriter.InvokeNextMethod(args => args[TStateTypeName] = nextState));
                             return;
                         }
-                        // If the method is constant we can simply advance and use Span method instead
-                        var writer = serializeWriter[TypeName.FromGenericArgument(SerializeWriterChainedMethods.T_WRITER)];
-                        node.State($"var writeSpan = {writer}.GetSpan({constLength})");
-                        node.State($"{writer}.Advance({MemberName.Serialize(0)}({}, {}, {}, {}))"); // Call Serialize Span<byte> index 0 method
-                    });
 
-                    for(var i = 0; i < _features.Count; ++i) {
-                        if (serializeWriter.HasChainedMethodInvoked) {
-                            serializeWriter = serializeWriter.MoveNext(i == _features.Count - 1); // Check if it's the last feature available
-                            _features[i].SerializeWriter(builder, serializeWriter);
-                        }
-                    }
+                        // If the method is constant we can simply advance and use Span method instead
+                        const string writeSpan = "writeSpan";
+                        var writer = serializeWriter[TypeName.FromGenericArgument(SerializeWriterChainedMethods.T_WRITER)];
+                        var serializeSpanMethod = SerializerSpanChainedMethods.CreateMethodSignature(_typeName, _member, MemberName.Serialize(0));
+                        var nextInvokeStr = serializeSpanMethod.GetInvocationString(
+                            new[] { SerializeWriterChainedMethods.T_STATE },
+                            new[] {
+                                serializeWriter[TypeName.FromType(_member.ReturnType.Symbol)].ArgName,           // member
+                                serializeWriter[TypeName.FromType(_member.ContainingFullType.Symbol)].ArgName,   // source
+                                serializeWriter[TStateTypeName].ArgName,                                         // writeState
+                                writeSpan                                                                        // data
+                            });
+
+                        node.State($"var {writeSpan} = {writer}.GetSpan({constLength})");
+                        node.State($"{writer}.Advance({nextInvokeStr})"); // Call Serialize Span<byte> index 0 method
+                    }).NewLine();
+
                 }
 
-                // int Serialize<TState>(in T item, in TState writeState, Span<byte> data);
+                // int Serialize<TState>(in __memberType member, in __type source, TState writeState, Span<byte> data);
+                node.Comment($"Serializer Span");
+                {
+                    var serializeSpan = new SerializerSpanChainedMethods(_typeName, _member, MemberName.Serialize);
+                    UseChainedMethods(builder, serializeSpan, node => {
+                        var nextState = LoadNextWriteState(node, serializeSpan);
+                        node.State(serializeSpan.InvokeNextMethod(args => args[TStateTypeName] = nextState));
+                    }).NewLine();
+                }
 
-                // int Deserialize(in __memberType member, in __type source, ReadOnlySpan<byte> data, out T result)
+                // int Deserialize(in __type source, ReadOnlySpan<byte> data, out __memberType result)
+                node.Comment($"Deserialize Span");
+                {
+                    var deserializeSpan = new DeserializeSpanChainedMethods(_typeName, _member, MemberName.Deserialize);
+                    UseChainedMethods(builder, deserializeSpan, node => node.State(deserializeSpan.InvokeNextMethod()))
+                        .NewLine();
+                }
 
-                // bool Deserialize(in __memberType member, in __type source, ref SequenceCursor<byte> cursor, out T result)
+                // bool Deserialize(in __type source, ref SequenceCursor<byte> cursor, out __memberType result)
+                node.Comment($"Deserialize Cursor");
+                {
+                    var deserializeCursor = new DeserializeCursorChainedMethods(_typeName, _member, MemberName.Deserialize);
+                    UseChainedMethods(builder, deserializeCursor, node => node.State(deserializeCursor.InvokeNextMethod()))
+                        .NewLine();
+                }
 
-                // int GetSpanLength(in __memberType member, in __type source)
+                // int GetSpanLength<TState>(in __memberType member, in __type source, TState writerState)
+                node.Comment("Get Span Length");
+                {
+                    var spanLength = new GetSpanLengthChainedMethods(_typeName, _member, MemberName.GetSpanLength);
+                    UseChainedMethods(builder, spanLength, node => {
+                        var nextState = LoadNextWriteState(node, spanLength);
+                        node.State(spanLength.InvokeNextMethod(args => args[TStateTypeName] = nextState));
+                    }).NewLine();
+                }
 
-                // int GetBlockLength(ReadOnlySpan<byte> data);
+                // int GetBlockLength(ReadOnlySpan<byte> data, in __dependentMember... dependentSource);
+                node.Comment("Get Block Length (Span)");
+                {
+                    var blockSpanLength = new GetBlockLengthSpanChainedMethods(_typeName, _member, MemberName.GetBlockLength);
+                    UseChainedMethods(builder, blockSpanLength, node => node.State(blockSpanLength.InvokeNextMethod()))
+                        .NewLine();
+                }
 
-                // int GetBlockLength(ref SequenceCursor<byte> cursor);
+                // int GetBlockLength(ref SequenceCursor<byte> cursor, in __dependentMember... dependentSource);
+                "__dependentMember...dependentSource";
+                node.Comment("Get Block Length (Sequence Cursor)");
+                {
+                    var blockCursorLength = new GetBlockLengthCursorChainedMethods(_typeName, _member, MemberName.GetBlockLength);
+                    UseChainedMethods(builder, blockCursorLength, node => node.State(blockCursorLength.InvokeNextMethod()))
+                        .NewLine();
+                }
             });
         }
     }
-
-    internal abstract class ChainedMethods<T> : IChainedMethods where T : ChainedMethods<T> {
-
-        private readonly bool _hasChainedMethod;
-        private readonly int? _currentIndex;
-        private readonly Func<int?, MethodSignature> _nextMethod;
-
-        public MethodSignature MethodSignature { get; }
-        
-        public MethodArg this[TypeName typeName] => MethodSignature.Arguments.First(x => x.TypeName.Equals(typeName));
-
-        public MethodArg this[TypeName typeName, int index] => MethodSignature.Arguments.ElementAt(index);
-
-        public IReadOnlyList<MethodTypeParams> TypeParameters => MethodSignature.TypeParameters;
-
-        public IReadOnlyList<MethodArg> Arguments => MethodSignature.Arguments;
-
-        public bool HasChainedMethodInvoked { get; private set; }
-
-        bool IChainedMethods.HasChainedMethod => _hasChainedMethod;
-
-        public ChainedMethods(Func<int?, MethodSignature> nextMethodSignature) {
-            _hasChainedMethod = true;
-            _currentIndex = null;
-            _nextMethod = nextMethodSignature;
-            MethodSignature = nextMethodSignature(null);
-        }
-
-        protected ChainedMethods(T sourceMethods, bool hasNextMethod) {
-            _hasChainedMethod = hasNextMethod;
-            _currentIndex = sourceMethods._currentIndex.HasValue ? sourceMethods._currentIndex + 1 : 0;
-            _nextMethod = sourceMethods._nextMethod;
-            MethodSignature = _nextMethod(_currentIndex);
-        }
-
-        private void EnsureHasChainedMethod() {
-            if (!_hasChainedMethod)
-                throw new InvalidOperationException("There's no chained method");
-        }
-
-        private string InvokeNextMethodCore(Action<IChainMethodInvokeAction>? action) {
-
-        }
-
-        protected abstract T MoveNext(T sourceMethod, bool hasNextMethod);
-
-        public string InvokeNextMethod() => InvokeNextMethodCore(null);
-
-        public string InvokeNextMethod(Action<IChainMethodInvokeAction> action) => InvokeNextMethodCore(action);
-
-        public T MoveNext(bool hasNextMethod) {
-            var us = this as T;
-            Debug.Assert(us is { });
-            return MoveNext(us, hasNextMethod);
-        }
-    }
-
-    internal class SerializeWriterChainedMethods : ChainedMethods<SerializeWriterChainedMethods>, IChainedMethods {
-
-        public const string T_STATE = "TState";
-        public const string T_WRITER = "TWriter";
-
-        public static MethodSignature CreateMethodSignature(TypeName memberCompositeName, MemberMetaInfo member, string methodName) {
-            Debug.Assert(member.ReturnType != null);
-            return MethodSignatureBuilder.CreateMethod(memberCompositeName, methodName)
-                                         .AddGenerics(T_STATE, GenericConstrainKind.Struct, new TypeName("Decuplr.Serialization.Binary", "IBinaryWriteState<TState>"))
-                                         .AddGenerics(T_WRITER, GenericConstrainKind.Struct, TypeName.FromType<IBufferWriter<byte>>())
-                                         .AddArgument((RefKind.In, member.ReturnType.Symbol, "member"))
-                                         .AddArgument((RefKind.In, member.ContainingFullType.Symbol, "source"))
-                                         .AddArgument((TypeName.FromGenericArgument(T_STATE), "state"))
-                                         .AddArgument((RefKind.Ref, TypeName.FromGenericArgument(T_WRITER), "writer"))
-                                         .WithReturn(TypeName.Void);
-        }
-
-        public SerializeWriterChainedMethods(TypeName memberCompositeName, MemberMetaInfo member)
-                : base(id => CreateMethodSignature(memberCompositeName, member, $"Serialize{(id.HasValue ? $"State{id}" : "")}")) {
-        }
-
-        private SerializeWriterChainedMethods(SerializeWriterChainedMethods sourceMethod, bool hasNextMethod)
-            : base(sourceMethod, hasNextMethod) { }
-
-        protected override SerializeWriterChainedMethods MoveNext(SerializeWriterChainedMethods sourceMethod, bool hasNextMethod) {
-            throw new NotImplementedException();
-        }
-    }
 }
+
