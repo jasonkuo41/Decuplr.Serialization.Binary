@@ -52,6 +52,10 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
         /// </summary>
         public IReadOnlyList<MethodArg> Arguments { get; }
 
+        public MethodArg this[TypeName typeName] => this[typeName, 0];
+
+        public MethodArg this[TypeName typeName, int index] => Arguments.Where(x => x.TypeName.Equals(typeName)).ElementAt(index);
+
         private MethodSignature (Accessibility accessibility, TypeName constructingType, IEnumerable<MethodArg> args) {
             Accessibility = accessibility;
             MethodName = constructingType.ToString();

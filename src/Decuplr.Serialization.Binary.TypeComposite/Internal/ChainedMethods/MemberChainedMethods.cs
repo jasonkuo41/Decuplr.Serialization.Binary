@@ -14,9 +14,9 @@ namespace Decuplr.Serialization.Binary.TypeComposite.Internal.ChainedMethods {
 
         public MethodSignature MethodSignature { get; }
         
-        public MethodArg this[TypeName typeName] => Arguments.First(x => x.TypeName.Equals(typeName));
+        public MethodArg this[TypeName typeName] => MethodSignature[typeName];
 
-        public MethodArg this[TypeName typeName, int index] => Arguments.Where(x => x.TypeName.Equals(typeName)).ElementAt(index);
+        public MethodArg this[TypeName typeName, int index] => MethodSignature[typeName, index];
 
         public IReadOnlyList<MethodTypeParams> TypeParameters => MethodSignature.TypeParameters;
 

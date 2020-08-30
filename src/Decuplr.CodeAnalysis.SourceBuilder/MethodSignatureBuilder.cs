@@ -89,11 +89,13 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
             return this;
         }
 
-        public MethodSignatureBuilder AddArgument(params MethodArg[] args) {
+        public MethodSignatureBuilder AddArgument(IEnumerable<MethodArg> args) {
             foreach (var arg in args)
                 AddArgument(arg);
             return this;
         }
+
+        public MethodSignatureBuilder AddArgument(params MethodArg[] args) => AddArgument(args.AsEnumerable());
 
         public MethodSignature WithReturn<T>() => WithReturn(RefKind.None, typeof(T));
         public MethodSignature WithReturn<T>(RefKind refKind) => WithReturn(refKind, typeof(T));

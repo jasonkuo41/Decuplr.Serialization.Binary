@@ -12,14 +12,28 @@ using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.TypeComposite.Internal {
 
+    internal class BinaryMemberCompositeBuilderProvider {
 
-    internal interface IBinaryMemberCompositeStruct {
-        public IReadOnlyList<int> RelyingMembers { get; }
-        public IReadOnlyList<MethodSignature> EntryMethods { get; }
+        private readonly IMemberFormatNamespaceProvider _namespaceProvider;
+        private readonly IEnumerable<IBinaryMemberFeatureProvider> _featureProviders;
+        private readonly ISourceAddition _sourceAddition;
+
+        public BinaryMemberCompositeBuilderProvider(IMemberFormatNamespaceProvider namespaceProvider, IEnumerable<IBinaryMemberFeatureProvider> featureProviders, ISourceAddition sourceAddition) {
+            _namespaceProvider = namespaceProvider;
+            _featureProviders = featureProviders;
+            _sourceAddition = sourceAddition;
+        }
+
+        public BinaryMemberCompositeStruct AddMemberCompositeStruct(MemberMetaInfo member, GeneratingTypeName typeName, IComponentResolver resolver) {
+            return new BinaryMemberCompositeBuilder(member, typeName, _namespaceProvider, _featureProviders, _sourceAddition).AddStructToSource(resolver);
+        }
     }
 
-    internal class BinaryMemberComposite {
 
+    internal class BinaryMemberCompositeBuilder {
+
+        #region Common Name Definitions
+        
         private static class MemberName {
             public static string ComponentField(int i) => $"_component{i}";
             public static string InitializeComponentMethod(int i) => $"InitializeComponent{i}";
@@ -28,28 +42,28 @@ namespace Decuplr.Serialization.Binary.TypeComposite.Internal {
             public static string GetSpanLength(int? i) => i.HasValue ? $"GetSpanLengthState{i.Value}" : $"GetSpanLength";
             public static string GetBlockLength(int? i) => i.HasValue ? $"GetBlockLengthState{i.Value}" : $"GetBlockLength";
         }
+        
+        #endregion
 
         private static readonly TypeName TStateTypeName = TypeName.FromGenericArgument(SerializeWriterChainedMethods.T_STATE);
 
         private readonly MemberMetaInfo _member;
         private readonly GeneratingTypeName _typeName;
         private readonly IReadOnlyList<IBinaryMemberComposeMethod> _features;
-        private readonly ITypeSymbolProvider _symbolProvider;
         private readonly ISourceAddition _sourceAddition;
         private readonly IReadOnlyList<string> _normalNamespaces;
         private readonly IReadOnlyList<string> _prioritizedNamespaces;
         private readonly MemberComponentCollection _memberComponents = new MemberComponentCollection();
         private readonly ThrowCollection _throwCollection = new ThrowCollection("ThrowHelper");
 
-        public BinaryMemberComposite(MemberMetaInfo member,
-                                     GeneratingTypeName typeName,
-                                     IMemberFormatNamespaceProvider namespaceProvider,
-                                     IEnumerable<IBinaryMemberFeatureProvider> featureProviders,
-                                     ITypeSymbolProvider symbolProvider,
-                                     ISourceAddition sourceAddition) {
+        #region Constructor
+        public BinaryMemberCompositeBuilder(MemberMetaInfo member,
+                                            GeneratingTypeName typeName,
+                                            IMemberFormatNamespaceProvider namespaceProvider,
+                                            IEnumerable<IBinaryMemberFeatureProvider> featureProviders,
+                                            ISourceAddition sourceAddition) {
             _member = member;
             _typeName = typeName;
-            _symbolProvider = symbolProvider;
             _sourceAddition = sourceAddition;
             _features = featureProviders.Where(feature => feature.ShouldApply(member))
                                         .Select(feature => feature.GetComposingMethods(member, _memberComponents, _throwCollection))
@@ -61,8 +75,9 @@ namespace Decuplr.Serialization.Binary.TypeComposite.Internal {
 
             Debug.Assert(_member.ReturnType != null);
         }
+        #endregion
 
-        private CodeNodeBuilder UseChainedMethods<TChainedMethod>(CodeNodeBuilder builder, TChainedMethod chainedMethod, Action<CodeNodeBuilder> node) where TChainedMethod : MemberChainedMethods<TChainedMethod> {
+        private CodeNodeBuilder UseChainedMethods<TChainedMethod>(CodeNodeBuilder builder, TChainedMethod chainedMethod, List<MethodSignature> methods, Action<CodeNodeBuilder> node) where TChainedMethod : MemberChainedMethods<TChainedMethod> {
 
             builder.AttributeMethodImpl(MethodImplOptions.AggressiveInlining);
             builder.AddMethod(chainedMethod.MethodSignature, node);
@@ -77,6 +92,8 @@ namespace Decuplr.Serialization.Binary.TypeComposite.Internal {
                 builder.AttributeMethodImpl(MethodImplOptions.AggressiveInlining);
                 builder.AddMethod(chainedMethod.MethodSignature, node => _features[i].SerializeWriter(node, chainedMethod));
             }
+
+            methods.Add(chainedMethod.MethodSignature);
             return builder;
         }
 
@@ -95,12 +112,28 @@ namespace Decuplr.Serialization.Binary.TypeComposite.Internal {
             return nextState;
         }
 
-        public void CreateStruct(IComponentResolver resolver) {
+        private int? GetConstantLength() {
+            var lengthInfo = ConstantLengthInfo.NotModified;
+            foreach (var feature in _features)
+                lengthInfo += feature.ConstantLengthInfo;
+            if (!lengthInfo.IsConstant)
+                return null;
+            if (lengthInfo.AbsoluteLength >= 0)
+                return lengthInfo.AbsoluteLength;
+            // Normally at this point we have to determinate the length
+            // If we don't then we assume we don't know the length of this member
+            return null;
+        }
+
+        public BinaryMemberCompositeStruct AddStructToSource(IComponentResolver resolver) {
             var builder = new CodeSourceFileBuilder(_typeName.Namespace);
             var genericArgs = _member.ReturnType!.Symbol is ITypeParameterSymbol symbol ? $"<{symbol}>" : "";
             var components = _memberComponents.Components;
+            var relyingMembers = _features.SelectMany(x => x.RelyingMembers).ToList();
+            var constLength = GetConstantLength();
+            var methods = new List<MethodSignature>();
 
-            builder.AttributeHideEditor().AttributeGenerated(typeof(BinaryMemberComposite).Assembly);
+            builder.AttributeHideEditor().AttributeGenerated(typeof(BinaryMemberCompositeBuilder).Assembly);
             builder.NestType(_typeName, $"internal readonly struct {_typeName.TypeName} {genericArgs}", node => {
 
                 node.NewLine().Comment("Component Fields");
@@ -128,10 +161,10 @@ namespace Decuplr.Serialization.Binary.TypeComposite.Internal {
                 node.Comment($"Serialize Buffer Writer");
                 {
                     var serializeWriter = new SerializeWriterChainedMethods(_typeName, _member, MemberName.Serialize);
-                    UseChainedMethods(builder, serializeWriter, node => {
+                    UseChainedMethods(builder, serializeWriter, methods, node => {
                         var nextState = LoadNextWriteState(node, serializeWriter);
 
-                        if (!isConstant) {
+                        if (!constLength.HasValue) {
                             node.State(serializeWriter.InvokeNextMethod(args => args[TStateTypeName] = nextState));
                             return;
                         }
@@ -149,17 +182,16 @@ namespace Decuplr.Serialization.Binary.TypeComposite.Internal {
                                 writeSpan                                                                        // data
                             });
 
-                        node.State($"var {writeSpan} = {writer}.GetSpan({constLength})");
+                        node.State($"var {writeSpan} = {writer}.GetSpan({constLength.Value})");
                         node.State($"{writer}.Advance({nextInvokeStr})"); // Call Serialize Span<byte> index 0 method
                     }).NewLine();
-
                 }
 
                 // int Serialize<TState>(in __memberType member, in __type source, TState writeState, Span<byte> data);
                 node.Comment($"Serializer Span");
                 {
                     var serializeSpan = new SerializerSpanChainedMethods(_typeName, _member, MemberName.Serialize);
-                    UseChainedMethods(builder, serializeSpan, node => {
+                    UseChainedMethods(builder, serializeSpan, methods, node => {
                         var nextState = LoadNextWriteState(node, serializeSpan);
                         node.State(serializeSpan.InvokeNextMethod(args => args[TStateTypeName] = nextState));
                     }).NewLine();
@@ -169,7 +201,7 @@ namespace Decuplr.Serialization.Binary.TypeComposite.Internal {
                 node.Comment($"Deserialize Span");
                 {
                     var deserializeSpan = new DeserializeSpanChainedMethods(_typeName, _member, MemberName.Deserialize);
-                    UseChainedMethods(builder, deserializeSpan, node => node.State(deserializeSpan.InvokeNextMethod()))
+                    UseChainedMethods(builder, deserializeSpan, methods, node => node.State(deserializeSpan.InvokeNextMethod()))
                         .NewLine();
                 }
 
@@ -177,7 +209,7 @@ namespace Decuplr.Serialization.Binary.TypeComposite.Internal {
                 node.Comment($"Deserialize Cursor");
                 {
                     var deserializeCursor = new DeserializeCursorChainedMethods(_typeName, _member, MemberName.Deserialize);
-                    UseChainedMethods(builder, deserializeCursor, node => node.State(deserializeCursor.InvokeNextMethod()))
+                    UseChainedMethods(builder, deserializeCursor, methods, node => node.State(deserializeCursor.InvokeNextMethod()))
                         .NewLine();
                 }
 
@@ -185,7 +217,7 @@ namespace Decuplr.Serialization.Binary.TypeComposite.Internal {
                 node.Comment("Get Span Length");
                 {
                     var spanLength = new GetSpanLengthChainedMethods(_typeName, _member, MemberName.GetSpanLength);
-                    UseChainedMethods(builder, spanLength, node => {
+                    UseChainedMethods(builder, spanLength, methods, node => {
                         var nextState = LoadNextWriteState(node, spanLength);
                         node.State(spanLength.InvokeNextMethod(args => args[TStateTypeName] = nextState));
                     }).NewLine();
@@ -194,20 +226,22 @@ namespace Decuplr.Serialization.Binary.TypeComposite.Internal {
                 // int GetBlockLength(ReadOnlySpan<byte> data, in __dependentMember... dependentSource);
                 node.Comment("Get Block Length (Span)");
                 {
-                    var blockSpanLength = new GetBlockLengthSpanChainedMethods(_typeName, _member, MemberName.GetBlockLength);
-                    UseChainedMethods(builder, blockSpanLength, node => node.State(blockSpanLength.InvokeNextMethod()))
+                    var blockSpanLength = new GetBlockLengthSpanChainedMethods(_typeName, _member, relyingMembers, MemberName.GetBlockLength);
+                    UseChainedMethods(builder, blockSpanLength, methods, node => node.State(blockSpanLength.InvokeNextMethod()))
                         .NewLine();
                 }
 
                 // int GetBlockLength(ref SequenceCursor<byte> cursor, in __dependentMember... dependentSource);
-                "__dependentMember...dependentSource";
                 node.Comment("Get Block Length (Sequence Cursor)");
                 {
-                    var blockCursorLength = new GetBlockLengthCursorChainedMethods(_typeName, _member, MemberName.GetBlockLength);
-                    UseChainedMethods(builder, blockCursorLength, node => node.State(blockCursorLength.InvokeNextMethod()))
+                    var blockCursorLength = new GetBlockLengthCursorChainedMethods(_typeName, _member, relyingMembers, MemberName.GetBlockLength);
+                    UseChainedMethods(builder, blockCursorLength, methods, node => node.State(blockCursorLength.InvokeNextMethod()))
                         .NewLine();
                 }
             });
+
+            _sourceAddition.AddSource($"{_typeName}.generated.cs", builder.ToString());
+            return new BinaryMemberCompositeStruct(_member, relyingMembers, methods, constLength);
         }
     }
 }

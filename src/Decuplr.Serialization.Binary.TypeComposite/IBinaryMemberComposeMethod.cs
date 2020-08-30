@@ -1,11 +1,15 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using Decuplr.CodeAnalysis.Meta;
 using Decuplr.CodeAnalysis.SourceBuilder;
 
 namespace Decuplr.Serialization.Binary.TypeComposite {
 
     public interface IBinaryMemberComposeMethod {
         // relying member
-        IReadOnlyList<int> RelyingMembers { get; }
+        IReadOnlyList<MemberMetaInfo> RelyingMembers { get; }
+
+        ConstantLengthInfo ConstantLengthInfo { get; }
 
         void SerializeWriter(CodeNodeBuilder builder, IChainedMethods chained);
         void SerializeSpan(CodeNodeBuilder builder, IChainedMethods chained);
