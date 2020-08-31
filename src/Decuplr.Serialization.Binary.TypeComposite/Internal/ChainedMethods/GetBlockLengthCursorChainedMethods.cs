@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Decuplr.CodeAnalysis;
 using Decuplr.CodeAnalysis.Meta;
 using Decuplr.CodeAnalysis.SourceBuilder;
 using Microsoft.CodeAnalysis;

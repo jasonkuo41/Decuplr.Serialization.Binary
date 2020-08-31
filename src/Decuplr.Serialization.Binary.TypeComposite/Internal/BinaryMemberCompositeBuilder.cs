@@ -241,7 +241,7 @@ namespace Decuplr.Serialization.Binary.TypeComposite.Internal {
             });
 
             _sourceAddition.AddSource($"{_typeName}.generated.cs", builder.ToString());
-            return new BinaryMemberCompositeStruct(_member, relyingMembers, methods, constLength);
+            return new BinaryMemberCompositeStruct(_typeName, _member, relyingMembers, methods, constLength);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Decuplr.CodeAnalysis;
 using Decuplr.CodeAnalysis.SourceBuilder;
 
 namespace Decuplr.Serialization.Binary.TypeComposite {

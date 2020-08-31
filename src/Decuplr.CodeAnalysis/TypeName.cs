@@ -5,23 +5,20 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Decuplr.CodeAnalysis.SourceBuilder {
+namespace Decuplr.CodeAnalysis {
 
-    public readonly struct TypeName : IEquatable<TypeName> {
+    internal static class SyntaxToolkit {
+        public static 
+    }
 
-        private readonly string _name;
-        private readonly string _namespace;
-        private readonly string[] _parentNames;
 
-        public bool IsEmpty => _name is null && _namespace is null && _parentNames is null;
+    public class TypeName : IEquatable<TypeName> {
 
-        public string Namespace => _namespace ?? string.Empty;
+        public string Namespace { get; }
 
-        public IReadOnlyList<string> ParentNames => _parentNames ?? Array.Empty<string>();
+        public IReadOnlyList<TypeName> Parents { get; }
 
-        public string Name => _name ?? string.Empty;
-
-        public bool IsGenericArgument { get; }
+        public string Name { get; }
 
         internal static string[] VerifyNamespaces(string fullTypeName, string argName) {
             var sliced = fullTypeName.Split('.');
@@ -65,7 +62,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
 
             static IEnumerable<string> parentNames(ITypeSymbol symbol) {
                 var currentSymbol = symbol;
-                while(currentSymbol.ContainingType is { }) {
+                while (currentSymbol.ContainingType is { }) {
                     yield return currentSymbol.Name;
                     currentSymbol = currentSymbol.ContainingType;
                 }
@@ -83,7 +80,7 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
 
             static IEnumerable<string> parentNames(Type type) {
                 var currentType = type;
-                while(currentType.DeclaringType is { }) {
+                while (currentType.DeclaringType is { }) {
                     if (currentType.DeclaringType.IsGenericType)
                         throw GenericNotSupported();
                     yield return currentType.Name;
@@ -139,12 +136,14 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
 
         public override string ToString() => GetFullName();
         public override bool Equals(object obj) => obj is TypeName otherName && Equals(otherName);
+        public bool Equals(TypeName other) => other.Name.Equals(Name)
+                                              && other.Namespace.Equals(Namespace)
+                                              && other.ParentNames.Equals(ParentNames);
         public override int GetHashCode() => HashCode.Combine(Name, Namespace, ParentNames);
 
         public static implicit operator string(TypeName name) => name.ToString();
         public static implicit operator TypeName(Type type) => FromType(type);
 
-        public static TypeName FromGenericArgument(string genericName) => new TypeName(true, string.Empty, Enumerable.Empty<string>(), genericName);
         public static TypeName FromType(Type type) => new TypeName(type);
         public static TypeName FromType<T>() => new TypeName(typeof(T));
         public static TypeName FromType(ITypeSymbol symbol) {
@@ -155,6 +154,5 @@ namespace Decuplr.CodeAnalysis.SourceBuilder {
 
         public static TypeName Void { get; } = new TypeName(typeof(void));
 
-        public bool Equals(TypeName other) => other.Name.Equals(Name) && other.Namespace.Equals(Namespace) && other.ParentNames.Equals(ParentNames);
     }
 }

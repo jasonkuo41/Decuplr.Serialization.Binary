@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Decuplr.CodeAnalysis;
 using Decuplr.CodeAnalysis.Meta;
 using Decuplr.CodeAnalysis.SourceBuilder;
 using Microsoft.CodeAnalysis;

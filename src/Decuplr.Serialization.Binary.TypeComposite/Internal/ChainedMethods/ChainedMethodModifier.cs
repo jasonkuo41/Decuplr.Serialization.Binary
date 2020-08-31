@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Linq;
+using Decuplr.CodeAnalysis;
 using Decuplr.CodeAnalysis.SourceBuilder;
 
 namespace Decuplr.Serialization.Binary.TypeComposite.Internal.ChainedMethods {

@@ -1,4 +1,4 @@
-﻿using Decuplr.CodeAnalysis.SourceBuilder;
+﻿using Decuplr.CodeAnalysis;
 
 namespace Decuplr.Serialization.Binary.TypeComposite {
     public interface IChainedMethodsModifier {

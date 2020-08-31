@@ -14,4 +14,9 @@
 		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.0.0" PrivateAssets="all" />
 	</ItemGroup>
 
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Decuplr.CodeAnalysis\Decuplr.CodeAnalysis.csproj" />
+	</ItemGroup>
+
 </Project>
