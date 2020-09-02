@@ -2,163 +2,12 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Decuplr.CodeAnalysis {
-
-    internal static class SyntaxToolkit {
-        public static 
-    }
-
-    /// <summary>
-    /// Represents a light weight name counterpart of <see cref="TypeName"/> with looser comparsion rules.
-    /// This class is meant for as a ease to use identifier and shall not be used to respresent any unique names of a type.
-    /// </summary>
-    public readonly struct LaxTypeName : IEquatable<LaxTypeName> {
-        internal static string[] VerifyNamespaces(string fullTypeName, string argName) {
-            var sliced = fullTypeName.Split('.');
-            if (sliced.Any(x => !SyntaxFacts.IsValidIdentifier(x.Trim())))
-                throw new ArgumentException($"Invalid type identification name : {fullTypeName}", argName);
-            return sliced;
-        }
-
-        internal static string[] VerifyTypeNames(string fullTypeNames, string argName) {
-            var slicedType = fullTypeNames.Split('.');
-            if (slicedType.Any(x => TypeWithClampedString(x).Any(x => !SyntaxFacts.IsValidIdentifier(x))))
-                throw ThrowArgException();
-            return slicedType;
-
-            IEnumerable<string> TypeWithClampedString(string source) {
-                var startBracket = source.IndexOf('<');
-                yield return startBracket < 0 ? source.Trim() : source.Substring(0, startBracket).Trim();
-                foreach (var clamped in GetClampedStrings(source))
-                    yield return clamped;
-            }
-
-            IEnumerable<string> GetClampedStrings(string source) {
-                var startBracket = source.IndexOf('<');
-                var endBracket = source.LastIndexOf('>');
-                if (startBracket < 0 ^ endBracket < 0)
-                    throw ThrowArgException();
-                if (startBracket < 0 || endBracket < 0)
-                    return Enumerable.Empty<string>();
-                var clampedString = source.Substring(startBracket + 1, endBracket - startBracket - 1);
-                return clampedString.Split(',').Select(x => x.Trim());
-            }
-
-            Exception ThrowArgException() => new ArgumentException($"Invalid type identification name : {fullTypeNames}", argName);
-        }
-
-        public string Namespace { get; }
-        public IReadOnlyList<LaxTypeName> Parents { get; }
-        public string Name { get; }
-        public IReadOnlyList<LaxTypeName>? TypeParameters { get; }
-        public IReadOnlyList<GenericName> TypeArguments { get; }
-        public bool IsGeneric => TypeArguments.Count > 0;
-        public bool IsGenericDefinition => IsGeneric && TypeParameters is null;
-        public bool IsTypeParameter { get; }
-
-        private static IEnumerable<LaxTypeName> GetParentNames(IEnumerable<string> parentNames, string namespaces) {
-            if (parentNames is IReadOnlyCollection<string> c && c.Count == 0)
-                return Enumerable.Empty<LaxTypeName>();
-            var parents = parentNames.ToList();
-            return parents.Select((parent, i) => new LaxTypeName(namespaces, parents.Take(i), parent));
-        }
-
-
-        private LaxTypeName(string typeParameterName) {
-            Namespace = string.Empty;
-            Parents = Array.Empty<LaxTypeName>();
-            Name = typeParameterName;
-            TypeParameters = null;
-            TypeArguments = Array.Empty<GenericName>();
-            IsTypeParameter = true;
-        }
-
-        private LaxTypeName(string namespaces, IEnumerable<LaxTypeName> parents, string typeName, IEnumerable<LaxTypeName>? typeParameters, IEnumerable<GenericName> typeArguments) {
-            Namespace = namespaces;
-            Parents = parents.ToList();
-            Name = typeName;
-            TypeParameters = typeParameters?.ToList();
-            TypeArguments = typeArguments.ToList();
-            IsTypeParameter = false;
-        }
-
-        public static LaxTypeName FromName(string namespaces, IEnumerable<string> parents, string typeName, params GenericName[] typeArguments) {
-            return new LaxTypeName(namespaces, GetParentNames(parents, namespaces), typeName, null, typeArguments);
-        }
-
-        public static LaxTypeName FromName(string namespaces, IEnumerable<LaxTypeName> parents, string typeName, params LaxTypeName[] arguemtns) {
-
-        }
-
-        public LaxTypeName MakeGenericType(params LaxTypeName[] typeNames) {
-            if (!IsGenericDefinition)
-                throw new InvalidOperationException($"{this} is not a GenericTypeDefinition. MakeGenericType may only be called on a type for which {nameof(IsGenericDefinition)} is true.");
-            if (typeNames.Length != TypeArguments.Count)
-                throw new ArgumentException("The number of generic arguments provided doesn't equal the arity of the generic type definition.");
-            return new LaxTypeName(Namespace, Parents, Name, typeNames, TypeArguments);
-        }
-
-        public LaxTypeName GetGenericDefinition() {
-            if (!IsGeneric)
-                throw new InvalidOperationException($"This operation is only valid on generic types.");
-            return new LaxTypeName(Namespace, Parents, Name, null, TypeArguments);
-        }
-
-        public bool Equals(LaxTypeName otherName)
-            => IsTypeParameter.Equals(otherName.IsTypeParameter)
-            && Namespace.Equals(otherName.Namespace)
-            && Name.Equals(otherName.Name)
-            && Parents.SequenceEqual(otherName.Parents)
-            && (TypeParameters?.Equals(otherName.TypeParameters) ?? otherName.TypeParameters is null)
-            && TypeArguments.Count.Equals(TypeArguments.Count);
-
-        public override bool Equals(object obj) => (obj is TypeName typeName && Equals(typeName.LaxName)) || (obj is LaxTypeName name && Equals(name));
-
-        public override int GetHashCode() {
-            var hashCode = new HashCode();
-            hashCode.Add(IsTypeParameter);
-            hashCode.Add(Namespace);
-            for (var i = 0; i < Parents.Count; i++)
-                hashCode.Add(Parents[i]);
-            hashCode.Add(Name);
-            if (TypeParameters is { }) {
-                for (var i = 0; i < TypeParameters.Count ; ++i)
-                   hashCode.Add(TypeParameters[i]);
-            }
-            hashCode.Add(TypeArguments.Count);
-            return hashCode.ToHashCode();
-        }
-
-        public override string ToString() {
-            var builder = new StringBuilder();
-            if (!string.IsNullOrEmpty(Namespace)) {
-                builder.Append(Namespace);
-                builder.Append('.');
-            }
-            for (var i = 0; i < Parents.Count; ++i) {
-                builder.Append(Parents[i].ToString());
-                builder.Append('.');
-            }
-            builder.Append(Name);
-            if (!IsGeneric)
-                return builder.ToString();
-            builder.Append('<');
-            if (IsGenericDefinition)
-                builder.Append(string.Join(", ", TypeArguments.Select(x => x.ToString())));
-            else
-                builder.Append(string.Join(", ", TypeParameters.Select(x => x.ToString())));
-            builder.Append('>');
-            return builder.ToString();
-        }
-    }
 
     /// <summary>
     /// Represents a strict and unique name for any given <see cref="INamedTypeSymbol"/> and <see cref="Type"/>. 
@@ -170,10 +19,17 @@ namespace Decuplr.CodeAnalysis {
 
         private string? _runtimeName;
         private string? _codeStyleName;
+        private int? _hashCode;
         private TypeName? _genericDefinition;
 
+        /// <summary>
+        /// The namespace that this type contains in
+        /// </summary>
         public string Namespace { get; }
 
+        /// <summary>
+        /// The containing type, null if none
+        /// </summary>
         public TypeName? ContainingType { get; }
 
         /// <summary>
@@ -181,18 +37,44 @@ namespace Decuplr.CodeAnalysis {
         /// </summary>
         public string Name { get; }
 
-        public IReadOnlyList<TypeName> TypeArguments { get; }
+        /// <summary>
+        /// The type argument for the generics
+        /// </summary>
+        public IReadOnlyList<TypeName> GenericArguments { get; }
 
-        //public IReadOnlyList<GenericName> TypeParameters { get; }
+        /// <summary>
+        /// Is it a type parameter that exists as a generic type's parameter
+        /// </summary>
+        public bool IsGenericParameter { get; }
 
-        public bool IsGeneric => TypeParameters.Count != 0;
+        /// <summary>
+        /// Is the type generic
+        /// </summary>
+        public bool IsGeneric => GenericArguments.Count != 0;
 
-        public bool IsGenericDefinition => IsGeneric && TypeArguments.Count == 0;
+        /// <summary>
+        /// Is the type generic definition without any concrete generic arguments
+        /// </summary>
+        public bool IsGenericDefinition {
+            get {
+                if (IsGeneric && GenericArguments[0].IsGenericParameter) {
+                    Debug.Assert(GenericArguments.All(x => x.IsGenericParameter));
+                    return true;
+                }
+                // short circuit so that when isgeneric is true, we never evaluate more
+                Debug.Assert(!IsGeneric || !GenericArguments.Any(x => x.IsGenericParameter));
+                return false;
+            }
+        }
 
-        public bool IsTypeParameter { get; }
+        /// <summary>
+        /// The generic definition of this generic type, null if this is not a generic type
+        /// </summary>
+        public TypeName? GenericDefinition => !IsGeneric ? null : (_genericDefinition ??= new TypeName(Namespace, ContainingType, Name, GenericArguments));
 
-        public TypeName? GenericDefinition => !IsGeneric ? null : (_genericDefinition ??= new TypeName(Namespace, ContainingType, Name, TypeArguments, TypeParameters));
-
+        /// <summary>
+        /// The coding style format of the type, for example System.Collections.Generic.<see cref="List{T}.Enumerator"/>.
+        /// </summary>
         public string CodeStyleName {
             get {
                 return _codeStyleName ??= GetCodeStyleName();
@@ -201,8 +83,8 @@ namespace Decuplr.CodeAnalysis {
                     var builder = new StringBuilder();
                     builder.Append(Namespace);
                     builder.Append('.');
-                    for(var i = 0; i < ContainingType.Count; ++i) {
-                        ContainingType[i].AppendCodeStyleShortName(builder);
+                    foreach (var containingType in GetParentNames()) {
+                        containingType.AppendCodeStyleShortName(builder);
                         builder.Append('.');
                     }
                     AppendCodeStyleShortName(builder);
@@ -211,57 +93,76 @@ namespace Decuplr.CodeAnalysis {
             }
         }
 
+        /// <summary>
+        /// The runtime style format of the type, can be used for <see cref="Type.GetType(string)"/> to retrieve the full type information. For example System.Collections.Generic.List`1+Enumerator[System.Int32].
+        /// </summary>
         public string? RuntimeName {
             get {
-                return IsTypeParameter ? null : _runtimeName ??= GetRuntimeNameActual();
+                const string invalidName = "|";
+                var result = _runtimeName ??= GetRuntimeNameActual();
+                return result.Equals(invalidName) ? null : result;
 
                 string GetRuntimeNameActual() {
+                    if (IsGenericParameter)
+                        return invalidName;
                     var builder = new StringBuilder();
                     builder.Append(Namespace);
                     builder.Append('.');
 
-                    foreach(var parentType in GetParentNames()) {
+                    foreach (var parentType in GetParentNames()) {
                         parentType.AppendRuntimeShortName(builder);
                         builder.Append('+');
                     }
 
                     AppendRuntimeShortName(builder);
 
-                    if (TypeArguments.Count > 0) {
-                        builder.Append('[');
-                        builder.Append(string.Join(',', TypeArguments.Select(x => x.ToString())));
-                        builder.Append(']');
-                    }
+                    if (!TryAppendTypeArguments(builder))
+                        return invalidName;
 
                     return builder.ToString();
+                }
+
+                bool TryAppendTypeArguments(StringBuilder builder) {
+                    var names = new List<TypeName>();
+                    foreach (var parentType in GetParentNames()) {
+                        names.AddRange(parentType.GenericArguments);
+                    }
+                    names.AddRange(GenericArguments);
+                    if (names.All(x => x.IsGenericParameter)) {
+                        return true;
+                    }
+                    if (names.All(x => !x.IsGenericParameter)) {
+                        builder.Append('[');
+                        builder.Append(string.Join(',', names.Select(x => x.RuntimeName)));
+                        builder.Append(']');
+                        return true;
+                    }
+                    return false;
                 }
             }
         }
 
-        private TypeName(string namespaceName, TypeName parent, string typeName, IEnumerable<TypeName> typeArguments, IEnumerable<GenericName> typeParams) {
+        private TypeName(string namespaceName, TypeName? parent, string typeName, IEnumerable<TypeName>? typeArguments) {
             Namespace = namespaceName;
             ContainingType = parent;
             Name = typeName;
-            TypeArguments = typeArguments.ToList();
-            TypeParameters = typeParams.ToList();
-            IsTypeParameter = false;
+            GenericArguments = typeArguments?.ToArray() ?? Array.Empty<TypeName>();
+            IsGenericParameter = false;
         }
 
         private TypeName(TypeName containingType, string typeName) {
             Namespace = string.Empty;
             ContainingType = containingType;
             Name = typeName;
-            TypeArguments = Array.Empty<TypeName>();
-            TypeParameters = Array.Empty<GenericName>();
-            IsTypeParameter = true;
+            GenericArguments = Array.Empty<TypeName>();
+            IsGenericParameter = true;
         }
 
-
-        [return: NotNullIfNotNull("type")]
-        private static TypeName? CreateFromType(Type? type) {
-            if (type is null)
-                return null;
-            return new TypeName(type.Namespace, CreateFromType(type), type.Name, type.GenericTypeArguments.Select(x => CreateFromType(x)), type.);
+        private static TypeName CreateFromType(Type type) {
+            if (type.IsGenericParameter)
+                return new TypeName(FromType(type.DeclaringType), type.Name);
+            var parentType = type.DeclaringType is null ? null : _typeCache.GetOrAdd(type.DeclaringType, CreateFromType);
+            return new TypeName(type.Namespace, parentType, type.Name, type.GetGenericArguments().Select(x => CreateFromType(x)));
         }
 
         public static TypeName FromType<T>() => FromType(typeof(T));
@@ -269,28 +170,24 @@ namespace Decuplr.CodeAnalysis {
         public static TypeName FromType(Type type) {
             if (type is null)
                 throw new ArgumentNullException(nameof(type));
-            if (type.IsGenericParameter)
-                return new TypeName(FromType(type.DeclaringType), type.Name);
-            return _typeCache.GetOrAdd(type, CreateFromType!);
+            return _typeCache.GetOrAdd(type, CreateFromType);
         }
 
         public static TypeName FromType(ITypeSymbol symbol) {
+
+            if (!(symbol is INamedTypeSymbol || symbol is IArrayTypeSymbol || symbol is ITypeParameterSymbol))
+                throw new NotSupportedException($"ITypeSymbol Kind {symbol.GetType()} is not supported for TypeName");
+
             if (symbol is ITypeParameterSymbol paramSybol) {
                 if (paramSybol.DeclaringType is null)
                     throw new NotSupportedException("Dangling type parameter is not supported for TypeName to correctly generate a unique name");
                 return new TypeName(FromType(paramSybol.DeclaringType), symbol.Name);
             }
-            Namespace = symbol.ContainingNamespace.ToString();
-            ContainingType = GetParentSymbols(symbol).Reverse().Select(x => new TypeName(x)).ToList();
-            Name = symbol.Name;
 
-            static IEnumerable<ITypeSymbol> GetParentSymbols(ITypeSymbol symbol) {
-                var currentSymbol = symbol;
-                while (currentSymbol.ContainingType is { }) {
-                    yield return currentSymbol.ContainingType;
-                    currentSymbol = currentSymbol.ContainingType;
-                }
-            }
+            var parentType = symbol.ContainingType is { } ? FromType(symbol.ContainingType) : null;
+            var typeArgs = symbol is INamedTypeSymbol namedType ? namedType.TypeArguments.Select(x => FromType(x)) : null;
+
+            return new TypeName(symbol.ContainingNamespace.ToString(), parentType, symbol.Name, typeArgs);
         }
 
         private IEnumerable<TypeName> GetParentNames() {
@@ -298,7 +195,7 @@ namespace Decuplr.CodeAnalysis {
 
             IEnumerable<TypeName> UnrollParentNames() {
                 var parentNames = ContainingType;
-                while(parentNames is { }) {
+                while (parentNames is { }) {
                     yield return parentNames;
                     parentNames = parentNames.ContainingType;
                 }
@@ -310,50 +207,59 @@ namespace Decuplr.CodeAnalysis {
             if (!IsGeneric)
                 return;
             builder.Append('<');
-            builder.Append(AppendingName());
+            builder.Append(string.Join(',', GenericArguments));
             builder.Append('>');
-
-            IEnumerable<string> AppendingName() => IsGenericDefinition ? TypeParameters.Select(x => x.ToString()) : TypeArguments.Select(x => x.ToString());
         }
 
         private void AppendRuntimeShortName(StringBuilder builder) {
             builder.Append(Name);
             if (IsGeneric) {
                 builder.Append('`');
-                builder.Append(TypeArguments.Count);
+                builder.Append(GenericArguments.Count);
             }
         }
 
         public TypeName MakeGenericType(params TypeName[] typeNames) {
             if (!IsGenericDefinition)
                 throw new InvalidOperationException($"{this} is not a GenericTypeDefinition. MakeGenericType may only be called on a type for which Type.IsGenericTypeDefinition is true.");
-            if (typeNames.Length == TypeArguments.Count)
+            if (typeNames.Length == GenericArguments.Count)
                 throw new ArgumentException("The number of generic arguments provided doesn't equal the arity of the generic type definition.");
-            return new TypeName(Namespace, ContainingType, Name, TypeArguments, TypeParameters);
+            return new TypeName(Namespace, ContainingType, Name, typeNames);
         }
 
         public TypeName MakeGenericType(IEnumerable<TypeName> typeNames) => MakeGenericType(typeNames.ToArray());
 
-        public TypeName(ITypeSymbol symbol) {
-            Namespace = symbol.ContainingNamespace.ToString();
-            ContainingType = GetParentSymbols(symbol).Reverse().Select(x => new TypeName(x)).ToList();
-            Name = symbol.Name;
+        public override string ToString() => CodeStyleName;
 
-            static IEnumerable<ITypeSymbol> GetParentSymbols(ITypeSymbol symbol) {
-                var currentSymbol = symbol;
-                while (currentSymbol.ContainingType is { }) {
-                    yield return currentSymbol.ContainingType;
-                    currentSymbol = currentSymbol.ContainingType;
-                }
+        public override bool Equals(object obj) => obj is TypeName otherName && Equals(otherName);
+
+        public override int GetHashCode() {
+            return _hashCode ??= CalcHashCode();
+
+            int CalcHashCode() {
+                var hashCode = new HashCode();
+                hashCode.Add(IsGenericParameter);
+                hashCode.Add(Namespace);
+                hashCode.Add(Name);
+                hashCode.Add(ContainingType);
+                for (var i = 0; i < GenericArguments.Count; ++i)
+                    hashCode.Add(GenericArguments[i]);
+                return hashCode.ToHashCode();
             }
         }
 
-        public override string ToString() => CodeStyleName;
-        public override bool Equals(object obj) => obj is TypeName otherName && Equals(otherName);
-        public bool Equals(TypeName other) => other.Name.Equals(Name)
-                                              && other.Namespace.Equals(Namespace)
-                                              && other.ParentNames.Equals(ParentNames);
-        public override int GetHashCode() => HashCode.Combine(Name, Namespace, ParentNames);
+        public bool Equals(TypeName other) {
+            bool isEqual = true;
+            if (IsGenericParameter && other.IsGenericParameter) {
+                return Equals(ContainingType, other.ContainingType);
+            }
+            isEqual &= IsGenericParameter.Equals(other.IsGenericParameter);
+            isEqual &= Namespace.Equals(other.Namespace);
+            isEqual &= Name.Equals(other.Name);
+            isEqual &= Equals(ContainingType, other.ContainingType);
+            isEqual &= GenericArguments.SequenceEqual(other.GenericArguments);
+            return isEqual;
+        }
 
         public static TypeName Void { get; } = FromType(typeof(void));
 
