@@ -16,6 +16,8 @@
 
 	<ItemGroup>
 		<Compile Include="..\Common\NullableAttributes.cs" Link="Common\NullableAttributes.cs" />
+		<Compile Include="..\Common\StringExtensions.cs" Link="Common\StringExtensions.cs" />
+		<Compile Include="..\Common\CollectionExtensions.cs" Link="Common\CollectionExtensions.cs" />
 	</ItemGroup>
 
 	<!--  disables the nullable warnings when compiling for .NET Standard 2.0 -->

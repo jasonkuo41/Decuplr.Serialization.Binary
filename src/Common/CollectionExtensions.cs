@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
-namespace Decuplr.CodeAnalysis.Serialization.Internal {
+namespace Decuplr.CodeAnalysis {
     internal static class CollectionExtensions {
         public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key, Func<TKey, TValue> addFactory) {
             if (dict.TryGetValue(key, out var value))
@@ -10,6 +11,15 @@ namespace Decuplr.CodeAnalysis.Serialization.Internal {
             value = addFactory(key);
             dict.Add(key, value);
             return value;
+        }
+
+        public static int RemoveWhere<TKey, TValue>(this IDictionary<TKey, TValue> dict, Func<KeyValuePair<TKey, TValue>, bool> predicate) {
+            var removingKeys = dict.Where(predicate).Select(x => x.Key);
+            var removeCount = 0;
+            foreach(var removingKey in removingKeys) {
+                removeCount += dict.Remove(removingKey) ? 1 : 0;
+            }
+            return removeCount;
         }
 
 #if NETSTANDARD2_0

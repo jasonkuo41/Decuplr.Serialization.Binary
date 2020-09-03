@@ -73,6 +73,11 @@ namespace Decuplr.CodeAnalysis {
         public TypeName? GenericDefinition => !IsGeneric ? null : (_genericDefinition ??= new TypeName(Namespace, ContainingType, Name, GenericArguments));
 
         /// <summary>
+        /// The <see cref="TypeSourceString"/> representation of this type name.
+        /// </summary>
+        public TypeSourceString SourceString => TypeSourceString.FromCacheName(CodeStyleName);
+
+        /// <summary>
         /// The coding style format of the type, for example System.Collections.Generic.<see cref="List{T}.Enumerator"/>.
         /// </summary>
         public string CodeStyleName {
@@ -159,10 +164,15 @@ namespace Decuplr.CodeAnalysis {
         }
 
         private static TypeName CreateFromType(Type type) {
+            var typeName = type.Name.RemoveAfter('`');
             if (type.IsGenericParameter)
-                return new TypeName(FromType(type.DeclaringType), type.Name);
+                return new TypeName(FromType(type.DeclaringType), typeName);
+            
             var parentType = type.DeclaringType is null ? null : _typeCache.GetOrAdd(type.DeclaringType, CreateFromType);
-            return new TypeName(type.Namespace, parentType, type.Name, type.GetGenericArguments().Select(x => CreateFromType(x)));
+            var previousGenericCount = type.DeclaringType is null ? 0 : type.DeclaringType.GetGenericArguments().Length;
+            var thisGenericArguments = type.GetGenericArguments().Skip(previousGenericCount).Select(x => CreateFromType(x));
+
+            return new TypeName(type.Namespace, parentType, typeName, thisGenericArguments);
         }
 
         public static TypeName FromType<T>() => FromType(typeof(T));

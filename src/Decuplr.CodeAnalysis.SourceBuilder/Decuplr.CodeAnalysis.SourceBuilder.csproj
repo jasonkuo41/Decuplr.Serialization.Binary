@@ -14,6 +14,9 @@
 		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.0.0" PrivateAssets="all" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<Compile Include="..\Common\StringExtensions.cs" Link="Common\StringExtensions.cs" />
+	</ItemGroup>
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Decuplr.CodeAnalysis\Decuplr.CodeAnalysis.csproj" />
