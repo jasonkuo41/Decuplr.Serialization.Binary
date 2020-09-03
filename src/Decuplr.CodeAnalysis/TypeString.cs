@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -16,14 +18,79 @@ namespace Decuplr.CodeAnalysis {
 
         public int Length { get; }
 
-        public IEnumerable<TypeStringSpan> GetGenerics() {
+        public string Name { get; }
 
+        public IReadOnlyList<TypeString> Generics { get; }
+
+        internal TypeStringSpan(TypeString source, int start, int length) {
+            Source = source;
+            Start = start;
+            Length = length;
+
+            // Start validation
+            // Type must end with brackets (if any)
+            var str = source.FullName.AsSpan(Start, Length);
+            var startBracket = str.IndexOf('<');
+
+            EnsureEndsWithRightBracketIfAny(str);
+            EnsureAngleBracketsInPair(str);
+
+            Name = startBracket switch
+            {
+                0 => throw InvalidType("Cannot start with bracket"),
+                _ when startBracket < 0 => str.ToString(),
+                _ => str.Slice(0, startBracket - 1).ToString()
+            };
+
+            if (SyntaxFacts.IsValidIdentifier(Name))
+                throw InvalidIdent();
+
+            Generics = GetTypeString(str);
+
+            Exception InvalidType(string reason) => throw new ArgumentException($"Invalid type name '{source.FullName}' ({reason})");
+            Exception InvalidIdent() => InvalidType("Invalid identifier");
+
+            IReadOnlyList<TypeString> GetTypeString(ReadOnlySpan<char> str) {
+                if (startBracket < 0)
+                    return Array.Empty<TypeString>();
+                var endBracket = str.Length - 1;
+
+                if (startBracket + 1 == endBracket)
+                    throw InvalidType("Empty generic");
+                Debug.Assert(str.LastIndexOf('>') == str.Length - 1);
+
+                var genericsPart = str.Slice(startBracket + 1, endBracket).ToString();
+                return genericsPart.Split(',').Select(x => TypeString.FromCacheName(x)).ToList();
+            }
+
+            void EnsureEndsWithRightBracketIfAny(ReadOnlySpan<char> str) {
+                var lastRightBracket = str.LastIndexOf('>');
+                if (lastRightBracket != -1 && lastRightBracket != str.Length - 1) {
+                    throw InvalidType("'>' must be the final character)");
+                }
+            }
+
+            void EnsureAngleBracketsInPair(ReadOnlySpan<char> str) {
+                var leftAngleBrackCount = 0;
+                for (var i = 0; i < str.Length; ++i) {
+                    switch (str[i]) {
+                        case '>':
+                            leftAngleBrackCount--;
+                            if (leftAngleBrackCount < 0)
+                                throw InvalidType("Too much right angle brackets");
+                            continue;
+                        case '<':
+                            leftAngleBrackCount++;
+                            break;
+                    }
+                }
+                if (leftAngleBrackCount != 0)
+                    throw InvalidType("Too much left angle brackets");
+            }
         }
 
-        public bool Equals(TypeStringSpan other) {
-            throw new NotImplementedException();
-        }
-
+        public bool Equals(TypeStringSpan other) => Source.Equals(other.Source) && Start.Equals(Start) && Length.Equals(Length);
+        // override equal
     }
 
     /// <summary>
@@ -31,39 +98,8 @@ namespace Decuplr.CodeAnalysis {
     /// This class is meant for as a ease to use identifier and shall not be used to respresent any unique names of a type.
     /// </summary>
     public readonly struct TypeString : IEquatable<TypeString>, IEnumerable<TypeStringSpan>, IReadOnlyList<TypeStringSpan> {
-        internal static string[] VerifyNamespaces(string fullTypeName, string argName) {
-            var sliced = fullTypeName.Split('.');
-            if (sliced.Any(x => !SyntaxFacts.IsValidIdentifier(x.Trim())))
-                throw new ArgumentException($"Invalid type identification name : {fullTypeName}", argName);
-            return sliced;
-        }
 
-        internal static string[] VerifyTypeNames(string fullTypeNames, string argName) {
-            var slicedType = fullTypeNames.Split('.');
-            if (slicedType.Any(x => TypeWithClampedString(x).Any(x => !SyntaxFacts.IsValidIdentifier(x))))
-                throw ThrowArgException();
-            return slicedType;
-
-            IEnumerable<string> TypeWithClampedString(string source) {
-                var startBracket = source.IndexOf('<');
-                yield return startBracket < 0 ? source.Trim() : source.Substring(0, startBracket).Trim();
-                foreach (var clamped in GetClampedStrings(source))
-                    yield return clamped;
-            }
-
-            IEnumerable<string> GetClampedStrings(string source) {
-                var startBracket = source.IndexOf('<');
-                var endBracket = source.LastIndexOf('>');
-                if (startBracket < 0 ^ endBracket < 0)
-                    throw ThrowArgException();
-                if (startBracket < 0 || endBracket < 0)
-                    return Enumerable.Empty<string>();
-                var clampedString = source.Substring(startBracket + 1, endBracket - startBracket - 1);
-                return clampedString.Split(',').Select(x => x.Trim());
-            }
-
-            Exception ThrowArgException() => new ArgumentException($"Invalid type identification name : {fullTypeNames}", argName);
-        }
+        private static readonly ConcurrentDictionary<string, TypeString> _cache = new ConcurrentDictionary<string, TypeString>();
 
         private readonly IReadOnlyList<TypeStringSpan> _segments;
 
@@ -73,53 +109,59 @@ namespace Decuplr.CodeAnalysis {
 
         public int SegmentCount => _segments.Count;
 
-        public TypeString(string typeName) {
-            // we will concentrate the string for consumption
-            var types = typeName.Split('.').Select(x => x.Trim()).ToArray();
-            foreach(var type in types) {
-                // check if > is the last element or not found, otherwise it's not a valid type string
-
-            }
-
+        internal TypeString(string typeName) {
+            FullName = typeName;
             var segments = new List<TypeStringSpan>(8);
-            var typeSpan = typeName.AsSpan();
-            var lastIndex = 0;
-            var currentIndex = typeSpan.IndexOf('.');
-            while (currentIndex > 0) {
-                var segmentSpan = typeSpan.Slice(lastIndex, currentIndex);
-                segments.Add(new TypeStringSpan(segmentSpan));
-            }
+            _segments = segments;
+            WriteSegments(this, segments, FullName);
 
-            string Concentrate(char[] identifiers, string originalString) {
-                var currentLength = 0;
-                Span<char> str = stackalloc char[originalString.Length];
-                var lastIndex = 0;
-                var spaceStart = 0;
-                var spaceLength = 0;
-                for(var i = 0; i < originalString.Length; ++i) {
-                    if (originalString[i] == ' ') {
-                        if (spaceStart == -1)
-                            spaceStart = i;
-                        spaceLength++;
+            static void WriteSegments(TypeString str, List<TypeStringSpan> segments, string fullname) {
+                var nameSpan = fullname.AsSpan();
+                var currentIndex = 0;
+                while (true) {
+                    var seperatorIndex = nameSpan.IndexOf('.');
+                    if (seperatorIndex < 0) {
+                        if (fullname.Length > currentIndex)
+                            segments.Add(new TypeStringSpan(str, currentIndex, fullname.Length - currentIndex));
+                        return;
                     }
-                    if (identifiers.Contains(originalString[i])) {
-                        var length = spaceStart - lastIndex + 1;
-                        originalString.AsSpan(lastIndex, length).CopyTo(str.Slice(currentLength));
-                        currentLength += length;
-                        spaceStart = -1;
-                        lastIndex = i;
-                    }
-                    else {
-                        spaceStart = -1;
-                    }
+                    segments.Add(new TypeStringSpan(str, currentIndex, seperatorIndex - currentIndex));
+                    nameSpan = nameSpan.Slice(seperatorIndex + 1);
+                    currentIndex += seperatorIndex + 1;
                 }
-                return new string(str.Slice(0, currentLength));
             }
         }
+
+        private static string Concentrate(string source, ReadOnlySpan<char> seperators) {
+            var writer = new SpanWriter<char>(stackalloc char[source.Length]);
+            var currentSpan = source.AsSpan();
+            while (true) {
+                var currentIndex = currentSpan.IndexOfAny(seperators);
+                if (currentIndex < 0) {
+                    writer.Write(currentSpan.Trim());
+                    return writer.Current.ToString();
+                }
+                writer.Write(currentSpan.Slice(0, currentIndex).Trim());
+                writer.Write(currentSpan[currentIndex]);
+                currentSpan = currentSpan.Slice(currentIndex + 1);
+            }
+        }
+
+        internal static TypeString FromCacheName(string cacheName) {
+            return _cache.GetOrAdd(cacheName, Create);
+
+            static TypeString Create(string name) => new TypeString(name);
+        }
+
+        public static TypeString FromCodeName(string typeName) => FromCacheName(Concentrate(typeName, stackalloc[] { ',', '.', '<', '>' }));
 
         public IEnumerator<TypeStringSpan> GetEnumerator() => _segments.GetEnumerator();
 
         int IReadOnlyCollection<TypeStringSpan>.Count => SegmentCount;
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public bool Equals(TypeString other) => FullName.Equals(other.FullName);
+        public override bool Equals(object obj) => (obj is TypeString typeString && Equals(typeString)) || (obj is string str && str == FullName);
+        public override int GetHashCode() => FullName.GetHashCode();
     }
 }
