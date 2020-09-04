@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Decuplr.CodeAnalysis {
+namespace Decuplr.Sourceberg {
     internal static class CollectionExtensions {
         public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key, Func<TKey, TValue> addFactory) {
             if (dict.TryGetValue(key, out var value))

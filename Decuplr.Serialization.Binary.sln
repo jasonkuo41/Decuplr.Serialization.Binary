@@ -33,7 +33,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Decuplr.Serialization", "sr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Decuplr.Serialization.Binary", "src\Decuplr.Serialization.Binary\Decuplr.Serialization.Binary.csproj", "{5EC4BF02-2343-4690-B908-5CE3783DD408}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Decuplr.Serialization.Binary.TypeComposite", "src\Decuplr.Serialization.Binary.TypeComposite\Decuplr.Serialization.Binary.TypeComposite.csproj", "{D9CF4015-864D-497F-A966-0CB964DC75D8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Decuplr.Serialization.Binary.TypeComposite", "src\Decuplr.Serialization.Binary.TypeComposite\Decuplr.Serialization.Binary.TypeComposite.csproj", "{D9CF4015-864D-497F-A966-0CB964DC75D8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Decuplr.Sourceberg", "src\Decuplr.Sourceberg\Decuplr.Sourceberg.csproj", "{380F69E3-6029-4A6D-AEA1-E075C6FDFCC2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -108,6 +110,12 @@ Global
 		{D9CF4015-864D-497F-A966-0CB964DC75D8}.NoAutogen|Any CPU.Build.0 = Debug|Any CPU
 		{D9CF4015-864D-497F-A966-0CB964DC75D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D9CF4015-864D-497F-A966-0CB964DC75D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{380F69E3-6029-4A6D-AEA1-E075C6FDFCC2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{380F69E3-6029-4A6D-AEA1-E075C6FDFCC2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{380F69E3-6029-4A6D-AEA1-E075C6FDFCC2}.NoAutogen|Any CPU.ActiveCfg = Debug|Any CPU
+		{380F69E3-6029-4A6D-AEA1-E075C6FDFCC2}.NoAutogen|Any CPU.Build.0 = Debug|Any CPU
+		{380F69E3-6029-4A6D-AEA1-E075C6FDFCC2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{380F69E3-6029-4A6D-AEA1-E075C6FDFCC2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

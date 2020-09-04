@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Decuplr.CodeAnalysis {
+namespace Decuplr.Sourceberg {
     internal static class StringExtensions {
 
         internal static bool AnyEndsWith(this string str, string end)

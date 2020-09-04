@@ -1,40 +1,27 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using Microsoft.CodeAnalysis;
 
 namespace Decuplr.CodeAnalysis {
 
-
     public interface INamedTypeSource : ITypeMemberSource<INamedTypeSymbol> {
+        TypeName TypeName { get; }
         IReadOnlyList<ITypeMemberSource> Members { get; }
         bool IsPartial { get; }
     }
 
-    internal class NamedTypeSource : INamedTypeSource {
-
-        public INamedTypeSymbol OriginalSymbol { get; }
-
-        public IReadOnlyList<ITypeMemberSource> Members { get; }
-
-        public IAttributeCollection Attributes { get; }
-
-        public bool IsPartial => OriginalSymbol.Locations.Length > 1;
-
-        public NamedTypeSource(INamedTypeSymbol symbol, ITypeSymbolProvider symbolProvider) {
-            OriginalSymbol = symbol;
-            Members = symbol.GetMembers().Select(x => new TypeMemberSource(this, x, symbolProvider)).ToList();
-
-        }
+    internal static class SourceExtensions {
+        public static ITypeMemberSource CreateSource(this ISymbol symbol, ITypeSymbolProvider symbolProvider, INamedTypeSource? parent) => symbol switch
+        {
+            INamedTypeSymbol typeSymbol => new NamedTypeSource(parent, typeSymbol.WithNullableAnnotation(NullableAnnotation.Annotated), symbolProvider),
+            _ => new TypeMemberSource(parent, symbol, symbolProvider)
+        };
     }
 
-    public interface ITypeMemberSource {
+    public interface ITypeMemberSource : IEquatable<ITypeMemberSource> {
         IAttributeCollection? Attributes { get; }
-        INamedTypeSource ContainingType { get; }
+        INamedTypeSource? ContainingType { get; }
         Location FirstLocation { get; }
         bool IsStatic { get; }
         string Name { get; }
@@ -53,7 +40,7 @@ namespace Decuplr.CodeAnalysis {
 
         public bool IsStatic => OriginalSymbol.IsStatic;
 
-        public INamedTypeSource ContainingType { get; }
+        public INamedTypeSource? ContainingType { get; }
 
         public Location FirstLocation => OriginalSymbol.Locations[0];
 
@@ -61,12 +48,16 @@ namespace Decuplr.CodeAnalysis {
 
         public ReturnValueInfo? ReturnValue { get; }
 
-        public TypeMemberSource(NamedTypeSource containingType, ISymbol memberSymbol, ITypeSymbolProvider symbolProvider) {
+        public TypeMemberSource(INamedTypeSource? containingType, ISymbol memberSymbol, ITypeSymbolProvider symbolProvider) {
             ContainingType = containingType;
             OriginalSymbol = memberSymbol;
             ReturnValue = ReturnValueInfo.FromMember(memberSymbol);
             Attributes = AttributeCollection.GetAttributeLocations(symbolProvider, memberSymbol);
         }
+
+        public bool Equals(ITypeMemberSource other) => OriginalSymbol.Equals(other.OriginalSymbol, SymbolEqualityComparer.Default);
+        public override bool Equals(object obj) => obj is ITypeMemberSource source && Equals(source);
+        public override int GetHashCode() => OriginalSymbol.GetHashCode();
     }
 
 }

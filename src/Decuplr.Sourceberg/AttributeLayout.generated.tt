@@ -1,0 +1,77 @@
+﻿<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ assembly name="$(TargetPath)" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Linq.Expressions" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="Decuplr.Sourceberg" #>
+<#@ import namespace="System.Collections.Immutable" #>
+<#@ output extension=".cs" #>
+<#
+	int count = 16;
+	string className = nameof(AttributeLayout);
+	string constructName = "TryGetConstructorArgument";
+
+	var arguments = new string[count];
+	var valueNames = new string[count];
+	for(var i = 0 ; i < count; ++i) {
+		var range = Enumerable.Range(0, i + 1);
+		arguments[i] = string.Join(", ", range.Select(x => $"T{x}"));
+		valueNames[i] = string.Join(",", range.Select(x => $"value{x}"));
+	}
+#>
+using System;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
+using Microsoft.CodeAnalysis;
+
+namespace Decuplr.Sourceberg {
+	public partial class <#= className #><TAttribute> {
+<# 
+	for (var i = 0 ; i < count; ++i) { 
+#>
+		public bool <#= constructName #><<#= arguments[i] #>>(Expression<Func<<#= arguments[i] #>, TAttribute>> expression<# for (var j = 0 ; j <= i ; j ++) { #>, [MaybeNullWhen(false)] out T<#= j #> value<#= j #><# } #>) {
+			if (!ValidateConstructorArguments(expression, out var locations))
+		        goto ReturnError;
+
+		    var isSuccess = true;
+<# 
+	for (var j = 0 ; j <= i ; j ++) {
+#>
+			isSuccess &= GetValue(AttributeData.ConstructorArguments[locations[<#= j #>]], out value<#= j #>);
+<# 
+	} 
+#>
+		    
+		    if (!isSuccess)
+		        goto ReturnError;
+
+<# 
+	for (var j = 0 ; j <= i ; j ++) {
+#>
+			Debug.Assert(value<#= j #> != null);
+<#
+	}
+#>
+		    return true;
+
+		    ReturnError:
+		    {
+<# 
+	for (var j = 0 ; j <= i ; j ++) {
+#>
+				value<#= j #> = default;
+<#
+	}
+#>
+		        return false;
+		    }
+		}
+
+<# 
+	} 
+#>
+	}
+	
+}

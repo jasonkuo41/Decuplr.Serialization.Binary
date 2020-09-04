@@ -16,7 +16,7 @@ namespace Decuplr.Serialization.Binary {
             public void OnVisitSyntaxNode(SyntaxNode syntaxNode) {
                 // We capture every class we are interested in
                 // We only capture classes that comes with attribute, but we may also be interested in those with specific syntax ending
-                if (syntaxNode is TypeDeclarationSyntax classSyntax && classSyntax.AttributeLists.Any()) {
+                if (syntaxNode is TypeDeclarationSyntax classSyntax && classSyntax.AttributeLists.Count > 0) {
                     DeclaredTypes.Add(classSyntax);
                 }
                 // TODO : Add interfaces, note we may only allow interfaces with public setters
