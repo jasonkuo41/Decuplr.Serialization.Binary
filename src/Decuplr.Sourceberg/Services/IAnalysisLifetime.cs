@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 
-namespace Decuplr.Sourceberg {
+namespace Decuplr.Sourceberg.Services {
     /// <summary>
     /// Describes the lifetime of the compilation
     /// </summary>
-    public interface ICompilationLifetime {
+    public interface IAnalysisLifetime {
         /// <summary>
         /// Notifies when compilation is canceled
         /// </summary>
-        CancellationToken OnCompilationCanceled { get; }
+        CancellationToken OnOperationCanceled { get; }
     }
 }

@@ -37,8 +37,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Decuplr.Serialization.Binar
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Decuplr.Sourceberg", "src\Decuplr.Sourceberg\Decuplr.Sourceberg.csproj", "{380F69E3-6029-4A6D-AEA1-E075C6FDFCC2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Decuplr.Serialization.Analyzers", "src\Decuplr.Serialization.Analyzers\Decuplr.Serialization.Analyzers.csproj", "{B001EF8C-0327-463D-8540-8744715F3099}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -118,12 +116,6 @@ Global
 		{380F69E3-6029-4A6D-AEA1-E075C6FDFCC2}.NoAutogen|Any CPU.Build.0 = Debug|Any CPU
 		{380F69E3-6029-4A6D-AEA1-E075C6FDFCC2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{380F69E3-6029-4A6D-AEA1-E075C6FDFCC2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B001EF8C-0327-463D-8540-8744715F3099}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B001EF8C-0327-463D-8540-8744715F3099}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B001EF8C-0327-463D-8540-8744715F3099}.NoAutogen|Any CPU.ActiveCfg = Debug|Any CPU
-		{B001EF8C-0327-463D-8540-8744715F3099}.NoAutogen|Any CPU.Build.0 = Debug|Any CPU
-		{B001EF8C-0327-463D-8540-8744715F3099}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B001EF8C-0327-463D-8540-8744715F3099}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -141,7 +133,6 @@ Global
 		{734CAA99-F4BA-4CA5-9DE5-28904699316C} = {731B8FE4-454F-4C6D-911D-6C9C6903B362}
 		{5EC4BF02-2343-4690-B908-5CE3783DD408} = {731B8FE4-454F-4C6D-911D-6C9C6903B362}
 		{D9CF4015-864D-497F-A966-0CB964DC75D8} = {13FDE718-C9EF-45DE-BC8D-D2577F6F9DAE}
-		{B001EF8C-0327-463D-8540-8744715F3099} = {13FDE718-C9EF-45DE-BC8D-D2577F6F9DAE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {531076BF-1BB1-486E-B04F-F7D0057238A0}

@@ -20,6 +20,7 @@ namespace Decuplr.Serialization.Binary {
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.RegisterSymbolAction(SymbolAnalysis, SymbolKind.NamedType);
+            context.RegisterSyntaxNodeAction(x => { }, SyntaxKind.Declar);
         }
 
         public void SymbolAnalysis(SymbolAnalysisContext context) {

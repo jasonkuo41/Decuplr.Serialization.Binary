@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using Decuplr.Sourceberg.Services;
 using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Sourceberg {
+namespace Decuplr.Sourceberg.Internal {
     internal class AttributeCollection : IAttributeCollection {
 
         private class LocationComparedBySpan : IComparer<Location> {
@@ -82,7 +83,7 @@ namespace Decuplr.Sourceberg {
         public bool ContainsAttribute(Type attributeType) {
             if (!attributeType.IsSubclassOf(typeof(Attribute)))
                 throw new InvalidOperationException($"{attributeType} is not a type of Attribute");
-            var symbol = _symbolProvider.GetSymbol(attributeType);
+            var symbol = _symbolProvider.Current.GetSymbol(attributeType);
             if (symbol is null)
                 return false;
             return _attributes.Any(x => x.AttributeClass?.Equals(symbol, SymbolEqualityComparer.Default) ?? false);
@@ -97,7 +98,7 @@ namespace Decuplr.Sourceberg {
         public IEnumerable<AttributeLayout> GetAttributes(Type attributeType) {
             if (!attributeType.IsSubclassOf(typeof(Attribute)))
                 throw new InvalidOperationException($"{attributeType} is not a type of Attribute");
-            var symbol = _symbolProvider.GetSymbol(attributeType);
+            var symbol = _symbolProvider.Current.GetSymbol(attributeType);
             if (symbol is null)
                 return Enumerable.Empty<AttributeLayout>();
             return Attributes.Where(x => x.AttributeClass?.Equals(symbol, SymbolEqualityComparer.Default) ?? false);
