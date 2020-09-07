@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using Decuplr.Sourceberg.Services;
 using Microsoft.CodeAnalysis;
 
-namespace Decuplr.Sourceberg.Internal {
+namespace Decuplr.Sourceberg.Services.Implementation {
     internal class AttributeCollection : IAttributeCollection {
 
         private class LocationComparedBySpan : IComparer<Location> {
@@ -23,7 +22,7 @@ namespace Decuplr.Sourceberg.Internal {
 
         private static Dictionary<Location, IReadOnlyList<AttributeLayout>> EmptyLocations { get; } = new Dictionary<Location, IReadOnlyList<AttributeLayout>>();
 
-        private readonly ITypeSymbolProvider _symbolProvider;
+        private readonly ReflectionTypeSymbolLocator _symbolLocator;
         private readonly ImmutableArray<AttributeData> _attributes;
 
         public IReadOnlyList<AttributeLayout> Attributes { get; }
@@ -32,17 +31,18 @@ namespace Decuplr.Sourceberg.Internal {
 
         public ISymbol ContainingSymbol { get; }
 
-        private AttributeCollection(ITypeSymbolProvider provider, ISymbol sourceSymbol) {
-            _symbolProvider = provider;
+        private AttributeCollection(ITypeSymbolProvider symbolProvider, TypeSymbolLocatorCache locatorCache, ISymbol sourceSymbol) {
+            var compilation = (sourceSymbol.ContainingAssembly as ISourceAssemblySymbol)?.Compilation ?? symbolProvider.Source.DeclaringCompilation;
+            _symbolLocator = locatorCache.GetLocator(compilation);
             ContainingSymbol = sourceSymbol;
             _attributes = sourceSymbol.GetAttributes();
             (AttributeLocations, Attributes) = GetAttributeLocations();
         }
 
-        public static AttributeCollection? GetAttributeLocations(ITypeSymbolProvider provider, ISymbol sourceSymbol) {
+        public static AttributeCollection? CreateCollection(ITypeSymbolProvider provider, TypeSymbolLocatorCache locatorCache, ISymbol sourceSymbol) {
             if (!sourceSymbol.Locations.All(x => x.IsInSource))
                 return null;
-            return new AttributeCollection(provider, sourceSymbol);
+            return new AttributeCollection(provider, locatorCache, sourceSymbol);
         }
 
         private (IReadOnlyDictionary<Location, IReadOnlyList<AttributeLayout>> Locations, IReadOnlyList<AttributeLayout> Attributes) GetAttributeLocations() {
@@ -83,7 +83,7 @@ namespace Decuplr.Sourceberg.Internal {
         public bool ContainsAttribute(Type attributeType) {
             if (!attributeType.IsSubclassOf(typeof(Attribute)))
                 throw new InvalidOperationException($"{attributeType} is not a type of Attribute");
-            var symbol = _symbolProvider.Current.GetSymbol(attributeType);
+            var symbol = _symbolLocator.GetTypeSymbol(attributeType);
             if (symbol is null)
                 return false;
             return _attributes.Any(x => x.AttributeClass?.Equals(symbol, SymbolEqualityComparer.Default) ?? false);
@@ -98,7 +98,7 @@ namespace Decuplr.Sourceberg.Internal {
         public IEnumerable<AttributeLayout> GetAttributes(Type attributeType) {
             if (!attributeType.IsSubclassOf(typeof(Attribute)))
                 throw new InvalidOperationException($"{attributeType} is not a type of Attribute");
-            var symbol = _symbolProvider.Current.GetSymbol(attributeType);
+            var symbol = _symbolLocator.GetTypeSymbol(attributeType);
             if (symbol is null)
                 return Enumerable.Empty<AttributeLayout>();
             return Attributes.Where(x => x.AttributeClass?.Equals(symbol, SymbolEqualityComparer.Default) ?? false);

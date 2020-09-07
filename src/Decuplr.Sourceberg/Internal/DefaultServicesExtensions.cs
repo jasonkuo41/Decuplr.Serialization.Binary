@@ -75,12 +75,13 @@ namespace Decuplr.Sourceberg.Internal {
         }
 
         private void AddDefaultServices() {
-            _services.AddScoped<SourceContextAccessor>();
-            _services.AddScoped<IAnalysisLifetime>(x => x.GetRequiredService<SourceContextAccessor>());
+            _services.AddScopedGroup<SourceContextAccessor, IAnalysisLifetime>();
+            _services.AddScopedGroup<TypeSymbolProvider, ITypeSymbolProvider, ISourceAddition>();
 
-            _services.AddScoped<TypeSymbolProvider>();
-            _services.AddScoped<ITypeSymbolProvider>(x => x.GetRequiredService<TypeSymbolProvider>());
-            _services.AddScoped<ISourceAddition>(x => x.GetRequiredService<TypeSymbolProvider>());
+            _services.AddScopedGroup<AttributeLayoutProvider, IAttributeLayoutProvider>();
+            _services.AddScopedGroup<ContextCollectionProvider, IContextCollectionProvider>();
+            _services.AddScoped<TypeSymbolLocatorCache>();
+
         }
 
         public void Build(AnalysisContext context) {

@@ -1,0 +1,36 @@
+﻿<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+
+using System;
+using Microsoft.Extensions.DependencyInjection;
+
+<#
+	var genericCount = 16;
+	var names = new string[] { "Singleton", "Scoped", "Transient" };
+	Func<int, string[]> generics = i => Enumerable.Range(0, i + 1).Select(x => $"T{x}").ToArray();
+#>
+
+namespace Decuplr {
+	public static partial class ServiceCollectionGroupExtensions {
+<# for(var i = 0 ; i < names.Length; ++i) { #>
+<# for(var j = 1 ; j < genericCount; ++j) { #>
+		public static IServiceCollection Add<#= names[i] #>Group<<#=string.Join(", ", generics(j))#>> (this IServiceCollection services) 
+			where T0 : <#= string.Join(", ", Enumerable.Range(1, j).Select(x => $"T{x}").Prepend("class")) #>
+<# for(var k = 1; k < j; ++k) { #>
+			where T<#=k#> : class
+<# } #>
+		{
+			services.Add<#= names[i] #><T0>();
+<# for(var k = 1; k < j; ++k) { #>
+			services.Add<#= names[i] #><T<#= k #>>(x => x.GetRequiredService<T0>());
+<# } #>
+			return services;
+		}
+
+<# } #>
+<# } #>
+	}
+}

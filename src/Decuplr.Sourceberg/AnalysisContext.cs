@@ -14,11 +14,11 @@ namespace Decuplr.Sourceberg {
 
         public TCurrent Current { get; }
 
-        public ISourceFeatureCollection Features { get; }
+        public IContextCollection Features { get; }
 
         public CancellationToken CancellationToken { get; }
 
-        public AnalysisContext(TCurrent current, ISourceFeatureCollection features, CancellationToken ct, Action<Diagnostic> reportDiagnostic, Func<Diagnostic, bool> isSupportedDiagnostic) {
+        public AnalysisContext(TCurrent current, IContextCollection features, CancellationToken ct, Action<Diagnostic> reportDiagnostic, Func<Diagnostic, bool> isSupportedDiagnostic) {
             Current = current;
             Features = features;
             CancellationToken = ct;

@@ -6,6 +6,7 @@ namespace Decuplr.Sourceberg.Services {
         ITypeSymbolCollection Current { get; }
         ITypeSymbolCollection Source { get; }
 
-        INamedTypeSymbol GetSourceSymbol(INamedTypeSymbol symbol);
+        // TODO : Implement GetSourceSymbol
+        //INamedTypeSymbol GetSourceSymbol(INamedTypeSymbol symbol);
     }
 }

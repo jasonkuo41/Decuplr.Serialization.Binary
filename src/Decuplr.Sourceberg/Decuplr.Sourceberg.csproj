@@ -26,6 +26,10 @@
 	    <Generator>TextTemplatingFileGenerator</Generator>
 	    <LastGenOutput>AttributeLayout.generated.cs</LastGenOutput>
 	  </None>
+	  <None Update="ServiceCollectionGroupExtensions.generated.tt">
+	    <Generator>TextTemplatingFileGenerator</Generator>
+	    <LastGenOutput>ServiceCollectionGroupExtensions.generated.cs</LastGenOutput>
+	  </None>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -37,6 +41,11 @@
 	    <DesignTime>True</DesignTime>
 	    <AutoGen>True</AutoGen>
 	    <DependentUpon>AttributeLayout.generated.tt</DependentUpon>
+	  </Compile>
+	  <Compile Update="ServiceCollectionGroupExtensions.generated.cs">
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	    <DependentUpon>ServiceCollectionGroupExtensions.generated.tt</DependentUpon>
 	  </Compile>
 	</ItemGroup>
 

@@ -3,8 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Decuplr.Sourceberg.Internal {
-    internal class SourceFeatureCollection : ISourceFeatureCollection {
+namespace Decuplr.Sourceberg.Services.Implementation {
+    internal class ContextCollection : IContextCollection {
 
         private readonly Dictionary<Type, object> _features = new Dictionary<Type, object>();
 

@@ -5,6 +5,11 @@ using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Sourceberg.Services {
     public interface IAttributeLayoutProvider {
-        IAttributeCollection GetAttributes(ISymbol symbol);
+        /// <summary>
+        /// Get's a collection of easy to operate attribute helpers
+        /// </summary>
+        /// <param name="symbol">The symbol</param>
+        /// <returns>Returns null if <paramref name="symbol"/>'s <see cref="ISymbol.Locations"/> are not all <see cref="Location.IsInSource"/></returns>
+        IAttributeCollection? GetAttributes(ISymbol symbol);
     }
 }
