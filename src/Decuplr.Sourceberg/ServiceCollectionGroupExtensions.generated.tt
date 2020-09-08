@@ -4,7 +4,6 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 
-using System;
 using Microsoft.Extensions.DependencyInjection;
 
 <#
@@ -14,17 +13,27 @@ using Microsoft.Extensions.DependencyInjection;
 #>
 
 namespace Decuplr {
-	public static partial class ServiceCollectionGroupExtensions {
+	
+	internal static partial class ServiceCollectionGroupExtensions {
 <# for(var i = 0 ; i < names.Length; ++i) { #>
 <# for(var j = 1 ; j < genericCount; ++j) { #>
+		
+		/// <summary>
+		///  Adds a set of <#= names[i].ToLower() #> service of the type specified in <#= string.Join(", ", Enumerable.Range(1, j).Select(x => $"<typeparamref name=\"T{x}\"/>"))#> with an implementation
+        ///  type specified in <typeparamref name="T0"/> to the specified Microsoft.Extensions.DependencyInjection.IServiceCollection.
+		/// </summary>
+		/// <typeparam name="T0">The type of the implementation to use.</typeparam>
+<# for(var k = 1; k < j; ++k) { #>
+		/// <typeparam name="T<#= k #>">The <#= k #> type of the service to add.</typeparam>
+<# } #>
 		public static IServiceCollection Add<#= names[i] #>Group<<#=string.Join(", ", generics(j))#>> (this IServiceCollection services) 
 			where T0 : <#= string.Join(", ", Enumerable.Range(1, j).Select(x => $"T{x}").Prepend("class")) #>
-<# for(var k = 1; k < j; ++k) { #>
+<# for(var k = 1; k <= j; ++k) { #>
 			where T<#=k#> : class
 <# } #>
 		{
 			services.Add<#= names[i] #><T0>();
-<# for(var k = 1; k < j; ++k) { #>
+<# for(var k = 1; k <= j; ++k) { #>
 			services.Add<#= names[i] #><T<#= k #>>(x => x.GetRequiredService<T0>());
 <# } #>
 			return services;
