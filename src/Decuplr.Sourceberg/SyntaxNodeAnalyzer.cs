@@ -6,31 +6,44 @@ using System.Threading;
 using Decuplr.Sourceberg.Services;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Decuplr.Sourceberg {
 
-    internal interface IAnalyzerRegisterKind<TKind> {
-        ImmutableArray<TKind> RegisteringKinds { get; }
-    }
+    public abstract class SyntaxNodeAnalyzer<TSyntax> : SourceAnalyzerBase where TSyntax : SyntaxNode {
 
-    public abstract class SyntaxNodeAnalyzer<TSyntax> : SourceAnalyzerBase, IAnalyzerRegisterKind<SyntaxKind> where TSyntax : SyntaxNode {
+        public abstract void RunAnalysis(SyntaxNodeAnalysisContext<TSyntax> context, Action<CancellationToken> nextAction);
 
-        public abstract ImmutableArray<SyntaxKind> RegisteringKinds { get; }
-
-        public abstract void RunAnalysis(AnalysisContext<TSyntax> context, Action<CancellationToken> nextAction);
-
-        internal override void InvokeAnalysis(AnalysisContextPrecusor contextPrecusor) {
-            var source = contextPrecusor.Source as TSyntax;
-            if (source is null)
-                return;
-            // Should we just skip this check since it may never be true?
-            Debug.Assert(RegisteringKinds.Contains(source.Kind()));
-            if (!RegisteringKinds.Contains(source.Kind()))
+        internal override void InvokeAnalysis<TContext>(TContext context, Action<CancellationToken> nextAction) {
+            if (!(context is SyntaxNodeAnalysisContext<TSyntax> actualContext))
                 return;
             var contextCollection = contextPrecusor.ContextProvider.GetContextCollection(source);
-            var context = new AnalysisContext<TSyntax>(source, contextCollection, contextPrecusor.CancellationToken, contextPrecusor.OnDiagnostics, IsSupportedDiagnostic);
-            RunAnalysis(context, contextPrecusor.NextAction);
+            var acontext = new AnalysisContext<TSyntax>(source, contextCollection, contextPrecusor.CancellationToken, contextPrecusor.OnDiagnostics, IsSupportedDiagnostic);
+            RunAnalysis(acontext, contextPrecusor.NextAction);
         }
     }
 
+    public struct SyntaxNodeAnalysisContext<TSyntax> where TSyntax : SyntaxNode {
+
+        /// <inheritdoc cref="SyntaxNodeAnalysisContext.Node"/>
+        public TSyntax Node { get; }
+
+        /// <inheritdoc cref="SyntaxNodeAnalysisContext.ContainingSymbol"/>
+        public ISymbol? ContainingSymbol { get; }
+
+        /// <inheritdoc cref="SyntaxNodeAnalysisContext.SemanticModel"/>
+        public SemanticModel SemanticModel { get; }
+
+        /// <inheritdoc cref="SyntaxNodeAnalysisContext.Compilation"/>
+        public Compilation Compilation => SemanticModel.Compilation;
+
+        /// <inheritdoc cref="AnalyzerOptions.AdditionalFiles"/>
+        public ImmutableArray<AdditionalText> AdditionalTexts { get; }
+
+        /// <inheritdoc cref="AnalyzerOptions.AnalyzerConfigOptionsProvider"/>
+        public AnalyzerConfigOptionsProvider AnalyzerConfigOptions { get; }
+
+        /// <inheritdoc cref="SyntaxNodeAnalysisContext.CancellationToken"/>
+        public CancellationToken CancellationToken { get; }
+    }
 }

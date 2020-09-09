@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Decuplr {
     internal static class CollectionExtensions {
@@ -30,6 +29,20 @@ namespace Decuplr {
 
         public static IEnumerable<T> TakeLast<T>(this IEnumerable<T> source, int N) {
             return source.Skip(Math.Max(0, source.Count() - N));
+        }
+
+        public static IEnumerable<T> Prepend<T>(this IEnumerable<T> values, T value) {
+            yield return value;
+            foreach (T item in values) {
+                yield return item;
+            }
+        }
+
+        public static IEnumerable<T> Append<T>(this IEnumerable<T> values, T value) {
+            foreach (T item in values) {
+                yield return item;
+            }
+            yield return value;
         }
 #endif
     }
