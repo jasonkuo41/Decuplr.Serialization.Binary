@@ -4,6 +4,6 @@ using Microsoft.CodeAnalysis.Text;
 namespace Decuplr.Sourceberg.Services {
     public interface ISourceAddition {
         SyntaxTree AddSource(string fileName, string sourceCode);
-        SyntaxTree AddSource(GeneratedSourceText sourceText);
+        SyntaxTree AddSource(string hintName, SourceText sourceText);
     }
 }

@@ -16,8 +16,8 @@ namespace Decuplr.Sourceberg.Internal {
     [EditorBrowsable(EditorBrowsableState.Never)]
     public class SourcebergAnalyzer {
 
-        private readonly IReadOnlyList<AnalyzerGroupInfo<ISymbol, SymbolKind>> symbolActionGroups;
-        private readonly IReadOnlyList<AnalyzerGroupInfo<SyntaxNode, SyntaxKind>> syntaxActionGroups;
+        private readonly IReadOnlyList<AnalyzerGroupInfo<ISymbol, SymbolAnalysisContextSource, SymbolKind>> symbolActionGroups;
+        private readonly IReadOnlyList<AnalyzerGroupInfo<SyntaxNode, SyntaxNodeAnalysisContextSource, SyntaxKind>> syntaxActionGroups;
         private readonly ServiceCollection _services = new ServiceCollection();
 
         public SourcebergAnalyzer(GeneratorStartup startup) {
@@ -51,10 +51,32 @@ namespace Decuplr.Sourceberg.Internal {
             // Currently we don't support popping analysis on generated code
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             foreach (var (symbolAction, requestKinds) in symbolActionGroups) {
-                context.RegisterSymbolAction(symbolContext => symbolAction.InvokeScope(serviceProvider, symbolContext.Symbol, symbolContext.Compilation, symbolContext.CancellationToken), requestKinds);
+                context.RegisterSymbolAction(symbolContext => {
+                    var diagnostics = symbolAction.InvokeScope(serviceProvider,
+                                                               symbolContext.Symbol,
+                                                               symbolContext.Compilation,
+                                                               (nextSymbol, _) => SymbolAnalysisContextSource.FromContextSource(nextSymbol, symbolContext),
+                                                               symbolContext.CancellationToken);
+                    foreach (var diagnostic in diagnostics)
+                        symbolContext.ReportDiagnostic(diagnostic);
+                }, requestKinds);
             }
             foreach (var (syntaxAction, requestKinds) in syntaxActionGroups) {
-                context.RegisterSyntaxNodeAction(syntaxContext => syntaxAction.InvokeScope(serviceProvider, syntaxContext.Node, syntaxContext.Compilation, syntaxContext.CancellationToken), requestKinds);
+                context.RegisterSyntaxNodeAction(syntaxContext => {
+                    var compilation = syntaxContext.Compilation;
+                    var ct = syntaxContext.CancellationToken;
+
+                    var reportedDiagnostics = syntaxAction.InvokeScope(serviceProvider, syntaxContext.Node, compilation, GetNextContext, ct);
+
+                    foreach (var reportedDiagnostic in reportedDiagnostics)
+                        syntaxContext.ReportDiagnostic(reportedDiagnostic);
+
+                    SyntaxNodeAnalysisContextSource GetNextContext(SyntaxNode nextSyntax, bool isEntryPoint) 
+                        => isEntryPoint
+                           ? SyntaxNodeAnalysisContextSource.FromContextSource(syntaxContext)
+                           : SyntaxNodeAnalysisContextSource.FromInherit(nextSyntax, syntaxContext);
+
+                }, requestKinds);
             }
 
         }

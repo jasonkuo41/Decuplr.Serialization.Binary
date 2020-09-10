@@ -9,12 +9,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Decuplr.Sourceberg.Internal {
-    internal class AnalyzerGroup<TKind> where TKind : notnull {
+    internal class AnalyzerGroup<TKind, TContext> where TKind : notnull {
 
-        private readonly List<AnalyzerGroupNode<TKind>> _analyzers = new List<AnalyzerGroupNode<TKind>>();
-        public IReadOnlyList<AnalyzerGroupNode<TKind>> Analyzers => _analyzers;
+        private readonly List<AnalyzerGroupNode<TKind, TContext>> _analyzers = new List<AnalyzerGroupNode<TKind, TContext>>();
+        public IReadOnlyList<AnalyzerGroupNode<TKind, TContext>> Analyzers => _analyzers;
 
-        internal void Add(AnalyzerGroupNode<TKind> node) => _analyzers.Add(node);
+        internal void Add(AnalyzerGroupNode<TKind, TContext> node) => _analyzers.Add(node);
 
         private IReadOnlyList<IReadOnlyList<TKind>> ExpandKindForInvocation(TKind origin){
             var kindList = new List<TKind>[Analyzers.Count];
@@ -56,7 +56,7 @@ namespace Decuplr.Sourceberg.Internal {
             return services;
         }
 
-        public void InvokeScope(IServiceProvider service, TKind kind, Compilation? compilation, CancellationToken ct) {
+        public IEnumerable<Diagnostic> InvokeScope(IServiceProvider service, TKind kind, Compilation? compilation, Func<TKind, bool, TContext> context, CancellationToken ct) {
             using var scope = service.CreateScope();
             var scopeService = scope.ServiceProvider;
             var accessor = scopeService.GetRequiredService<SourceContextAccessor>();
@@ -73,21 +73,19 @@ namespace Decuplr.Sourceberg.Internal {
             for(var i = Analyzers.Count - 1; i >=0; --i) {
                 var analyzerInfo = Analyzers[i];
                 var analyzer = (SourceAnalyzerBase)scopeService.GetRequiredService(analyzerInfo.AnalyzerType);
+                var currentIndex = i;
 
                 void NextAction(CancellationToken providedCt) {
-                    for (int j = 0; j < kindList[i].Count; j++) {
-                        var kindChild = kindList[i][j];
-                        analyzer.InvokeAnalysis(new AnalysisContextPrecusor {
-                            Source = kindChild,
-                            ContextProvider = contextProvider,
-                            NextAction = prevNextAction,
-                            CancellationToken = providedCt,
-                        });
+                    for (int j = 0; j < kindList[currentIndex].Count; j++) {
+                        var kindChild = kindList[currentIndex][j];
+                        analyzer.InvokeAnalysis(context(kindChild, currentIndex == 0), prevNextAction);
                     }
                 }
                 prevNextAction = NextAction;
             }
             prevNextAction(ct);
+
+            return scopeService.GetServices<SourceAnalyzerBase>().SelectMany(x => x.ReportingDiagnostics);
         }
     }
 

@@ -1,4 +1,7 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using System;
+using System.Threading;
+using Decuplr.Sourceberg.Internal;
+using Microsoft.CodeAnalysis;
 
 namespace Decuplr.Sourceberg {
     /// <summary>
@@ -10,6 +13,15 @@ namespace Decuplr.Sourceberg {
         /// Perform analysis on the symbol and provide additional information to the symbol
         /// </summary>
         /// <param name="currentSymbol"></param>
-        public abstract void RunAnalysis(AnalysisContext<TSymbol> currentSymbol);
+        public abstract void RunAnalysis(SymbolAnalysisContext<TSymbol> context, Action<CancellationToken> nextAction);
+
+        internal override void InvokeAnalysis<TContext>(TContext context, Action<CancellationToken> nextAction) {
+            if (!(context is SymbolAnalysisContextSource source))
+                return;
+            var analysisContext = source.ToActualContext<TSymbol>();
+            if (analysisContext is null)
+                return;
+            RunAnalysis(analysisContext.Value, nextAction);
+        }
     }
 }
