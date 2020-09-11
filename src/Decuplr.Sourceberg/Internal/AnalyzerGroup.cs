@@ -9,6 +9,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Decuplr.Sourceberg.Internal {
+
+    internal struct AnalyzerGroupResult {
+        public IEnumerable<Diagnostic> GeneratedDiagnostics { get; set; }
+        public IContextCollectionProvider 
+    }
+
     internal class AnalyzerGroup<TKind, TContext> where TKind : notnull {
 
         private readonly List<AnalyzerGroupNode<TKind, TContext>> _analyzers = new List<AnalyzerGroupNode<TKind, TContext>>();
@@ -56,7 +62,12 @@ namespace Decuplr.Sourceberg.Internal {
             return services;
         }
 
-        public IEnumerable<Diagnostic> InvokeScope(IServiceProvider service, TKind kind, Compilation? compilation, Func<TKind, bool, TContext> context, CancellationToken ct) {
+        private IEnumerable<Diagnostic> InvokeScopeCore(IServiceProvider service,
+                                                        TKind kind,
+                                                        Compilation? compilation,
+                                                        Func<TKind, bool, TContext> context,
+                                                        IContextCollectionProvider? externalProvider,
+                                                        CancellationToken ct) {
             using var scope = service.CreateScope();
             var scopeService = scope.ServiceProvider;
             var accessor = scopeService.GetRequiredService<SourceContextAccessor>();
@@ -64,13 +75,13 @@ namespace Decuplr.Sourceberg.Internal {
                 accessor.OnOperationCanceled = ct;
                 accessor.SourceCompilation = compilation;
             }
-            var contextProvider = scopeService.GetRequiredService<IContextCollectionProvider>();
+            var contextProvider = externalProvider ?? scopeService.GetRequiredService<IContextCollectionProvider>();
 
             var kindList = ExpandKindForInvocation(kind);
 
             // reverse iterator
             Action<CancellationToken> prevNextAction = ct => { };
-            for(var i = Analyzers.Count - 1; i >=0; --i) {
+            for (var i = Analyzers.Count - 1; i >= 0; --i) {
                 var analyzerInfo = Analyzers[i];
                 var analyzer = (SourceAnalyzerBase)scopeService.GetRequiredService(analyzerInfo.AnalyzerType);
                 var currentIndex = i;
@@ -87,6 +98,21 @@ namespace Decuplr.Sourceberg.Internal {
 
             return scopeService.GetServices<SourceAnalyzerBase>().SelectMany(x => x.ReportingDiagnostics);
         }
+
+        public IEnumerable<Diagnostic> InvokeScope(IServiceProvider service,
+                                                   TKind kind,
+                                                   Compilation? compilation,
+                                                   Func<TKind, bool, TContext> context,
+                                                   IContextCollectionProvider externalProvider,
+                                                   CancellationToken ct) 
+            => InvokeScopeCore(service, kind, compilation, context, externalProvider, ct);
+
+        public IEnumerable<Diagnostic> InvokeScope(IServiceProvider service,
+                                                   TKind kind,
+                                                   Compilation? compilation,
+                                                   Func<TKind, bool, TContext> context,
+                                                   CancellationToken ct) 
+            => InvokeScopeCore(service, kind, compilation, context, null, ct);
     }
 
 }
